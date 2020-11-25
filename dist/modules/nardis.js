@@ -16,6 +16,7 @@ var train_1 = require("./core/train");
 var resource_1 = require("./core/resource");
 var types_1 = require("../types/types");
 var constants_1 = require("../util/constants");
+var data_1 = require("../data/data");
 var util_1 = require("../util/util");
 /**
  * @constructor
@@ -273,6 +274,17 @@ var Nardis = /** @class */ (function () {
             resources: resources,
             cities: cities
         }, players, currentPlayer, turn);
+    };
+    // TODO comment
+    Nardis.createFromPlayer = function (player) {
+        var data = data_1.generateData();
+        var resources = data.resources.map(function (resource) { return resource_1.default.createFromModel(resource); });
+        return new Nardis({
+            resources: resources,
+            cities: data.cities.map(function (city) { return city_1.default.createFromModel(city, resources); }),
+            trains: data.trains.map(function (train) { return train_1.default.createFromModel(train); }),
+            upgrades: data.upgrades.map(function (upgrade) { return upgrade_1.default.createFromModel(upgrade); })
+        }, [player]);
     };
     return Nardis;
 }());

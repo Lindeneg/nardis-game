@@ -113,4 +113,5 @@ export declare class Nardis {
      * @return {Nardis} Nardis instance recreated from localStorage.
      */
     static createFromLocalStorage: () => Nardis;
+    static createFromPlayer: (player: Player) => Nardis;
 }

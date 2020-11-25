@@ -19,8 +19,14 @@ import {
     localKeys
 } from '../util/constants';
 import {
+    generateData
+} from '../data/data';
+import {
     getRangeTurnCost
 } from '../util/util';
+import { 
+    RawDataModel 
+} from '../types/model';
 
 
 /**
@@ -386,5 +392,18 @@ export class Nardis {
             currentPlayer,
             turn
         );
+    }
+
+    // TODO comment
+    public static createFromPlayer = (player: Player) => {
+        const data: RawDataModel = generateData();
+        const resources: Resource[] = data.resources.map(resource => Resource.createFromModel(resource));
+        return new Nardis({
+            resources,
+            cities: data.cities.map(city => City.createFromModel(city, resources)),
+            trains: data.trains.map(train => Train.createFromModel(train)),
+            upgrades: data.upgrades.map(upgrade => Upgrade.createFromModel(upgrade))
+        },
+        [player]);
     }
 }
