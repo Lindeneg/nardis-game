@@ -276,15 +276,16 @@ var Nardis = /** @class */ (function () {
         }, players, currentPlayer, turn);
     };
     // TODO comment
-    Nardis.createFromPlayer = function (player) {
+    Nardis.createFromPlayer = function (name) {
         var data = data_1.generateData();
         var resources = data.resources.map(function (resource) { return resource_1.default.createFromModel(resource); });
+        var cities = data.cities.map(function (city) { return city_1.default.createFromModel(city, resources); });
         return new Nardis({
             resources: resources,
-            cities: data.cities.map(function (city) { return city_1.default.createFromModel(city, resources); }),
+            cities: cities,
             trains: data.trains.map(function (train) { return train_1.default.createFromModel(train); }),
             upgrades: data.upgrades.map(function (upgrade) { return upgrade_1.default.createFromModel(upgrade); })
-        }, [player]);
+        }, [new player_1.default(name, types_1.PlayerType.Human, cities[0])]);
     };
     return Nardis;
 }());

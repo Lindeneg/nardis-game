@@ -395,15 +395,16 @@ export class Nardis {
     }
 
     // TODO comment
-    public static createFromPlayer = (player: Player) => {
+    public static createFromPlayer = (name: string) => {
         const data: RawDataModel = generateData();
         const resources: Resource[] = data.resources.map(resource => Resource.createFromModel(resource));
+        const cities: City[] = data.cities.map(city => City.createFromModel(city, resources));
         return new Nardis({
             resources,
-            cities: data.cities.map(city => City.createFromModel(city, resources)),
+            cities,
             trains: data.trains.map(train => Train.createFromModel(train)),
             upgrades: data.upgrades.map(upgrade => Upgrade.createFromModel(upgrade))
         },
-        [player]);
+        [new Player(name, PlayerType.Human, cities[0])]);
     }
 }
