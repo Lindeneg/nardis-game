@@ -24,6 +24,7 @@ export default abstract class BaseComponent implements ISaveable {
         this.name = name;
     }
 
+    // TODO is it necessary to override toString?
     public toString = (): string => this.id;
 
     /** 
