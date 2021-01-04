@@ -30,7 +30,7 @@ export default class Finance extends BaseComponent implements ITurnable {
     */
     addToFinanceExpense: (type: FinanceType, id: string, amount: number, value: number) => void;
     /**
-    * Remove entry to expense object from the turn at hand
+    * Remove entry from expense object.
     *
     * @param {FinanceType} type   - FinanceType of the expense to be removed
     * @param {string}      id     - string with id of the expense to be removed

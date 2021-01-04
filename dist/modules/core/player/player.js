@@ -92,6 +92,25 @@ var Player = /** @class */ (function (_super) {
             return false;
         };
         /**
+         * Remove Route from routes.
+         *
+         * @param {string}    id - String with id of Route to remove.
+         *
+         * @returns {boolean}      True if the Route was removed from queue else false.
+         */
+        _this.removeRouteFromRoutes = function (id) {
+            for (var i = 0; i < _this._routes.length; i++) {
+                var route = _this._routes[i];
+                if (route.id === id) {
+                    route.getCityOne().decrementRouteCount();
+                    route.getCityTwo().decrementRouteCount();
+                    _this._routes.splice(i, 1);
+                    return true;
+                }
+            }
+            return false;
+        };
+        /**
          * Add Upgrade.
          *
          * @param {Upgrade} upgrade - Upgrade to add.
@@ -105,15 +124,17 @@ var Player = /** @class */ (function (_super) {
          * else decrement current turn cost by one.
          */
         _this.handleQueue = function () {
+            var completed = [];
             for (var i = 0; i < _this._queue.length; i++) {
                 if (_this._queue[i].turnCost <= 0) {
                     _this._routes.push(_this._queue[i].route);
-                    _this._queue.splice(i, 1);
+                    completed.push(_this._queue[i].route.id);
                 }
                 else {
                     _this._queue[i].turnCost--;
                 }
             }
+            _this._queue = _this._queue.filter(function (e) { return !(completed.indexOf(e.route.id) > -1); });
         };
         /**
          * Handle all Routes each turn.

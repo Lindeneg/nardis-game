@@ -64,11 +64,12 @@ var generateName = function (min, max) {
  *
  * @return {number}       Number between from and to constrains.
  */
-exports.randomNumber = function (from, to) {
+var randomNumber = function (from, to) {
     if (from === void 0) { from = 1; }
     if (to === void 0) { to = 10; }
     return Math.floor(Math.random() * (to - from + 1) + from);
 };
+exports.randomNumber = randomNumber;
 /**
  * Get PlayerLevel from number.
  *
@@ -76,12 +77,13 @@ exports.randomNumber = function (from, to) {
  *
  * @return {PlayerLevel}     PlayerLevel found.
  */
-exports.getPlayerLevelFromNumber = function (n) {
+var getPlayerLevelFromNumber = function (n) {
     if (n >= 0 && n < constants_1.playerLevelMapping.length) {
         return constants_1.playerLevelMapping[n];
     }
     return types_1.PlayerLevel.None;
 };
+exports.getPlayerLevelFromNumber = getPlayerLevelFromNumber;
 /**
  * Convert degrees to radians.
  *
@@ -89,22 +91,24 @@ exports.getPlayerLevelFromNumber = function (n) {
  *
  * @return {number}                Number with radians.
  */
-exports.degreesToRadians = function (degrees) {
+var degreesToRadians = function (degrees) {
     return (degrees * Math.PI) / 180;
     ;
 };
+exports.degreesToRadians = degreesToRadians;
 /**
  * Get a 32bit random Id.
  *
  * @return {string} String with generated Id.
  */
-exports.createId = function () {
+var createId = function () {
     var result = '';
     for (var _ = 0; _ < constants_1.ID_LENGTH; _++) {
         result += constants_1.ID_CHARS.charAt(Math.floor(Math.random() * constants_1.ID_CHARS.length));
     }
     return result;
 };
+exports.createId = createId;
 /**
  * Get array of random names.
  *
@@ -115,7 +119,7 @@ exports.createId = function () {
  *
  * @return {string[]}                 Array of strings with generated names.
  */
-exports.generateArrayOfRandomNames = function (arraySize, nameMinLength, nameMaxLength, exclude) {
+var generateArrayOfRandomNames = function (arraySize, nameMinLength, nameMaxLength, exclude) {
     var result = [];
     for (var _ = 0; _ < arraySize; _++) {
         while (true) {
@@ -129,56 +133,63 @@ exports.generateArrayOfRandomNames = function (arraySize, nameMinLength, nameMax
     }
     return result;
 };
+exports.generateArrayOfRandomNames = generateArrayOfRandomNames;
 /**
  * Generate low yield ResourceModels with random entries for
  * Resource value and Resource value volatility.
  *
  * @return {ResourceModel[]} Array with generated low yield ResourceModels.
  */
-exports.getLowYieldResourceModels = function () { return preparedData_1.lowYieldData.map(function (e) {
+var getLowYieldResourceModels = function () { return preparedData_1.lowYieldData.map(function (e) {
     return __assign(__assign({}, e), { value: exports.randomNumber.apply(void 0, e.value), valueVolatility: getRandomValueVolatility.apply(void 0, e.valueVolatility) });
 }); };
+exports.getLowYieldResourceModels = getLowYieldResourceModels;
 /**
  * Generate medium yield ResourceModels with random entries for
  * Resource value and Resource value volatility.
  *
  * @return {ResourceModel[]} Array with generated medium yield ResourceModels.
  */
-exports.getMediumYieldResourceModels = function () { return preparedData_1.mediumYieldData.map(function (e) {
+var getMediumYieldResourceModels = function () { return preparedData_1.mediumYieldData.map(function (e) {
     return __assign(__assign({}, e), { value: exports.randomNumber.apply(void 0, e.value), valueVolatility: exports.randomNumber.apply(void 0, e.valueVolatility) });
 }); };
+exports.getMediumYieldResourceModels = getMediumYieldResourceModels;
 /**
  * Generate high yield ResourceModels with random entries for
  * Resource value and Resource value volatility.
  *
  * @return {ResourceModel[]} Array with generated high yield ResourceModels.
  */
-exports.getHighYieldResources = function () { return preparedData_1.highYieldData.map(function (e) {
+var getHighYieldResources = function () { return preparedData_1.highYieldData.map(function (e) {
     return __assign(__assign({}, e), { value: exports.randomNumber.apply(void 0, e.value), valueVolatility: getRandomValueVolatility.apply(void 0, e.valueVolatility) });
 }); };
+exports.getHighYieldResources = getHighYieldResources;
 /**
  * Generate TrainModels with random entries for cost, upkeep and speed.
  *
  * @return {TrainModel[]} Array with generated TrainModels.
  */
-exports.getTrainModels = function () { return preparedData_1.trainData.map(function (e) {
+var getTrainModels = function () { return preparedData_1.trainData.map(function (e) {
     return __assign(__assign({}, e), { cost: exports.randomNumber.apply(void 0, e.cost), upkeep: exports.randomNumber.apply(void 0, e.upkeep), speed: exports.randomNumber.apply(void 0, e.speed), cargoSpace: exports.randomNumber.apply(void 0, e.cargoSpace) });
 }); };
+exports.getTrainModels = getTrainModels;
 /**
  * Get fixed UpgradeModels.
  *
  * @return {UpgradeModel[]} Array with UpgradeModels.
  */
-exports.getUpgradeModels = function () { return preparedData_1.upgradeData; };
+var getUpgradeModels = function () { return preparedData_1.upgradeData; };
+exports.getUpgradeModels = getUpgradeModels;
 /**
  * Get the turn cost for a given distance.
  *
  * @return {number} Number describing the maximum range.
  */
-exports.getRangeTurnCost = function (distance) {
+var getRangeTurnCost = function (distance) {
     var turnKey = Object.keys(constants_1.rangeCost).filter(function (key) {
         var _a = key.split(','), lower = _a[0], upper = _a[1];
         return parseInt(lower) >= distance && distance < parseInt(upper);
     })[0];
     return !turnKey ? constants_1.rangeCost['260,10000'] : constants_1.rangeCost[turnKey];
 };
+exports.getRangeTurnCost = getRangeTurnCost;

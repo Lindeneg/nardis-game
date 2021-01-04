@@ -86,6 +86,14 @@ export declare class Nardis {
      */
     removeRouteFromPlayerQueue: (routeId: string, trainId: string) => boolean;
     /**
+     * Remove an entry from Player routes.
+     *
+     * @param {string}   routeId - String with id of Route to remove.
+     *
+     * @return {boolean} True if Route was removed from routes else false.
+     */
+    removeRouteFromPlayerRoutes: (routeId: string) => boolean;
+    /**
      * Clear the saved game state from localStorage.
      */
     clearStorage: () => void;

@@ -60,6 +60,14 @@ export default class Player extends BaseComponent implements ITurnable {
      */
     removeRouteFromQueue: (id: string) => boolean;
     /**
+     * Remove Route from routes.
+     *
+     * @param {string}    id - String with id of Route to remove.
+     *
+     * @returns {boolean}      True if the Route was removed from queue else false.
+     */
+    removeRouteFromRoutes: (id: string) => boolean;
+    /**
      * Add Upgrade.
      *
      * @param {Upgrade} upgrade - Upgrade to add.

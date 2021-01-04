@@ -94,7 +94,7 @@ var generateTrains = function () {
         return __assign(__assign({}, e), { name: names.splice(util_1.randomNumber(0, names.length - 1), 1)[0] });
     });
 };
-exports.generateData = function () {
+var generateData = function () {
     return {
         cities: generateCities(),
         trains: generateTrains(),
@@ -102,3 +102,4 @@ exports.generateData = function () {
         upgrades: util_1.getUpgradeModels()
     };
 };
+exports.generateData = generateData;

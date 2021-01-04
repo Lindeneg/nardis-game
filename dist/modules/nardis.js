@@ -159,6 +159,16 @@ var Nardis = /** @class */ (function () {
             return _this.handleRemoveRouteFromPlayerFinance(routeId, trainId) && _this._currentPlayer.removeRouteFromQueue(routeId);
         };
         /**
+         * Remove an entry from Player routes.
+         *
+         * @param {string}   routeId - String with id of Route to remove.
+         *
+         * @return {boolean} True if Route was removed from routes else false.
+         */
+        this.removeRouteFromPlayerRoutes = function (routeId) {
+            return _this._currentPlayer.removeRouteFromRoutes(routeId);
+        };
+        /**
          * Clear the saved game state from localStorage.
          */
         this.clearStorage = function () {

@@ -54,7 +54,7 @@ var Finance = /** @class */ (function (_super) {
             _this.addNthTurnObject(types_1.FinanceGeneralType.Expense, type, id, amount, value);
         };
         /**
-        * Remove entry to expense object from the turn at hand
+        * Remove entry from expense object.
         *
         * @param {FinanceType} type   - FinanceType of the expense to be removed
         * @param {string}      id     - string with id of the expense to be removed
@@ -62,13 +62,16 @@ var Finance = /** @class */ (function (_super) {
         * @returns {boolean}            true if removed else false
         */
         _this.removeFromFinanceExpense = function (type, id) {
-            var target = _this._history.expense.nthTurn;
-            for (var i = 0; i < target.length; i++) {
-                if (target[i].type === type && target[i].id === id) {
-                    var value = target[i].amount * target[i].value;
-                    target.splice(i, 1);
-                    _this.addGold(value);
-                    return true;
+            var targets = Object.keys(_this._history.expense).map(function (e) { return _this._history.expense[e]; });
+            for (var i = 0; i < targets.length; i++) {
+                var target = targets[i];
+                for (var j = 0; j < target.length; j++) {
+                    if (target[j].type === type && target[j].id === id) {
+                        var value = target[j].amount * target[j].value;
+                        target.splice(j, 1);
+                        _this.addGold(value);
+                        return true;
+                    }
                 }
             }
             return false;
