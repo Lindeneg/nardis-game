@@ -137,6 +137,27 @@ export default class Player extends BaseComponent implements ITurnable {
     }
 
     /**
+     * Remove Route from routes.
+     * 
+     * @param {string}    id - String with id of Route to remove.
+     * 
+     * @returns {boolean}      True if the Route was removed from queue else false.
+     */
+
+    public removeRouteFromRoutes = (id: string): boolean => {
+        for (let i = 0; i < this._routes.length; i++) {
+            const route: Route = this._routes[i];
+            if (route.id === id) {
+                route.getCityOne().decrementRouteCount();
+                route.getCityTwo().decrementRouteCount();
+                this._routes.splice(i, 1);
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /**
      * Add Upgrade.
      * 
      * @param {Upgrade} upgrade - Upgrade to add.
@@ -153,14 +174,16 @@ export default class Player extends BaseComponent implements ITurnable {
      */
 
     protected handleQueue = (): void => {
+        const completed: string[] = [];
         for (let i = 0; i < this._queue.length; i++) {
             if (this._queue[i].turnCost <= 0) {
                 this._routes.push(this._queue[i].route);
-                this._queue.splice(i, 1);
+                completed.push(this._queue[i].route.id);
             } else {
                 this._queue[i].turnCost--;
             }
         }
+        this._queue = this._queue.filter(e => !(completed.indexOf(e.route.id) > -1));
     }
 
     /**

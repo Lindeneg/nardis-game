@@ -219,6 +219,18 @@ export class Nardis {
     }
 
     /**
+     * Remove an entry from Player routes.
+     * 
+     * @param {string}   routeId - String with id of Route to remove.
+     * 
+     * @return {boolean} True if Route was removed from routes else false.
+     */
+
+    public removeRouteFromPlayerRoutes = (routeId: string): boolean => {
+        return this._currentPlayer.removeRouteFromRoutes(routeId);
+    }
+
+    /**
      * Clear the saved game state from localStorage.
      */
 
