@@ -78,7 +78,7 @@ export default class Finance extends BaseComponent implements ITurnable {
     }
 
     /**
-    * Remove entry to expense object from the turn at hand
+    * Remove entry from expense object.
     * 
     * @param {FinanceType} type   - FinanceType of the expense to be removed
     * @param {string}      id     - string with id of the expense to be removed
@@ -90,13 +90,16 @@ export default class Finance extends BaseComponent implements ITurnable {
             type: FinanceType, 
             id  : string
     ): boolean => {
-        const target: FinanceTurnItem[] = this._history.expense.nthTurn;
-        for (let i: number = 0; i < target.length; i++) {
-            if (target[i].type === type && target[i].id === id) {
-                const value: number = target[i].amount * target[i].value;
-                target.splice(i, 1);
-                this.addGold(value);
-                return true;
+        const targets: Array<FinanceTurnItem[]> = Object.keys(this._history.expense).map(e => this._history.expense[e]);
+        for (let i: number = 0; i < targets.length; i++) {
+            const target: FinanceTurnItem[] = targets[i];
+            for (let j = 0; j < target.length; j++) {
+                if (target[j].type === type && target[j].id === id) {
+                    const value: number = target[j].amount * target[j].value;
+                    target.splice(j, 1);
+                    this.addGold(value);
+                    return true;
+                }
             }
         }
         return false;
