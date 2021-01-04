@@ -39,6 +39,7 @@ export default class City extends BaseComponent implements ITurnable {
     getSupplyRefillRate: () => number;
     getSupplyDecider: () => number;
     getCurrentRouteCount: () => number;
+    getMaxRouteCount: () => number;
     isFull: () => boolean;
     isSupply: (resource: Resource) => boolean;
     isDemand: (resource: Resource) => boolean;

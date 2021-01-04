@@ -65,6 +65,8 @@ var Player = /** @class */ (function (_super) {
          * @param {Route} turnCost - Number describing turn cost.
          */
         _this.addRouteToQueue = function (route, turnCost) {
+            route.getCityOne().incrementRouteCount();
+            route.getCityTwo().incrementRouteCount();
             _this._queue.push({
                 route: route,
                 turnCost: turnCost
@@ -79,7 +81,10 @@ var Player = /** @class */ (function (_super) {
          */
         _this.removeRouteFromQueue = function (id) {
             for (var i = 0; i < _this._queue.length; i++) {
-                if (_this._queue[i].route.id === id) {
+                var route = _this._queue[i].route;
+                if (route.id === id) {
+                    route.getCityOne().decrementRouteCount();
+                    route.getCityTwo().decrementRouteCount();
                     _this._queue.splice(i, 1);
                     return true;
                 }

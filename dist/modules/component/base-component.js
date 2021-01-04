@@ -11,6 +11,7 @@ var util_1 = require("../../util/util");
 var BaseComponent = /** @class */ (function () {
     function BaseComponent(name, id) {
         var _this = this;
+        // TODO is it necessary to override toString?
         this.toString = function () { return _this.id; };
         /**
          * @return {boolean} True if instances has same id else false.

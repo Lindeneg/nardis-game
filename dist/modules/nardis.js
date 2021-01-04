@@ -14,6 +14,7 @@ var upgrade_1 = require("./core/player/upgrade");
 var player_1 = require("./core/player/player");
 var train_1 = require("./core/train");
 var resource_1 = require("./core/resource");
+var finance_1 = require("./core/player/finance");
 var types_1 = require("../types/types");
 var constants_1 = require("../util/constants");
 var data_1 = require("../data/data");
@@ -33,8 +34,27 @@ var Nardis = /** @class */ (function () {
         this.getCurrentTurn = function () { return _this._turn; };
         /**
          * Runs at the start of each turn cycle. One cycle is when every player in-game has ended their turn.
+         
+    
+        public startTurn = (): void => {
+            const handleTurnInfo: HandleTurnInfo = {
+                turn: this._turn,
+                data: this.data,
+                playerData: {
+                    routes: this._currentPlayer.getRoutes(),
+                    upgrades: this._currentPlayer.getUpgrades()
+                }
+            };
+            [...this.data.cities, ...this.data.resources, this._currentPlayer].forEach(turnComponent => {
+                turnComponent.handleTurn(handleTurnInfo);
+            });
+        }
+        */
+        /**
+         * Runs at the end of each Player turn.
          */
-        this.startTurn = function () {
+        this.endTurn = function () {
+            _this.handleComputerTurn();
             var handleTurnInfo = {
                 turn: _this._turn,
                 data: _this.data,
@@ -46,12 +66,6 @@ var Nardis = /** @class */ (function () {
             __spreadArrays(_this.data.cities, _this.data.resources, [_this._currentPlayer]).forEach(function (turnComponent) {
                 turnComponent.handleTurn(handleTurnInfo);
             });
-        };
-        /**
-         * Runs when the Human player's turn is concluded. Then all Computer actions are handled in the turn.
-         */
-        this.endTurn = function () {
-            _this.handleComputerTurn();
             _this._turn++;
             _this.saveGame();
         };
@@ -142,10 +156,7 @@ var Nardis = /** @class */ (function () {
          * @return {boolean} True if Route was removed from queue else false.
          */
         this.removeRouteFromPlayerQueue = function (routeId, trainId) {
-            if (_this._currentPlayer.removeRouteFromQueue(routeId)) {
-                return _this.handleRemoveRouteFromPlayerFinance(routeId, trainId);
-            }
-            return false;
+            return _this.handleRemoveRouteFromPlayerFinance(routeId, trainId) && _this._currentPlayer.removeRouteFromQueue(routeId);
         };
         /**
          * Clear the saved game state from localStorage.
@@ -239,7 +250,7 @@ var Nardis = /** @class */ (function () {
             window.localStorage.setItem(constants_1.localKeys[types_1.LocalKey.Cities], btoa(JSON.stringify(_this.data.cities.map(function (e) { return e.deconstruct(); }))));
             window.localStorage.setItem(constants_1.localKeys[types_1.LocalKey.Players], btoa(JSON.stringify(_this.players.map(function (e) { return e.deconstruct(); }))));
             window.localStorage.setItem(constants_1.localKeys[types_1.LocalKey.CurrentPlayer], btoa(JSON.stringify(_this._currentPlayer.deconstruct())));
-            window.localStorage.setItem(constants_1.localKeys[types_1.LocalKey.Turn], btoa('' + _this._turn));
+            window.localStorage.setItem(constants_1.localKeys[types_1.LocalKey.Turn], btoa(_this._turn.toString()));
         };
         this.players = players;
         this.data = gameData;
@@ -267,7 +278,7 @@ var Nardis = /** @class */ (function () {
         var cities = citiesRaw.map(function (cityString) { return city_1.default.createFromStringifiedJSON(cityString, resources); });
         var players = playersRaw.map(function (playerString) { return player_1.default.createFromStringifiedJSON(playerString, cities, trains, resources); });
         var currentPlayer = players.filter(function (player) { return player.id === currentPlayerRaw.id; })[0];
-        var turn = parseInt(window.localStorage.getItem(constants_1.localKeys[types_1.LocalKey.Turn]));
+        var turn = parseInt(atob(window.localStorage.getItem(constants_1.localKeys[types_1.LocalKey.Turn])));
         return new Nardis({
             trains: trains,
             upgrades: upgrades,
@@ -275,8 +286,18 @@ var Nardis = /** @class */ (function () {
             cities: cities
         }, players, currentPlayer, turn);
     };
-    // TODO comment
-    Nardis.createFromPlayer = function (name) {
+    /**
+     * Create a Nardis instance from one to three parameters.
+     *
+     * @param {string}   name      - String with name of player.
+     * @param {number}   gold      - (optional) Number specifying start gold.
+     * @param {number}   opponents - (optional) Number specifying number of opponents.
+     *
+     * @return {Nardis}              Created Nardis instance.
+     */
+    Nardis.createFromPlayer = function (name, gold, opponents) {
+        if (gold === void 0) { gold = constants_1.START_GOLD; }
+        if (opponents === void 0) { opponents = constants_1.START_OPPONENTS; }
         var data = data_1.generateData();
         var resources = data.resources.map(function (resource) { return resource_1.default.createFromModel(resource); });
         var cities = data.cities.map(function (city) { return city_1.default.createFromModel(city, resources); });
@@ -285,7 +306,7 @@ var Nardis = /** @class */ (function () {
             cities: cities,
             trains: data.trains.map(function (train) { return train_1.default.createFromModel(train); }),
             upgrades: data.upgrades.map(function (upgrade) { return upgrade_1.default.createFromModel(upgrade); })
-        }, [new player_1.default(name, types_1.PlayerType.Human, cities[0])]);
+        }, [new player_1.default(name, types_1.PlayerType.Human, cities[0], new finance_1.default(name, gold))]);
     };
     return Nardis;
 }());

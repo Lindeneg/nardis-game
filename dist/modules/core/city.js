@@ -51,6 +51,7 @@ var City = /** @class */ (function (_super) {
         _this.getSupplyRefillRate = function () { return _this._supplyRefillRate; };
         _this.getSupplyDecider = function () { return _this._supplyRefillDecider; };
         _this.getCurrentRouteCount = function () { return _this._currentRouteCount; };
+        _this.getMaxRouteCount = function () { return _this._maxConcurrentRoutes; };
         _this.isFull = function () { return _this._currentRouteCount >= _this._maxConcurrentRoutes; };
         _this.isSupply = function (resource) { return _this._supply.filter(function (e) { return e.resource.equals(resource); }).length > 0; };
         _this.isDemand = function (resource) { return _this._demand.filter(function (e) { return e.resource.equals(resource); }).length > 0; };

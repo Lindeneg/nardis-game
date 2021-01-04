@@ -20,10 +20,24 @@ export declare class Nardis {
     getCurrentTurn: () => number;
     /**
      * Runs at the start of each turn cycle. One cycle is when every player in-game has ended their turn.
-     */
-    startTurn: () => void;
+     
+
+    public startTurn = (): void => {
+        const handleTurnInfo: HandleTurnInfo = {
+            turn: this._turn,
+            data: this.data,
+            playerData: {
+                routes: this._currentPlayer.getRoutes(),
+                upgrades: this._currentPlayer.getUpgrades()
+            }
+        };
+        [...this.data.cities, ...this.data.resources, this._currentPlayer].forEach(turnComponent => {
+            turnComponent.handleTurn(handleTurnInfo);
+        });
+    }
+    */
     /**
-     * Runs when the Human player's turn is concluded. Then all Computer actions are handled in the turn.
+     * Runs at the end of each Player turn.
      */
     endTurn: () => void;
     /**
@@ -113,5 +127,14 @@ export declare class Nardis {
      * @return {Nardis} Nardis instance recreated from localStorage.
      */
     static createFromLocalStorage: () => Nardis;
-    static createFromPlayer: (name: string) => Nardis;
+    /**
+     * Create a Nardis instance from one to three parameters.
+     *
+     * @param {string}   name      - String with name of player.
+     * @param {number}   gold      - (optional) Number specifying start gold.
+     * @param {number}   opponents - (optional) Number specifying number of opponents.
+     *
+     * @return {Nardis}              Created Nardis instance.
+     */
+    static createFromPlayer: (name: string, gold?: number, opponents?: number) => Nardis;
 }

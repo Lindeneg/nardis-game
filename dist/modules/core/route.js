@@ -184,6 +184,8 @@ var Route = /** @class */ (function (_super) {
      */
     Route.createFromStringifiedJSON = function (stringifiedJSON, cities, trains, resources) {
         var parsedJSON = JSON.parse(stringifiedJSON);
+        var routeState = parsedJSON._routeState;
+        var cargo = !!routeState.cargo ? routeState.cargo.map(function (e) { return (__assign(__assign({}, e), { resource: resources.filter(function (j) { return j.id === e.resource.id; })[0] })); }) : routeState.cargo;
         return new Route(parsedJSON.name, cities.filter(function (e) { return e.id === parsedJSON._cityOne.id; })[0], cities.filter(function (e) { return e.id === parsedJSON._cityTwo.id; })[0], trains.filter(function (e) { return e.id === parsedJSON._train.id; })[0], {
             cityOne: parsedJSON._routePlanCargo.cityOne.map(function (e) {
                 return __assign(__assign({}, e), { resource: resources.filter(function (j) { return j.id === e.resource.id; })[0] });
@@ -191,7 +193,7 @@ var Route = /** @class */ (function (_super) {
             cityTwo: parsedJSON._routePlanCargo.cityTwo.map(function (e) {
                 return __assign(__assign({}, e), { resource: resources.filter(function (j) { return j.id === e.resource.id; })[0] });
             })
-        }, parsedJSON._distance, parsedJSON._cost, parsedJSON._purchasedOnTurn, parsedJSON._profit, parsedJSON._kilometersTravelled, __assign(__assign({}, parsedJSON._routeState), { destination: cities.filter(function (e) { return e.id === parsedJSON._routeState.destination.id; })[0] }), parsedJSON.id);
+        }, parsedJSON._distance, parsedJSON._cost, parsedJSON._purchasedOnTurn, parsedJSON._profit, parsedJSON._kilometersTravelled, __assign(__assign({}, parsedJSON._routeState), { destination: cities.filter(function (e) { return e.id === parsedJSON._routeState.destination.id; })[0], cargo: cargo }), parsedJSON.id);
     };
     return Route;
 }(base_component_1.default));
