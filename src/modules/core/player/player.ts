@@ -107,6 +107,8 @@ export default class Player extends BaseComponent implements ITurnable {
      */
 
     public addRouteToQueue = (route: Route, turnCost: number): void => {
+        route.getCityOne().incrementRouteCount();
+        route.getCityTwo().incrementRouteCount();
         this._queue.push({
             route,
             turnCost
@@ -123,7 +125,10 @@ export default class Player extends BaseComponent implements ITurnable {
 
     public removeRouteFromQueue = (id: string): boolean => {
         for (let i = 0; i < this._queue.length; i++) {
-            if (this._queue[i].route.id === id) {
+            const route: Route = this._queue[i].route;
+            if (route.id === id) {
+                route.getCityOne().decrementRouteCount();
+                route.getCityTwo().decrementRouteCount();
                 this._queue.splice(i, 1);
                 return true;
             }

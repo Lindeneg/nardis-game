@@ -205,6 +205,11 @@ export default class Route extends BaseComponent implements ITurnable {
 
     public static createFromStringifiedJSON = (stringifiedJSON: string, cities: City[], trains: Train[], resources: Resource[]): Route => {
         const parsedJSON: any = JSON.parse(stringifiedJSON);
+        const routeState: any = parsedJSON._routeState;
+        const cargo: any = !!routeState.cargo ? routeState.cargo.map(e => ({
+            ...e,
+            resource: resources.filter(j => j.id === e.resource.id)[0]
+        })) : routeState.cargo;
         return new Route(
             parsedJSON.name,
             cities.filter(e => e.id === parsedJSON._cityOne.id)[0],
@@ -231,7 +236,8 @@ export default class Route extends BaseComponent implements ITurnable {
             parsedJSON._kilometersTravelled,
             {
                 ...parsedJSON._routeState,
-                destination: cities.filter(e => e.id === parsedJSON._routeState.destination.id)[0]
+                destination: cities.filter(e => e.id === parsedJSON._routeState.destination.id)[0],
+                cargo
             },
             parsedJSON.id
         );

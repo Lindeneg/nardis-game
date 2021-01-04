@@ -4,6 +4,7 @@ import {
     getRouteConfig 
 } from './data';
 import { 
+    LocalKey,
     PlayerType,
     UpgradeType
 } from '../src/types/types';
@@ -129,7 +130,6 @@ test('can add to player queue', () => {
 
 test('can handle turn cycle', () => {
     for (let i = 0; i < 2; i++) {
-        nardis.startTurn();
         nardis.endTurn();
     }
 
@@ -164,6 +164,11 @@ test('has saved game', () => {
     }).length === localKeys.length;
 
     expect(hasSavedGame).toBe(true);
+});
+
+test('can extract turn from local storage', () => {
+    const turn = parseInt(atob(window.localStorage.getItem(localKeys[LocalKey.Turn])));
+    expect(turn).toEqual(nardis.getCurrentTurn());
 });
 
 test('can clear local storage', () => {

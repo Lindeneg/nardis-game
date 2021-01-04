@@ -16,7 +16,7 @@ import {
     LocalKey
 } from '../types/types';
 import {
-    localKeys
+    localKeys, START_GOLD, START_OPPONENTS
 } from '../util/constants';
 import {
     generateData
@@ -65,7 +65,7 @@ export class Nardis {
 
     /**
      * Runs at the start of each turn cycle. One cycle is when every player in-game has ended their turn.
-     */
+     
 
     public startTurn = (): void => {
         const handleTurnInfo: HandleTurnInfo = {
@@ -80,13 +80,25 @@ export class Nardis {
             turnComponent.handleTurn(handleTurnInfo);
         });
     }
+    */
 
     /**
-     * Runs when the Human player's turn is concluded. Then all Computer actions are handled in the turn.
+     * Runs at the end of each Player turn.
      */
 
     public endTurn = (): void => {
         this.handleComputerTurn();
+        const handleTurnInfo: HandleTurnInfo = {
+            turn: this._turn, 
+            data: this.data,
+            playerData: {
+                routes: this._currentPlayer.getRoutes(),
+                upgrades: this._currentPlayer.getUpgrades()
+            }
+        };
+        [...this.data.cities, ...this.data.resources, this._currentPlayer].forEach(turnComponent => {
+            turnComponent.handleTurn(handleTurnInfo);
+        });
         this._turn++;
         this.saveGame();
     }
@@ -203,10 +215,7 @@ export class Nardis {
      */
 
     public removeRouteFromPlayerQueue = (routeId: string, trainId: string): boolean => {
-        if (this._currentPlayer.removeRouteFromQueue(routeId)) {
-            return this.handleRemoveRouteFromPlayerFinance(routeId, trainId);
-        }
-        return false;
+        return this.handleRemoveRouteFromPlayerFinance(routeId, trainId) && this._currentPlayer.removeRouteFromQueue(routeId);
     }
 
     /**
@@ -329,7 +338,7 @@ export class Nardis {
             localKeys[LocalKey.CurrentPlayer], btoa(JSON.stringify(this._currentPlayer.deconstruct()))
         );
         window.localStorage.setItem(
-            localKeys[LocalKey.Turn], btoa('' + this._turn)
+            localKeys[LocalKey.Turn], btoa(this._turn.toString())
         );
     }
 
@@ -379,7 +388,7 @@ export class Nardis {
             playerString => Player.createFromStringifiedJSON(playerString, cities, trains, resources)
         );
         const currentPlayer: Player     = players.filter(player => player.id === currentPlayerRaw.id)[0];
-        const turn         : number     = parseInt(window.localStorage.getItem(localKeys[LocalKey.Turn]));
+        const turn         : number     = parseInt(atob(window.localStorage.getItem(localKeys[LocalKey.Turn])));
 
         return new Nardis(
             {
@@ -394,8 +403,17 @@ export class Nardis {
         );
     }
 
-    // TODO comment
-    public static createFromPlayer = (name: string) => {
+    /**
+     * Create a Nardis instance from one to three parameters. 
+     * 
+     * @param {string}   name      - String with name of player.
+     * @param {number}   gold      - (optional) Number specifying start gold.
+     * @param {number}   opponents - (optional) Number specifying number of opponents.
+     * 
+     * @return {Nardis}              Created Nardis instance.
+     */
+
+    public static createFromPlayer = (name: string, gold: number = START_GOLD, opponents: number = START_OPPONENTS) => {
         const data: RawDataModel = generateData();
         const resources: Resource[] = data.resources.map(resource => Resource.createFromModel(resource));
         const cities: City[] = data.cities.map(city => City.createFromModel(city, resources));
@@ -405,6 +423,6 @@ export class Nardis {
             trains: data.trains.map(train => Train.createFromModel(train)),
             upgrades: data.upgrades.map(upgrade => Upgrade.createFromModel(upgrade))
         },
-        [new Player(name, PlayerType.Human, cities[0])]);
+        [new Player(name, PlayerType.Human, cities[0], new Finance(name, gold))]);
     }
 }

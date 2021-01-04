@@ -98,6 +98,7 @@ test('can reconstruct route state properties', () => {
     const [s1, s2] = [reconstructedRoute.getRouteState(), route.getRouteState()];
 
     expect(s1.cargo.length).toEqual(s2.cargo.length);
+    expect(s1.cargo[0].resource.equals(s2.cargo[0].resource)).toBe(true);
     expect(s1.destination.equals(s2.destination)).toBe(true);
     expect(s1.distance).toEqual(s2.distance);
     expect(s1.hasArrived).toBe(s2.hasArrived);

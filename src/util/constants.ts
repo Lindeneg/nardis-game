@@ -8,6 +8,7 @@ export const RESOURCE_VALUE_DECISION_TARGET: number   = 1;
 export const MAX_CITY_SIZE                 : number   = 6;
 export const MAP_RADIUS_IN_KILOMETERS      : number   = 6371;
 export const START_GOLD                    : number   = 1000;
+export const START_OPPONENTS               : number   = 3;
 export const ID_LENGTH                     : number   = 32;
 export const ID_CHARS                      : string   = 'abcdef0123456789';
 export const VOWELS                        : string[] = 'aeiou'.split('');
