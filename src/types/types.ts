@@ -136,6 +136,7 @@ export interface FinanceTurnItem {
 }
 
 export interface FinanceHistoryItem {
+    [key: string]  : FinanceTurnItem[],
     nthTurn        : FinanceTurnItem[],
     nthTurnMinusOne: FinanceTurnItem[],
     nthTurnMinusTwo: FinanceTurnItem[]
