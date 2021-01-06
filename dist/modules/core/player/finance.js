@@ -14,21 +14,27 @@ var __extends = (this && this.__extends) || (function () {
 })();
 Object.defineProperty(exports, "__esModule", { value: true });
 var base_component_1 = require("../../component/base-component");
+var constants_1 = require("../../../util/constants");
 var types_1 = require("../../../types/types");
 /**
  * @constructor
- * @param {string}         name    - string with name
- * @param {number}         gold    - number with current gold
+ * @param {string}         name         - string with name
+ * @param {number}         gold         - number with current gold
  *
- * @param {FinanceHistory} history - (optional) FinanceHistory object
- * @param {string}         id      - (optional) string number describing id
+ * @param {FinanceHistory} history      - (optional) FinanceHistory object
+ * @param {FinanceTotal}   totalHistory - (optional) FinanceTotal object
+ * @param {number}         totalProfits - (optional) Number with total profits.
+ * @param {string}         id           - (optional) string number describing id
  */
 var Finance = /** @class */ (function (_super) {
     __extends(Finance, _super);
-    function Finance(name, gold, history, id) {
+    function Finance(name, gold, history, totalHistory, totalProfits, id) {
+        var _a;
         var _this = _super.call(this, name, id) || this;
         _this.getGold = function () { return _this._gold; };
         _this.getHistory = function () { return _this._history; };
+        _this.getTotalHistory = function () { return _this._totalHistory; };
+        _this.getTotalProfits = function () { return _this._totalProfits; };
         /**
         * Handle Finance events at each turn
         *
@@ -51,6 +57,8 @@ var Finance = /** @class */ (function (_super) {
         * @param {number}      value  - number with value of the expense
         */
         _this.addToFinanceExpense = function (type, id, amount, value) {
+            _this.addToTotalHistory(constants_1.localKeys[type], amount * value);
+            _this._totalProfits -= amount * value;
             _this.addNthTurnObject(types_1.FinanceGeneralType.Expense, type, id, amount, value);
         };
         /**
@@ -69,6 +77,7 @@ var Finance = /** @class */ (function (_super) {
                     if (target[j].type === type && target[j].id === id) {
                         var value = target[j].amount * target[j].value;
                         target.splice(j, 1);
+                        _this._totalProfits += value;
                         _this.addGold(value);
                         return true;
                     }
@@ -80,11 +89,12 @@ var Finance = /** @class */ (function (_super) {
         * @returns {number} number that describes the revenue in gold over the last three turns
         */
         _this.getAverageRevenue = function () {
+            var keys = Object.keys(_this._history.income);
             var sum = 0;
-            Object.keys(_this._history.income).forEach(function (key) {
+            keys.forEach(function (key) {
                 sum += _this._history.income[key].reduce(function (prev, cur) { return prev + (cur.amount * cur.value); }, 0);
             });
-            return Math.round(sum / 3);
+            return Math.round(sum / keys.length);
         };
         /**
         * Set nthTurn array of income and expense object to an empty array
@@ -107,7 +117,10 @@ var Finance = /** @class */ (function (_super) {
             if (state.hasArrived) {
                 state.cargo.forEach(function (cargo) {
                     if (state.destination.isDemand(cargo.resource)) {
-                        route.addToProfit(cargo.actualAmount * cargo.resource.getValue());
+                        var value = cargo.actualAmount * cargo.resource.getValue();
+                        route.addToProfit(value);
+                        _this._totalProfits += value;
+                        _this.addToTotalHistory(cargo.resource.id, value);
                         _this.addNthTurnObject(types_1.FinanceGeneralType.Income, types_1.FinanceType.Resource, cargo.resource.id, cargo.actualAmount, cargo.resource.getValue());
                     }
                 });
@@ -143,6 +156,14 @@ var Finance = /** @class */ (function (_super) {
         */
         _this.removeGold = function (value) {
             _this._gold -= value;
+        };
+        _this.addToTotalHistory = function (id, value) {
+            if (typeof _this._totalHistory[id] !== 'undefined') {
+                _this._totalHistory[id] += value;
+            }
+            else {
+                _this._totalHistory[id] = value;
+            }
         };
         /**
         * Add entry to any nthTurn object
@@ -195,6 +216,13 @@ var Finance = /** @class */ (function (_super) {
         };
         _this._gold = gold;
         _this._history = history ? history : _this.getInitialHistoryState();
+        _this._totalProfits = totalProfits ? totalProfits : 0;
+        _this._totalHistory = totalHistory ? totalHistory : (_a = {},
+            _a[constants_1.localKeys[types_1.FinanceType.Train]] = 0,
+            _a[constants_1.localKeys[types_1.FinanceType.Track]] = 0,
+            _a[constants_1.localKeys[types_1.FinanceType.Upkeep]] = 0,
+            _a[constants_1.localKeys[types_1.FinanceType.Upgrade]] = 0,
+            _a);
         return _this;
     }
     /**
@@ -206,7 +234,7 @@ var Finance = /** @class */ (function (_super) {
     */
     Finance.createFromStringifiedJSON = function (stringifiedJSON) {
         var parsedJSON = JSON.parse(stringifiedJSON);
-        return new Finance(parsedJSON.name, parsedJSON._gold, parsedJSON._history, parsedJSON.id);
+        return new Finance(parsedJSON.name, parsedJSON._gold, parsedJSON._history, parsedJSON._totalHistory, parsedJSON._totalProfits, parsedJSON.id);
     };
     return Finance;
 }(base_component_1.default));

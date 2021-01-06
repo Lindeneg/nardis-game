@@ -147,6 +147,10 @@ export interface FinanceHistory {
     expense: FinanceHistoryItem
 }
 
+export interface FinanceTotal {
+    [key: string]: number
+}
+
 export interface PotentialRoute {
     cityOne: City,
     cityTwo: City,

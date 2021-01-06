@@ -122,6 +122,9 @@ export interface FinanceHistory {
     income: FinanceHistoryItem;
     expense: FinanceHistoryItem;
 }
+export interface FinanceTotal {
+    [key: string]: number;
+}
 export interface PotentialRoute {
     cityOne: City;
     cityTwo: City;

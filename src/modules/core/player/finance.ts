@@ -2,10 +2,12 @@ import BaseComponent from '../../component/base-component';
 import Upgrade from './upgrade';
 import Route from '../route';
 import Train from '../train';
+import { localKeys } from '../../../util/constants';
 import {
     FinanceHistory,
     FinanceHistoryItem,
     FinanceTurnItem,
+    FinanceTotal,
     RouteState,
     HandleTurnInfo,
     ITurnable,
@@ -17,32 +19,47 @@ import {
 
 /**
  * @constructor
- * @param {string}         name    - string with name
- * @param {number}         gold    - number with current gold
+ * @param {string}         name         - string with name
+ * @param {number}         gold         - number with current gold
  * 
- * @param {FinanceHistory} history - (optional) FinanceHistory object
- * @param {string}         id      - (optional) string number describing id
+ * @param {FinanceHistory} history      - (optional) FinanceHistory object
+ * @param {FinanceTotal}   totalHistory - (optional) FinanceTotal object
+ * @param {number}         totalProfits - (optional) Number with total profits.
+ * @param {string}         id           - (optional) string number describing id
  */
 
 export default class Finance extends BaseComponent implements ITurnable {
 
-    private _gold   : number;
-    private _history: FinanceHistory;
+    private _gold        : number;
+    private _history     : FinanceHistory;
+    private _totalHistory: FinanceTotal;
+    private _totalProfits: number;
 
     constructor(
-            name    : string,
-            gold    : number,
-            history?: FinanceHistory,
-            id     ?: string
+            name         : string,
+            gold         : number,
+            history     ?: FinanceHistory,
+            totalHistory?: FinanceTotal,
+            totalProfits?: number,
+            id          ?: string
     ) {
         super(name, id);
 
-        this._gold    = gold;
-        this._history = history ? history : this.getInitialHistoryState();
+        this._gold            = gold;
+        this._history         = history ? history : this.getInitialHistoryState();
+        this._totalProfits    = totalProfits ? totalProfits : 0;
+        this._totalHistory    = totalHistory ? totalHistory : {
+            [localKeys[FinanceType.Train]]  : 0,
+            [localKeys[FinanceType.Track]]  : 0,
+            [localKeys[FinanceType.Upkeep]] : 0,
+            [localKeys[FinanceType.Upgrade]]: 0
+        };
     }
 
-    public getGold    = (): number         => this._gold;
-    public getHistory = (): FinanceHistory => this._history;
+    public getGold         = (): number         => this._gold;
+    public getHistory      = (): FinanceHistory => this._history;
+    public getTotalHistory = (): FinanceTotal   => this._totalHistory;
+    public getTotalProfits = (): number         => this._totalProfits;
 
     /**
     * Handle Finance events at each turn 
@@ -74,6 +91,8 @@ export default class Finance extends BaseComponent implements ITurnable {
             amount: number, 
             value : number
     ): void => {
+        this.addToTotalHistory(localKeys[type], amount * value);
+        this._totalProfits -= amount * value;
         this.addNthTurnObject(FinanceGeneralType.Expense, type, id, amount, value);
     }
 
@@ -97,6 +116,7 @@ export default class Finance extends BaseComponent implements ITurnable {
                 if (target[j].type === type && target[j].id === id) {
                     const value: number = target[j].amount * target[j].value;
                     target.splice(j, 1);
+                    this._totalProfits += value;
                     this.addGold(value);
                     return true;
                 }
@@ -110,11 +130,12 @@ export default class Finance extends BaseComponent implements ITurnable {
     */
 
     public getAverageRevenue = (): number => {
+        const keys: string[] = Object.keys(this._history.income);
         let sum: number = 0;
-        Object.keys(this._history.income).forEach(key => {
+        keys.forEach(key => {
             sum += this._history.income[key].reduce((prev, cur) => prev + (cur.amount * cur.value), 0);
         });
-        return Math.round(sum / 3);
+        return Math.round(sum / keys.length);
     }
 
     /**
@@ -141,7 +162,10 @@ export default class Finance extends BaseComponent implements ITurnable {
         if (state.hasArrived) {
             state.cargo.forEach(cargo => {
                 if (state.destination.isDemand(cargo.resource)) {
-                    route.addToProfit(cargo.actualAmount * cargo.resource.getValue());
+                    const value: number = cargo.actualAmount * cargo.resource.getValue();
+                    route.addToProfit(value);
+                    this._totalProfits += value;
+                    this.addToTotalHistory(cargo.resource.id, value);
                     this.addNthTurnObject(
                         FinanceGeneralType.Income, 
                         FinanceType.Resource,
@@ -189,6 +213,14 @@ export default class Finance extends BaseComponent implements ITurnable {
 
     private removeGold = (value: number): void => {
         this._gold -= value;
+    }
+
+    private addToTotalHistory = (id: string, value: number): void => {
+        if (typeof this._totalHistory[id] !== 'undefined') {
+            this._totalHistory[id] += value;
+        } else {
+            this._totalHistory[id] = value;
+        }
     }
 
     /**
@@ -266,6 +298,8 @@ export default class Finance extends BaseComponent implements ITurnable {
             parsedJSON.name,
             parsedJSON._gold,
             parsedJSON._history,
+            parsedJSON._totalHistory,
+            parsedJSON._totalProfits,
             parsedJSON.id
         );
     }

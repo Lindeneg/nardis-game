@@ -266,6 +266,8 @@ export default class Player extends BaseComponent implements ITurnable {
                 parsedJSON._finance.name,
                 parsedJSON._finance._gold,
                 parsedJSON._finance._history,
+                parsedJSON._finance._totalHistory,
+                parsedJSON._finance._totalProfits,
                 parsedJSON._finance.id
             ),
             parsedJSON._level,

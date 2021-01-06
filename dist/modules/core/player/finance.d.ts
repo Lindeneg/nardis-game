@@ -1,19 +1,25 @@
 import BaseComponent from '../../component/base-component';
-import { FinanceHistory, HandleTurnInfo, ITurnable, FinanceType } from '../../../types/types';
+import { FinanceHistory, FinanceTotal, HandleTurnInfo, ITurnable, FinanceType } from '../../../types/types';
 /**
  * @constructor
- * @param {string}         name    - string with name
- * @param {number}         gold    - number with current gold
+ * @param {string}         name         - string with name
+ * @param {number}         gold         - number with current gold
  *
- * @param {FinanceHistory} history - (optional) FinanceHistory object
- * @param {string}         id      - (optional) string number describing id
+ * @param {FinanceHistory} history      - (optional) FinanceHistory object
+ * @param {FinanceTotal}   totalHistory - (optional) FinanceTotal object
+ * @param {number}         totalProfits - (optional) Number with total profits.
+ * @param {string}         id           - (optional) string number describing id
  */
 export default class Finance extends BaseComponent implements ITurnable {
     private _gold;
     private _history;
-    constructor(name: string, gold: number, history?: FinanceHistory, id?: string);
+    private _totalHistory;
+    private _totalProfits;
+    constructor(name: string, gold: number, history?: FinanceHistory, totalHistory?: FinanceTotal, totalProfits?: number, id?: string);
     getGold: () => number;
     getHistory: () => FinanceHistory;
+    getTotalHistory: () => FinanceTotal;
+    getTotalProfits: () => number;
     /**
     * Handle Finance events at each turn
     *
@@ -70,6 +76,7 @@ export default class Finance extends BaseComponent implements ITurnable {
     * @param {number} value - number with gold to be subtracted
     */
     private removeGold;
+    private addToTotalHistory;
     /**
     * Add entry to any nthTurn object
     *

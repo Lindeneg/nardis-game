@@ -206,7 +206,7 @@ var Player = /** @class */ (function (_super) {
      */
     Player.createFromStringifiedJSON = function (stringifiedJSON, cities, trains, resources) {
         var parsedJSON = JSON.parse(stringifiedJSON);
-        return new Player(parsedJSON.name, parsedJSON.playerType, cities.filter(function (e) { return e.id === parsedJSON._startCity.id; })[0], new finance_1.default(parsedJSON._finance.name, parsedJSON._finance._gold, parsedJSON._finance._history, parsedJSON._finance.id), parsedJSON._level, parsedJSON._queue.map(function (e) {
+        return new Player(parsedJSON.name, parsedJSON.playerType, cities.filter(function (e) { return e.id === parsedJSON._startCity.id; })[0], new finance_1.default(parsedJSON._finance.name, parsedJSON._finance._gold, parsedJSON._finance._history, parsedJSON._finance._totalHistory, parsedJSON._finance._totalProfits, parsedJSON._finance.id), parsedJSON._level, parsedJSON._queue.map(function (e) {
             return {
                 route: route_1.default.createFromStringifiedJSON(JSON.stringify(e.route), cities, trains, resources),
                 turnCost: e.turnCost
