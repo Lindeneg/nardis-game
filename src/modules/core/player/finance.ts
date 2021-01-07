@@ -117,6 +117,7 @@ export default class Finance extends BaseComponent implements ITurnable {
                     const value: number = target[j].amount * target[j].value;
                     target.splice(j, 1);
                     this._totalProfits += value;
+                    this.removeFromTotalHistory(localKeys[type], value);
                     this.addGold(value);
                     return true;
                 }
@@ -215,11 +216,31 @@ export default class Finance extends BaseComponent implements ITurnable {
         this._gold -= value;
     }
 
+    /**
+    * Add entry to FinanceTotal.
+    * 
+    * @param {string} id    - string with id of the entry target
+    * @param {number} value - number with value to add to target
+    */
+
     private addToTotalHistory = (id: string, value: number): void => {
         if (typeof this._totalHistory[id] !== 'undefined') {
             this._totalHistory[id] += value;
         } else {
             this._totalHistory[id] = value;
+        }
+    }
+
+    /**
+    * Remove entry from FinanceTotal.
+    * 
+    * @param {string} id    - string with id of the entry target
+    * @param {number} value - number with value to remove from target
+    */
+
+    private removeFromTotalHistory = (id: string, value: number): void => {
+        if (typeof this._totalHistory[id] !== 'undefined') {
+            this._totalHistory[id] -= value;
         }
     }
 
