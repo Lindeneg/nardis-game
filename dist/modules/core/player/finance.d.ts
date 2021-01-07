@@ -76,7 +76,20 @@ export default class Finance extends BaseComponent implements ITurnable {
     * @param {number} value - number with gold to be subtracted
     */
     private removeGold;
+    /**
+    * Add entry to FinanceTotal.
+    *
+    * @param {string} id    - string with id of the entry target
+    * @param {number} value - number with value to add to target
+    */
     private addToTotalHistory;
+    /**
+    * Remove entry from FinanceTotal.
+    *
+    * @param {string} id    - string with id of the entry target
+    * @param {number} value - number with value to remove from target
+    */
+    private removeFromTotalHistory;
     /**
     * Add entry to any nthTurn object
     *

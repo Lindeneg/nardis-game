@@ -78,6 +78,7 @@ var Finance = /** @class */ (function (_super) {
                         var value = target[j].amount * target[j].value;
                         target.splice(j, 1);
                         _this._totalProfits += value;
+                        _this.removeFromTotalHistory(constants_1.localKeys[type], value);
                         _this.addGold(value);
                         return true;
                     }
@@ -157,12 +158,29 @@ var Finance = /** @class */ (function (_super) {
         _this.removeGold = function (value) {
             _this._gold -= value;
         };
+        /**
+        * Add entry to FinanceTotal.
+        *
+        * @param {string} id    - string with id of the entry target
+        * @param {number} value - number with value to add to target
+        */
         _this.addToTotalHistory = function (id, value) {
             if (typeof _this._totalHistory[id] !== 'undefined') {
                 _this._totalHistory[id] += value;
             }
             else {
                 _this._totalHistory[id] = value;
+            }
+        };
+        /**
+        * Remove entry from FinanceTotal.
+        *
+        * @param {string} id    - string with id of the entry target
+        * @param {number} value - number with value to remove from target
+        */
+        _this.removeFromTotalHistory = function (id, value) {
+            if (typeof _this._totalHistory[id] !== 'undefined') {
+                _this._totalHistory[id] -= value;
             }
         };
         /**
