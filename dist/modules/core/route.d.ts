@@ -65,6 +65,10 @@ export default class Route extends BaseComponent implements ITurnable {
      */
     subtractFromProfit: (value: number) => void;
     /**
+     * Change Train or RoutePlanCargo from active route.
+     */
+    change: (train: Train, routePlan: RoutePlanCargo) => void;
+    /**
      * Get Train speed with Player upgrades taken into consideration.
      *
      * @return {number} - Number with the correct Train speed.
@@ -77,6 +81,7 @@ export default class Route extends BaseComponent implements ITurnable {
      * @return {RouteCargo[]} - Array of RouteCargo objects.
      */
     private getChangedCargo;
+    private resetRouteState;
     /**
      * Get Route instance from stringified JSON.
      *

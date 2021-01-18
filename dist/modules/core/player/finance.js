@@ -98,6 +98,14 @@ var Finance = /** @class */ (function (_super) {
             return Math.round(sum / keys.length);
         };
         /**
+         * Add to gold from a deleted Route.
+         *
+         * @param {number} value - Number wih gold to recoup.
+         */
+        _this.recoupDeletedRoute = function (value) {
+            _this.addGold(value);
+        };
+        /**
         * Set nthTurn array of income and expense object to an empty array
         */
         _this.handleStartTurn = function () {

@@ -101,6 +101,18 @@ var Route = /** @class */ (function (_super) {
             _this._profit -= value;
         };
         /**
+         * Change Train or RoutePlanCargo from active route.
+         */
+        _this.change = function (train, routePlan) {
+            if (!_this._train.equals(train)) {
+                _this._profit = 0;
+                _this._kilometersTravelled = 0;
+            }
+            _this._train = train;
+            _this._routePlanCargo = routePlan;
+            _this.resetRouteState();
+        };
+        /**
          * Get Train speed with Player upgrades taken into consideration.
          *
          * @return {number} - Number with the correct Train speed.
@@ -149,6 +161,15 @@ var Route = /** @class */ (function (_super) {
             });
             return cargo;
         };
+        _this.resetRouteState = function () {
+            _this._routeState = {
+                hasArrived: false,
+                destination: _this._cityTwo,
+                distance: _this._distance,
+                cargo: null
+            };
+            _this._routeState.cargo = _this.getChangedCargo();
+        };
         _this._cityOne = cityOne;
         _this._cityTwo = cityTwo;
         _this._train = train;
@@ -162,13 +183,7 @@ var Route = /** @class */ (function (_super) {
             _this._routeState = routeState;
         }
         else {
-            _this._routeState = {
-                hasArrived: false,
-                destination: _this._cityTwo,
-                distance: _this._distance,
-                cargo: null
-            };
-            _this._routeState.cargo = _this.getChangedCargo();
+            _this.resetRouteState();
         }
         return _this;
     }

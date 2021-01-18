@@ -49,6 +49,12 @@ export default class Finance extends BaseComponent implements ITurnable {
     */
     getAverageRevenue: () => number;
     /**
+     * Add to gold from a deleted Route.
+     *
+     * @param {number} value - Number wih gold to recoup.
+     */
+    recoupDeletedRoute: (value: number) => void;
+    /**
     * Set nthTurn array of income and expense object to an empty array
     */
     private handleStartTurn;

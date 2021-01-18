@@ -148,6 +148,27 @@ var Nardis = /** @class */ (function () {
             return false;
         };
         /**
+         * Change Train and/or RoutePlanCargo of active Route.
+         *
+         * @param {string}         id        - String with id of Route to alter.
+         * @param {Train}          train     - Train instance to be used.
+         * @param {RoutePlanCargo} routePlan - RoutePlanCargo to be used.
+         * @param {number}         cost      - Number with cost of the Route change.
+         *
+         * @return {boolean} True if Route was altered else false.
+         */
+        this.changeActivePlayerRoute = function (routeId, train, routePlan, cost) {
+            var routes = _this._currentPlayer.getRoutes().filter(function (e) { return e.id === routeId; });
+            if (routes.length > 0) {
+                if (cost > 0) {
+                    _this._currentPlayer.getFinance().addToFinanceExpense(types_1.FinanceType.Train, train.id, 1, cost);
+                }
+                routes[0].change(train, routePlan);
+                return true;
+            }
+            return false;
+        };
+        /**
          * Remove an entry from Player queue.
          *
          * @param {string}   routeId - String with id of Route to remove.
@@ -162,11 +183,16 @@ var Nardis = /** @class */ (function () {
          * Remove an entry from Player routes.
          *
          * @param {string}   routeId - String with id of Route to remove.
+         * @param {number}   value - Number wih gold to recoup
          *
          * @return {boolean} True if Route was removed from routes else false.
          */
-        this.removeRouteFromPlayerRoutes = function (routeId) {
-            return _this._currentPlayer.removeRouteFromRoutes(routeId);
+        this.removeRouteFromPlayerRoutes = function (routeId, value) {
+            if (_this._currentPlayer.removeRouteFromRoutes(routeId)) {
+                _this._currentPlayer.getFinance().recoupDeletedRoute(value);
+                return true;
+            }
+            return false;
         };
         /**
          * Clear the saved game state from localStorage.

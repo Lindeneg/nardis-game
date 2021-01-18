@@ -1,7 +1,7 @@
 import City from './core/city';
 import Player from './core/player/player';
 import Train from './core/train';
-import { GameData, PotentialRoute, BuyableRoute } from '../types/types';
+import { GameData, PotentialRoute, BuyableRoute, RoutePlanCargo } from '../types/types';
 /**
  * @constructor
  * @param {GameData} data          - Object with GameData.
@@ -77,6 +77,17 @@ export declare class Nardis {
      */
     addUpgradeToPlayer: (id: string) => boolean;
     /**
+     * Change Train and/or RoutePlanCargo of active Route.
+     *
+     * @param {string}         id        - String with id of Route to alter.
+     * @param {Train}          train     - Train instance to be used.
+     * @param {RoutePlanCargo} routePlan - RoutePlanCargo to be used.
+     * @param {number}         cost      - Number with cost of the Route change.
+     *
+     * @return {boolean} True if Route was altered else false.
+     */
+    changeActivePlayerRoute: (routeId: string, train: Train, routePlan: RoutePlanCargo, cost: number) => boolean;
+    /**
      * Remove an entry from Player queue.
      *
      * @param {string}   routeId - String with id of Route to remove.
@@ -89,10 +100,11 @@ export declare class Nardis {
      * Remove an entry from Player routes.
      *
      * @param {string}   routeId - String with id of Route to remove.
+     * @param {number}   value - Number wih gold to recoup
      *
      * @return {boolean} True if Route was removed from routes else false.
      */
-    removeRouteFromPlayerRoutes: (routeId: string) => boolean;
+    removeRouteFromPlayerRoutes: (routeId: string, value: number) => boolean;
     /**
      * Clear the saved game state from localStorage.
      */
