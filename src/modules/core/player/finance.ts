@@ -140,6 +140,16 @@ export default class Finance extends BaseComponent implements ITurnable {
     }
 
     /**
+     * Add to gold from a deleted Route.
+     * 
+     * @param {number} value - Number wih gold to recoup. 
+     */
+
+    public recoupDeletedRoute = (value: number): void => {
+        this.addGold(value);
+    }
+
+    /**
     * Set nthTurn array of income and expense object to an empty array
     */
 

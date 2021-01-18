@@ -13,7 +13,8 @@ import {
     FinanceType,
     UpgradeType,
     PlayerType,
-    LocalKey
+    LocalKey,
+    RoutePlanCargo
 } from '../types/types';
 import {
     localKeys, START_GOLD, START_OPPONENTS
@@ -206,6 +207,29 @@ export class Nardis {
     }
 
     /**
+     * Change Train and/or RoutePlanCargo of active Route.
+     * 
+     * @param {string}         id        - String with id of Route to alter.
+     * @param {Train}          train     - Train instance to be used.
+     * @param {RoutePlanCargo} routePlan - RoutePlanCargo to be used.
+     * @param {number}         cost      - Number with cost of the Route change.
+     * 
+     * @return {boolean} True if Route was altered else false.
+     */
+
+    public changeActivePlayerRoute = (routeId: string, train: Train, routePlan: RoutePlanCargo, cost: number): boolean => {
+        const routes: Route[] = this._currentPlayer.getRoutes().filter(e => e.id === routeId);
+        if (routes.length > 0) {
+            if (cost > 0) {
+                this._currentPlayer.getFinance().addToFinanceExpense(FinanceType.Train, train.id, 1, cost);
+            }
+            routes[0].change(train, routePlan);
+            return true;
+        }
+        return false;
+    }
+
+    /**
      * Remove an entry from Player queue.
      * 
      * @param {string}   routeId - String with id of Route to remove.
@@ -222,12 +246,17 @@ export class Nardis {
      * Remove an entry from Player routes.
      * 
      * @param {string}   routeId - String with id of Route to remove.
+     * @param {number}   value - Number wih gold to recoup
      * 
      * @return {boolean} True if Route was removed from routes else false.
      */
 
-    public removeRouteFromPlayerRoutes = (routeId: string): boolean => {
-        return this._currentPlayer.removeRouteFromRoutes(routeId);
+    public removeRouteFromPlayerRoutes = (routeId: string, value: number): boolean => {
+        if (this._currentPlayer.removeRouteFromRoutes(routeId)) {
+            this._currentPlayer.getFinance().recoupDeletedRoute(value);
+            return true;
+        }
+        return false;
     }
 
     /**

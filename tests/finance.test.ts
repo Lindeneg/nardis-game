@@ -2,6 +2,7 @@ import Finance from '../src/modules/core/player/finance';
 import Upgrade from '../src/modules/core/player/upgrade';
 import Route from '../src/modules/core/route';
 import {
+    localKeys,
     START_GOLD
 } from '../src/util/constants';
 import {
@@ -63,6 +64,8 @@ test('can add to Finance expense history', () => {
     expect(history.expense.nthTurn[0].type).toEqual(FinanceType.Track);
     expect(history.expense.nthTurn[0].amount).toEqual(1);
     expect(history.expense.nthTurn[0].value).toEqual(200);
+    expect(finance.getTotalHistory()[localKeys[FinanceType.Track]]).toEqual(200);
+    expect(finance.getTotalProfits()).toEqual(-200);
     expect(finance.getGold()).toEqual(START_GOLD - 200);
 });
 
@@ -70,6 +73,8 @@ test('can remove from Finance expense history', () => {
     const didRemove = finance.removeFromFinanceExpense(FinanceType.Track, 'test route');
     expect(didRemove).toBe(true);
     expect(history.expense.nthTurn.length).toEqual(0);
+    expect(finance.getTotalHistory()[localKeys[FinanceType.Track]]).toEqual(0);
+    expect(finance.getTotalProfits()).toEqual(0);
     expect(finance.getGold()).toEqual(START_GOLD);
 });
 
@@ -88,12 +93,15 @@ test('can handle route on turns', () => {
         ...handleTurn,
         turn: turnCount++
     });
+    const value = r1.resource.getValue() * 2;
     expect(history.income.nthTurn.length).toEqual(1);
     expect(history.income.nthTurn[0].id).toEqual(r1.resource.id);
     expect(history.income.nthTurn[0].type).toEqual(FinanceType.Resource);
     expect(history.income.nthTurn[0].amount).toEqual(2);
     expect(history.income.nthTurn[0].value).toEqual(r1.resource.getValue());
-    expect(finance.getGold()).toEqual(START_GOLD + (r1.resource.getValue() * 2) - route.getTrain().upkeep);
+    expect(finance.getGold()).toEqual(START_GOLD + value - route.getTrain().upkeep);
+    expect(finance.getTotalHistory()[r1.resource.id]).toEqual(value);
+    expect(finance.getTotalProfits()).toEqual(value - route.getTrain().upkeep);
 });
 
 test('can shift history array on turn change', () => {

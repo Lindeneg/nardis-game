@@ -73,13 +73,7 @@ export default class Route extends BaseComponent implements ITurnable {
         if (routeState) {
             this._routeState = routeState;
         } else {
-            this._routeState          = {
-                hasArrived: false,
-                destination: this._cityTwo,
-                distance: this._distance,
-                cargo: null
-            };
-            this._routeState.cargo = this.getChangedCargo();
+            this.resetRouteState();
         }
     }
 
@@ -143,6 +137,18 @@ export default class Route extends BaseComponent implements ITurnable {
     }
 
     /**
+     * Change Train or RoutePlanCargo from active route.
+     */
+
+    public change = (train: Train, routePlan: RoutePlanCargo): void => {
+        if (!this._train.equals(train)) {
+            this._profit = 0; this._kilometersTravelled = 0;
+        }
+        this._train = train; this._routePlanCargo = routePlan;
+        this.resetRouteState();
+    }
+
+    /**
      * Get Train speed with Player upgrades taken into consideration.
      * 
      * @return {number} - Number with the correct Train speed.
@@ -190,6 +196,16 @@ export default class Route extends BaseComponent implements ITurnable {
             }
         });
         return cargo;
+    }
+
+    private resetRouteState = () => {
+        this._routeState = {
+            hasArrived: false,
+            destination: this._cityTwo,
+            distance: this._distance,
+            cargo: null
+        };
+        this._routeState.cargo = this.getChangedCargo();
     }
 
     /**
