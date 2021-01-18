@@ -72,7 +72,7 @@ export const trainData: DataTrainModel[] = [
     {
         name: "",
         cost: [90, 110],
-        upkeep: [10, 15],
+        upkeep: [1, 5],
         speed: [40, 50],
         cargoSpace: [4, 4],
         levelRequired: 1
@@ -80,23 +80,23 @@ export const trainData: DataTrainModel[] = [
     {
         name: "",
         cost: [130, 150],
-        upkeep: [20, 30],
+        upkeep: [6, 11],
         speed: [60, 80],
         cargoSpace: [4, 5],
         levelRequired: 1
     },
     {
         name: "",
-        cost: [130, 150],
-        upkeep: [20, 30],
+        cost: [150, 160],
+        upkeep: [6, 11],
         speed: [60, 80],
-        cargoSpace: [4, 5],
+        cargoSpace: [5, 5],
         levelRequired: 1
     },
     {
         name: "",
         cost: [190, 210],
-        upkeep: [25, 35],
+        upkeep: [10, 15],
         speed: [100, 120],
         cargoSpace: [5, 5],
         levelRequired: 2
@@ -104,7 +104,7 @@ export const trainData: DataTrainModel[] = [
     {
         name: "",
         cost: [240, 260],
-        upkeep: [40, 45],
+        upkeep: [20, 25],
         speed: [130, 140],
         cargoSpace: [5, 7],
         levelRequired: 2
@@ -112,7 +112,7 @@ export const trainData: DataTrainModel[] = [
     {
         name: "",
         cost: [270, 300],
-        upkeep: [50, 55],
+        upkeep: [30, 35],
         speed: [140, 160],
         cargoSpace: [6, 7],
         levelRequired: 2
@@ -120,7 +120,7 @@ export const trainData: DataTrainModel[] = [
     {
         name: "",
         cost: [310, 330],
-        upkeep: [60, 65],
+        upkeep: [40, 45],
         speed: [160, 180],
         cargoSpace: [8, 9],
         levelRequired: 3
@@ -128,7 +128,7 @@ export const trainData: DataTrainModel[] = [
     {
         name: "",
         cost: [330, 350],
-        upkeep: [70, 75],
+        upkeep: [50, 55],
         speed: [180, 200],
         cargoSpace: [8, 9],
         levelRequired: 3
@@ -136,7 +136,7 @@ export const trainData: DataTrainModel[] = [
     {
         name: "",
         cost: [400, 450],
-        upkeep: [90, 100],
+        upkeep: [56, 60],
         speed: [210, 250],
         cargoSpace: [10, 12],
         levelRequired: 4
@@ -144,7 +144,7 @@ export const trainData: DataTrainModel[] = [
     {
         name: "",
         cost: [460, 500],
-        upkeep: [105, 120],
+        upkeep: [60, 65],
         speed: [250, 280],
         cargoSpace: [10, 14],
         levelRequired: 4
