@@ -164,7 +164,7 @@ var Route = /** @class */ (function (_super) {
         _this.resetRouteState = function (edit) {
             _this._routeState = {
                 hasArrived: edit ? true : false,
-                destination: _this._cityTwo,
+                destination: edit ? _this._cityOne : _this._cityTwo,
                 distance: edit ? 0 : _this._distance,
                 cargo: null
             };
