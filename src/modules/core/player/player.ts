@@ -213,13 +213,15 @@ export default class Player extends BaseComponent implements ITurnable {
      */
 
     protected shouldLevelBeIncreased = (): boolean => {
-        const requirements = levelUpRequirements[this._level];
-        if (requirements) {
-            return (
-                this._routes.length >= requirements.routes &&
-                this._finance.getAverageRevenue() >= requirements.revenuePerTurn &&
-                this.gold >= requirements.gold
-            );
+        if (this._level < PlayerLevel.Master) {
+            const requirements = levelUpRequirements[this._level + 1];
+            if (requirements) {
+                return (
+                    this._routes.length >= requirements.routes &&
+                    this._finance.getAverageRevenue() >= requirements.revenuePerTurn &&
+                    this.gold >= requirements.gold
+                );
+            }
         }
         return false;
     }
