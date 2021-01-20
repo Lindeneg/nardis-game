@@ -32,7 +32,7 @@ export const upgradeData: UpgradeModel[] = [
         levelRequired: PlayerLevel.Intermediate
     },
     {
-        name: '10% off upkeep on all Trains',
+        name: '10% off upkeep on >= 10G/Turn Trains',
         cost: 200,
         value: 0.1,
         type: UpgradeType.TrainUpkeepCheaper,
@@ -72,7 +72,7 @@ export const trainData: DataTrainModel[] = [
     {
         name: "",
         cost: [90, 110],
-        upkeep: [1, 5],
+        upkeep: [3, 5],
         speed: [40, 50],
         cargoSpace: [4, 4],
         levelRequired: 1
