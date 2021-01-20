@@ -201,7 +201,7 @@ export default class Route extends BaseComponent implements ITurnable {
     private resetRouteState = (edit: boolean) => {
         this._routeState = {
             hasArrived: edit ? true : false,
-            destination: this._cityTwo,
+            destination: edit ? this._cityOne : this._cityTwo,
             distance: edit ? 0 : this._distance,
             cargo: null
         };
