@@ -120,12 +120,6 @@ test('can reconstruct route plan properties', () => {
     })
 });
 
-test('can change route train', () => {
-    const newTrain = trains.filter(e => !e.equals(route.getTrain()))[0];
-    route.change(newTrain, route.getRoutePlan());
-    expect(route.getTrain().equals(newTrain)).toBe(true);
-});
-
 test('can handle player upgrades', () => {
     const speed = route.getTrain().speed
     const predictedDistance = route.getRouteState().distance - (speed + Math.floor(speed  * speedUpgrade.value));
@@ -139,4 +133,10 @@ test('can handle player upgrades', () => {
     });
 
     expect(route.getRouteState().distance).toEqual(predictedDistance);
+});
+
+test('can change route train', () => {
+    const newTrain = trains.filter(e => !e.equals(route.getTrain()))[0];
+    route.change(newTrain, route.getRoutePlan());
+    expect(route.getTrain().equals(newTrain)).toBe(true);
 });
