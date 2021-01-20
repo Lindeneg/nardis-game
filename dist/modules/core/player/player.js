@@ -158,11 +158,13 @@ var Player = /** @class */ (function (_super) {
          * @returns {boolean} True if level should be increased else false.
          */
         _this.shouldLevelBeIncreased = function () {
-            var requirements = constants_1.levelUpRequirements[_this._level];
-            if (requirements) {
-                return (_this._routes.length >= requirements.routes &&
-                    _this._finance.getAverageRevenue() >= requirements.revenuePerTurn &&
-                    _this.gold >= requirements.gold);
+            if (_this._level < types_1.PlayerLevel.Master) {
+                var requirements = constants_1.levelUpRequirements[_this._level + 1];
+                if (requirements) {
+                    return (_this._routes.length >= requirements.routes &&
+                        _this._finance.getAverageRevenue() >= requirements.revenuePerTurn &&
+                        _this.gold >= requirements.gold);
+                }
             }
             return false;
         };
