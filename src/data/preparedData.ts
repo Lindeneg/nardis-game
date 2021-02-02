@@ -256,3 +256,11 @@ export const lowYieldData: DataResourceModel[] = [
         valueVolatility: [6, 7]
     }
 ];
+
+export const genericOpponentsName: string[] = [
+    'J. Hamilton',
+    'C. H. Pryce',
+    'R. Hendrix',
+    'P. Peterson',
+    'H. Underfoot'
+];
