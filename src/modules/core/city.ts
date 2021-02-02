@@ -252,8 +252,6 @@ export default class City extends BaseComponent implements ITurnable {
         const resourceDiff: number = resourceLimit - this._supply.length;
         this._maxConcurrentRoutes = this.getMaxConcurrentRoutes();
         if (resourceDiff > 0) {
-            // one could mutate the current reference instead of creating a new one
-            // but strange behavior follows when doing the former, hence the latter
             const newSupplies: CityResource[] = [...this._supply];
             const newDemands: CityResource[] = [...this._demand];
             for (let _ = 0; _ < resourceDiff; _++) {

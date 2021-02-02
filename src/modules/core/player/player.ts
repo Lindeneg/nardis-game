@@ -20,6 +20,7 @@ import {
     rangePerLevel,
     levelUpRequirements
 } from '../../../util/constants';
+import { Nardis } from '../../..';
 
 
 /**
@@ -90,7 +91,7 @@ export default class Player extends BaseComponent implements ITurnable {
      * @param {HandleTurnInfo} info - Object with relevant turn information.
      */
 
-    public handleTurn = (info: HandleTurnInfo) => {
+    public handleTurn = (info: HandleTurnInfo, game?: Nardis) => {
         if (this.shouldLevelBeIncreased()) {
             this.increaseLevel();
         }
