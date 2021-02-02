@@ -14,7 +14,8 @@ import {
     UpgradeType,
     PlayerType,
     LocalKey,
-    RoutePlanCargo
+    RoutePlanCargo,
+    AdjustedTrain
 } from '../types/types';
 import {
     localKeys, START_GOLD, START_OPPONENTS
@@ -23,11 +24,14 @@ import {
     generateData
 } from '../data/data';
 import {
+    generateArrayOfRandomNames,
     getRangeTurnCost
 } from '../util/util';
 import { 
     RawDataModel 
 } from '../types/model';
+import Opponent from './core/player/opponent/opponent';
+import { genericOpponentsName } from '../data/preparedData';
 
 
 /**
@@ -65,25 +69,6 @@ export class Nardis {
     public getCurrentTurn   = (): number => this._turn;
 
     /**
-     * Runs at the start of each turn cycle. One cycle is when every player in-game has ended their turn.
-     
-
-    public startTurn = (): void => {
-        const handleTurnInfo: HandleTurnInfo = {
-            turn: this._turn, 
-            data: this.data,
-            playerData: {
-                routes: this._currentPlayer.getRoutes(),
-                upgrades: this._currentPlayer.getUpgrades()
-            }
-        };
-        [...this.data.cities, ...this.data.resources, this._currentPlayer].forEach(turnComponent => {
-            turnComponent.handleTurn(handleTurnInfo);
-        });
-    }
-    */
-
-    /**
      * Runs at the end of each Player turn.
      */
 
@@ -97,7 +82,7 @@ export class Nardis {
                 upgrades: this._currentPlayer.getUpgrades()
             }
         };
-        [...this.data.cities, ...this.data.resources, this._currentPlayer].forEach(turnComponent => {
+        [this._currentPlayer, ...this.data.cities, ...this.data.resources].forEach(turnComponent => {
             turnComponent.handleTurn(handleTurnInfo);
         });
         this._turn++;
@@ -136,7 +121,7 @@ export class Nardis {
      * @return {{train: Train, cost: number}[]} Array of Trains with their cost adjusted to reflect potential Player Upgrades.
      */
 
-    public getArrayOfAdjustedTrains = (): {train: Train, cost: number}[] => {
+    public getArrayOfAdjustedTrains = (): AdjustedTrain[] => {
         const upgrades: Upgrade[] = this._currentPlayer.getUpgrades().filter(upgrade => upgrade.type === UpgradeType.TrainValueCheaper);
         return this.data.trains.map(train => {
             let cost: number = train.cost;
@@ -152,6 +137,8 @@ export class Nardis {
 
     /**
      * @return {object} Object describing the current win state.
+     * 
+     * // TODO update winning condition when net worth and stock is implemented
      */
 
     public hasAnyPlayerWon = (): {player: Player, hasWon: boolean} => {
@@ -282,7 +269,8 @@ export class Nardis {
                     {turn: this._turn, data: this.data, playerData: {
                         routes: player.getRoutes(), 
                         upgrades: player.getUpgrades()}
-                    }
+                    },
+                    this
                 );
             }
         });
@@ -454,16 +442,31 @@ export class Nardis {
      * @return {Nardis}              Created Nardis instance.
      */
 
-    public static createFromPlayer = (name: string, gold: number = START_GOLD, opponents: number = START_OPPONENTS) => {
+    public static createFromPlayer = (name: string, gold: number = START_GOLD, opponents: number = START_OPPONENTS): Nardis => {
         const data: RawDataModel = generateData();
         const resources: Resource[] = data.resources.map(resource => Resource.createFromModel(resource));
         const cities: City[] = data.cities.map(city => City.createFromModel(city, resources));
-        return new Nardis({
-            resources,
-            cities,
-            trains: data.trains.map(train => Train.createFromModel(train)),
-            upgrades: data.upgrades.map(upgrade => Upgrade.createFromModel(upgrade))
-        },
-        [new Player(name, PlayerType.Human, cities[0], new Finance(name, gold))]);
+        const startCities: City[] = cities.filter(city => city.isStartCity);
+        const nStartCities: number = startCities.length; const nOpponents: number = opponents + 1;
+        if (nStartCities >= nOpponents) {
+            return new Nardis({
+                resources,
+                cities,
+                trains: data.trains.map(train => Train.createFromModel(train)),
+                upgrades: data.upgrades.map(upgrade => Upgrade.createFromModel(upgrade))
+            },
+            Nardis.createPlayers(name, gold, opponents, startCities));
+        } else {
+            throw new Error(`not enough start cities '${nStartCities}' to satisfy number of players '${nOpponents}'`)
+        }
+    }
+
+    private static createPlayers = (name: string, gold: number, opponents: number, cities: City[]): Player[] => {
+        const players: Player[] = [];
+        for (let i = 0; i < opponents; i++) {
+            const a_name: string = genericOpponentsName.pop();
+            players.push(new Opponent(a_name, cities.pop(), new Finance(a_name, gold)))
+        }
+        return [new Player(name, PlayerType.Human, cities.pop(), new Finance(name, gold)), ...players];
     }
 }
