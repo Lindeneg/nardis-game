@@ -190,3 +190,9 @@ export interface OriginRoutePotential {
     aRoutes: RoutePowerPotential[],
     pRoutes: PotentialRoute[]
 }
+
+export interface IRoute {
+    originIndex: number, 
+    aRouteIndex: number, 
+    powerIndex: number
+} 

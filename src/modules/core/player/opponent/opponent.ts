@@ -17,13 +17,15 @@ import {
     RoutePlanCargo,
     CityResource,
     RouteCargo,
-    RoutePower
+    RoutePower,
+    IRoute,
+    BuyableRoute
 } from '../../../../types/types';
 
 
 export default class Opponent extends Player {
 
-    _lastLevel: number
+    private _lastLevel: number
 
     constructor(
         name        : string,
@@ -50,32 +52,71 @@ export default class Opponent extends Player {
         this.deduceAction(info, game);
     }
 
+    /**
+     * Main function for deducing the best action for the non-human player in question.
+     */
     private deduceAction = (info: HandleTurnInfo, game: Nardis): void => {
+        this.log(`turn #${info.turn} non-human ${this.name}`);
         if (this._lastLevel < this._level || this._level === PlayerLevel.Novice) {
             this.buyAvailableUpgrades(info, game, Math.floor(this._finance.getGold() / 2));
             this._level !== PlayerLevel.Novice ? this._lastLevel++ : null;
         }
 
         if (this.shouldPurchaseRoute()) {
-            this.pickNInterestingRoutes(this.getInterestingRoutes(game), 1);
+            const train: AdjustedTrain = this.getSuggestedTrain(game.getArrayOfAdjustedTrains());
+            this.purchaseRoutes(this.pickNInterestingRoutes(this.getInterestingRoutes(game, train), this.getN(), train));
         }
 
         this.optimizeUnprofitableRoutes();
+        this.log('\n\n');
     }
 
-    private getInterestingRoutes = (game: Nardis): OriginRoutePotential[] => {
-        const result: OriginRoutePotential[] = [];
-        const train: AdjustedTrain = this.getSuggestedTrain(game.getArrayOfAdjustedTrains());
-        const routePotentials: OriginRoutePotential[] = this.getRoutePowerPotential(game, train);
-        console.log(routePotentials)
-        // TODO filter result for routes within budget
-        return result;
-    }
+    /**
+     * Iterate over each unique origin. Then iterate over routes from that origin.
+     * Sort those routes after highest potential profitability.
+     */
+    private getInterestingRoutes = (game: Nardis, train: AdjustedTrain): OriginRoutePotential[] => (
+        this.getRoutePowerPotential(game, train).map((origin: OriginRoutePotential): OriginRoutePotential => (
+            {
+                ...origin,
+                aRoutes: origin.aRoutes.filter((aRoute: RoutePowerPotential): boolean => (
+                    origin.pRoutes[aRoute.index].goldCost + train.cost <= this._finance.getGold()
+                ))
+                .sort((a: RoutePowerPotential, b: RoutePowerPotential): number => b.power.powerIndex - a.power.powerIndex)
+            }
+        ))
+    )
 
-    private pickNInterestingRoutes = (routes: OriginRoutePotential[], n: number) => {
-        // todo
-    }
+    /**
+     * Reduce an array of OriginRoutePotential to a sorted array of BuyableRoutes with length n.
+     */
+    private pickNInterestingRoutes = (routes: OriginRoutePotential[], n: number, train: AdjustedTrain): BuyableRoute[] => (
+        routes.map((route: OriginRoutePotential, originIndex: number): IRoute[] => (
+            route.aRoutes.map((aRoute: RoutePowerPotential, aRouteIndex: number): IRoute => ({
+                originIndex,
+                aRouteIndex,
+                powerIndex: aRoute.power.powerIndex
+            }))
+        ))
+        .reduce((a: IRoute[], b: IRoute[]): IRoute[] => a.concat(b), [])
+        .sort((a: IRoute, b: IRoute): number => b.powerIndex - a.powerIndex)
+        .splice(0, n)
+        .map((chosenRoute: IRoute): BuyableRoute => {
+            const origin: OriginRoutePotential = routes[chosenRoute.originIndex];
+            const aRoute: RoutePowerPotential = origin.aRoutes[chosenRoute.aRouteIndex];
+            const pRoute: PotentialRoute = origin.pRoutes[aRoute.index]; 
+            return {
+                ...pRoute,
+                train: train.train,
+                trainCost: train.cost,
+                routePlanCargo: aRoute.suggestedRoutePlan
+            }
+        })
+    )
 
+    /**
+     * Buy all available upgrades but respect the maxSpend constraint.
+     */
     private buyAvailableUpgrades = (info: HandleTurnInfo, game: Nardis, maxSpend: number = this._finance.getGold()) => {
         let spent: number = 0;
         info.data.upgrades.filter((upgrade: Upgrade): boolean => this._level >= upgrade.levelRequired)
@@ -87,6 +128,10 @@ export default class Opponent extends Player {
         });
     }
 
+    /**
+     * Each origin will have its own unique routes. There can be multiple origins each with multiple routes.
+     * Assign a "power index" to each route associated with each origin. Higher the index, better the route.
+     */
     private getRoutePowerPotential = (game: Nardis, suggestedTrain: AdjustedTrain): OriginRoutePotential[] => (
         this.getUniqueOrigins().map((origin: City): OriginRoutePotential => {
             const pRoutes: PotentialRoute[] = game.getArrayOfPossibleRoutes(origin);
@@ -108,6 +153,10 @@ export default class Opponent extends Player {
         }})
     );
 
+    /**
+     * What would the expected profit be from a full revolution? That is from origin, to destination and back again.
+     * How many turns will it take? The power index is the expected profit over the turns a full revolution requires.
+     */
     private getPower = (distance: number, train: Train, routePlan: RoutePlanCargo): RoutePower => {
         const fullRevolutionInTurns: number = Math.ceil(distance / train.speed) * 2;
         // plus four is to account for loading/unloading in both cities
@@ -124,6 +173,9 @@ export default class Opponent extends Player {
         }
     }
 
+    /**
+     * Try and deduce the best RoutePlanCargo for a given route between two cities.
+     */
     private getSuggestedRoutePlan = (route: PotentialRoute, cargoConstraint: number): RoutePlanCargo => {
         const c1Supply: CityResource[] = route.cityOne.getSupply(); const c2Supply: CityResource[] = route.cityTwo.getSupply();
         const c1p: CityResource = c1Supply[0]; const c1m: CityResource = c1Supply[1];
@@ -146,6 +198,11 @@ export default class Opponent extends Player {
         };
     }
 
+    /**
+     * supply will be medium-to-high-yield Resources. filler will be the highest valued low-yield Resource.
+     * Prioritize supply but if all are either not demand in destination or weights more than current cargoConstraint,
+     * then fill up the rest of the cargo space with filler Resource.
+     */
     private getSuggestedCargo = (supply: CityResource[], destination: City, cargoConstraint: number, filler: CityResource): RouteCargo[] => {
         const result: RouteCargo[] = [];
         supply.sort((a: CityResource, b: CityResource): number => b.resource.getValue() - a.resource.getValue())
@@ -178,6 +235,17 @@ export default class Opponent extends Player {
         return result;
     }
 
+    private getN = (): number => {
+        // todo
+        return 3;
+    }
+
+    private purchaseRoutes = (routes: BuyableRoute[]): void => {
+        // todo
+        this.log(`best ${routes.length} routes`);
+        console.log(routes);
+    }
+
     private shouldPurchaseRoute = (): boolean => {
         // todo
         return true;
@@ -187,18 +255,31 @@ export default class Opponent extends Player {
         // todo
     }
 
+    /**
+     * Find the valueRatio of each Train, which is cost (negative) over the sum of the speed and space (positive).
+     */
     private getSuggestedTrain = (trains: AdjustedTrain[]): AdjustedTrain => {
         const relevantTrains: AdjustedTrain[] = trains.filter((e: AdjustedTrain): boolean => this._level >= e.train.levelRequired);
         let currentSpace: number = 0; let valueRatio: number = Infinity; let i: number = 0;
         relevantTrains.forEach((train: AdjustedTrain, index: number): void => {
-            const vr: number = train.cost / train.train.cargoSpace;
-            if (train.train.cargoSpace > currentSpace * 2 || (vr < valueRatio && train.train.cargoSpace > currentSpace)) {
+            const vr: number = train.cost / (train.train.speed + train.train.cargoSpace);
+            
+            this.log(`possible train: nme=${train.train.name};vr=${vr.toFixed(3)};cst=${train.cost};vel=${train.train.speed};spa=${train.train.cargoSpace}`);
+            
+            if ((vr < valueRatio && train.train.cargoSpace >= currentSpace) || (Math.abs(vr - valueRatio) < Number.EPSILON && train.train.cargoSpace > currentSpace)) {
                 currentSpace = train.train.cargoSpace; valueRatio = vr; i = index;
             }
         });
+        
+        this.log(`suggested train: ${relevantTrains[i].train.name}`);
+        
         return relevantTrains[i];
     }
 
+    /**
+     * Get array of all cities currently connected to the Route network of the player. These cities will
+     * serve as potential origins for new routes.
+     */
     private getUniqueOrigins = (): City[] => {
         const origins: City[] = [];
         !this._startCity.isFull() ? origins.push(this._startCity) : null;
@@ -211,6 +292,18 @@ export default class Opponent extends Player {
                 origins.push(c2);
             }
         }
+        
+        this.log(`found ${origins.length} unique origins`);
+        
         return origins;
+    }
+
+    /**
+     * Temp for debug purposes
+     */
+    private log = (msg: string): void => {
+        if (!!parseInt(window['nardisNonHumanDebug'])) {
+            console.log(msg);
+        }
     }
 }
