@@ -138,3 +138,28 @@ export interface BuyableRoute extends PotentialRoute {
     trainCost: number;
     routePlanCargo: RoutePlanCargo;
 }
+export interface AdjustedTrain {
+    train: Train;
+    cost: number;
+}
+export interface RoutePower {
+    expectedProfitValue: number;
+    fullRevolutionInTurns: number;
+    powerIndex: number;
+}
+export interface RoutePowerPotential {
+    index: number;
+    tradeableResources: number;
+    suggestedRoutePlan: RoutePlanCargo;
+    power: RoutePower;
+}
+export interface OriginRoutePotential {
+    origin: City;
+    aRoutes: RoutePowerPotential[];
+    pRoutes: PotentialRoute[];
+}
+export interface IRoute {
+    originIndex: number;
+    aRouteIndex: number;
+    powerIndex: number;
+}

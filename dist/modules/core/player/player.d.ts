@@ -6,6 +6,7 @@ import Train from '../train';
 import Resource from '../resource';
 import Route from '../route';
 import { QueuedRouteItem, HandleTurnInfo, ITurnable, PlayerType, PlayerLevel } from '../../../types/types';
+import { Nardis } from '../../..';
 /**
  * @constructor
  * @param {string}            name       - String with name.
@@ -43,7 +44,7 @@ export default class Player extends BaseComponent implements ITurnable {
      *
      * @param {HandleTurnInfo} info - Object with relevant turn information.
      */
-    handleTurn: (info: HandleTurnInfo) => void;
+    handleTurn: (info: HandleTurnInfo, game?: Nardis) => void;
     /**
      * Add Route to queue.
      *

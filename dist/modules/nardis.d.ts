@@ -1,7 +1,7 @@
 import City from './core/city';
 import Player from './core/player/player';
 import Train from './core/train';
-import { GameData, PotentialRoute, BuyableRoute, RoutePlanCargo } from '../types/types';
+import { GameData, PotentialRoute, BuyableRoute, RoutePlanCargo, AdjustedTrain } from '../types/types';
 /**
  * @constructor
  * @param {GameData} data          - Object with GameData.
@@ -19,24 +19,6 @@ export declare class Nardis {
     getCurrentPlayer: () => Player;
     getCurrentTurn: () => number;
     /**
-     * Runs at the start of each turn cycle. One cycle is when every player in-game has ended their turn.
-     
-
-    public startTurn = (): void => {
-        const handleTurnInfo: HandleTurnInfo = {
-            turn: this._turn,
-            data: this.data,
-            playerData: {
-                routes: this._currentPlayer.getRoutes(),
-                upgrades: this._currentPlayer.getUpgrades()
-            }
-        };
-        [...this.data.cities, ...this.data.resources, this._currentPlayer].forEach(turnComponent => {
-            turnComponent.handleTurn(handleTurnInfo);
-        });
-    }
-    */
-    /**
      * Runs at the end of each Player turn.
      */
     endTurn: () => void;
@@ -51,12 +33,11 @@ export declare class Nardis {
     /**
      * @return {{train: Train, cost: number}[]} Array of Trains with their cost adjusted to reflect potential Player Upgrades.
      */
-    getArrayOfAdjustedTrains: () => {
-        train: Train;
-        cost: number;
-    }[];
+    getArrayOfAdjustedTrains: () => AdjustedTrain[];
     /**
      * @return {object} Object describing the current win state.
+     *
+     * // TODO update winning condition when net worth and stock is implemented
      */
     hasAnyPlayerWon: () => {
         player: Player;
@@ -157,4 +138,5 @@ export declare class Nardis {
      * @return {Nardis}              Created Nardis instance.
      */
     static createFromPlayer: (name: string, gold?: number, opponents?: number) => Nardis;
+    private static createPlayers;
 }

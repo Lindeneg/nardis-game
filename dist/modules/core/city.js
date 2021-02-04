@@ -190,8 +190,6 @@ var City = /** @class */ (function (_super) {
             var resourceDiff = resourceLimit - _this._supply.length;
             _this._maxConcurrentRoutes = _this.getMaxConcurrentRoutes();
             if (resourceDiff > 0) {
-                // one could mutate the current reference instead of creating a new one
-                // but strange behavior follows when doing the former, hence the latter
                 var newSupplies = __spreadArrays(_this._supply);
                 var newDemands = __spreadArrays(_this._demand);
                 for (var _ = 0; _ < resourceDiff; _++) {

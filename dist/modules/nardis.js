@@ -19,6 +19,8 @@ var types_1 = require("../types/types");
 var constants_1 = require("../util/constants");
 var data_1 = require("../data/data");
 var util_1 = require("../util/util");
+var opponent_1 = require("./core/player/opponent/opponent");
+var preparedData_1 = require("../data/preparedData");
 /**
  * @constructor
  * @param {GameData} data          - Object with GameData.
@@ -33,24 +35,6 @@ var Nardis = /** @class */ (function () {
         this.getCurrentPlayer = function () { return _this._currentPlayer; };
         this.getCurrentTurn = function () { return _this._turn; };
         /**
-         * Runs at the start of each turn cycle. One cycle is when every player in-game has ended their turn.
-         
-    
-        public startTurn = (): void => {
-            const handleTurnInfo: HandleTurnInfo = {
-                turn: this._turn,
-                data: this.data,
-                playerData: {
-                    routes: this._currentPlayer.getRoutes(),
-                    upgrades: this._currentPlayer.getUpgrades()
-                }
-            };
-            [...this.data.cities, ...this.data.resources, this._currentPlayer].forEach(turnComponent => {
-                turnComponent.handleTurn(handleTurnInfo);
-            });
-        }
-        */
-        /**
          * Runs at the end of each Player turn.
          */
         this.endTurn = function () {
@@ -63,7 +47,7 @@ var Nardis = /** @class */ (function () {
                     upgrades: _this._currentPlayer.getUpgrades()
                 }
             };
-            __spreadArrays(_this.data.cities, _this.data.resources, [_this._currentPlayer]).forEach(function (turnComponent) {
+            __spreadArrays([_this._currentPlayer], _this.data.cities, _this.data.resources).forEach(function (turnComponent) {
                 turnComponent.handleTurn(handleTurnInfo);
             });
             _this._turn++;
@@ -113,6 +97,8 @@ var Nardis = /** @class */ (function () {
         };
         /**
          * @return {object} Object describing the current win state.
+         *
+         * // TODO update winning condition when net worth and stock is implemented
          */
         this.hasAnyPlayerWon = function () {
             var result = _this.players.filter(function (player) { return player.gold > 10000; });
@@ -214,7 +200,7 @@ var Nardis = /** @class */ (function () {
                             routes: player.getRoutes(),
                             upgrades: player.getUpgrades()
                         }
-                    });
+                    }, _this);
                 }
             });
             _this._currentPlayer = actualPlayer;
@@ -337,12 +323,28 @@ var Nardis = /** @class */ (function () {
         var data = data_1.generateData();
         var resources = data.resources.map(function (resource) { return resource_1.default.createFromModel(resource); });
         var cities = data.cities.map(function (city) { return city_1.default.createFromModel(city, resources); });
-        return new Nardis({
-            resources: resources,
-            cities: cities,
-            trains: data.trains.map(function (train) { return train_1.default.createFromModel(train); }),
-            upgrades: data.upgrades.map(function (upgrade) { return upgrade_1.default.createFromModel(upgrade); })
-        }, [new player_1.default(name, types_1.PlayerType.Human, cities[0], new finance_1.default(name, gold))]);
+        var startCities = cities.filter(function (city) { return city.isStartCity; });
+        var nStartCities = startCities.length;
+        var nOpponents = opponents + 1;
+        if (nStartCities >= nOpponents) {
+            return new Nardis({
+                resources: resources,
+                cities: cities,
+                trains: data.trains.map(function (train) { return train_1.default.createFromModel(train); }),
+                upgrades: data.upgrades.map(function (upgrade) { return upgrade_1.default.createFromModel(upgrade); })
+            }, Nardis.createPlayers(name, gold, opponents, startCities));
+        }
+        else {
+            throw new Error("not enough start cities '" + nStartCities + "' to satisfy number of players '" + nOpponents + "'");
+        }
+    };
+    Nardis.createPlayers = function (name, gold, opponents, cities) {
+        var players = [];
+        for (var i = 0; i < opponents; i++) {
+            var a_name = preparedData_1.genericOpponentsName.pop();
+            players.push(new opponent_1.default(a_name, cities.pop(), new finance_1.default(a_name, gold)));
+        }
+        return __spreadArrays([new player_1.default(name, types_1.PlayerType.Human, cities.pop(), new finance_1.default(name, gold))], players);
     };
     return Nardis;
 }());

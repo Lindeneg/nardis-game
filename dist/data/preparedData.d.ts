@@ -4,3 +4,4 @@ export declare const trainData: DataTrainModel[];
 export declare const highYieldData: DataResourceModel[];
 export declare const mediumYieldData: DataResourceModel[];
 export declare const lowYieldData: DataResourceModel[];
+export declare const genericOpponentsName: string[];

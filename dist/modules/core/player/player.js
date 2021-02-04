@@ -50,7 +50,7 @@ var Player = /** @class */ (function (_super) {
          *
          * @param {HandleTurnInfo} info - Object with relevant turn information.
          */
-        _this.handleTurn = function (info) {
+        _this.handleTurn = function (info, game) {
             if (_this.shouldLevelBeIncreased()) {
                 _this.increaseLevel();
             }
