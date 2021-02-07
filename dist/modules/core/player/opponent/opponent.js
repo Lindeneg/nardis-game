@@ -26,6 +26,7 @@ var __assign = (this && this.__assign) || function () {
 Object.defineProperty(exports, "__esModule", { value: true });
 var player_1 = require("../player");
 var types_1 = require("../../../../types/types");
+var constants_1 = require("../../../../util/constants");
 var Opponent = /** @class */ (function (_super) {
     __extends(Opponent, _super);
     function Opponent(name, startCity, finance, level, queue, routes, upgrades, id) {
@@ -43,14 +44,14 @@ var Opponent = /** @class */ (function (_super) {
          * Main function for deducing the best action for the non-human player in question.
          */
         _this.deduceAction = function (info, game) {
-            _this.log("turn #" + info.turn + " non-human " + _this.name);
+            _this.log("turn=" + info.turn + ";comp=" + _this.name + ";avgr=" + _this._finance.getAverageRevenue() + "g;curg=" + _this._finance.getGold() + ";rout=" + _this._routes.length + ";queu=" + _this._queue.length + ";leve=" + _this._level + ";");
             if (_this._lastLevel < _this._level || _this._level === types_1.PlayerLevel.Novice) {
                 _this.buyAvailableUpgrades(info, game, Math.floor(_this._finance.getGold() / 2));
                 _this._level !== types_1.PlayerLevel.Novice ? _this._lastLevel++ : null;
             }
-            if (_this.shouldPurchaseRoute()) {
+            if (_this.shouldPurchaseRoutes) {
                 var train = _this.getSuggestedTrain(game.getArrayOfAdjustedTrains());
-                _this.purchaseRoutes(_this.pickNInterestingRoutes(_this.getInterestingRoutes(game, train), _this.getN(), train));
+                _this.purchaseRoutes(game, _this.pickNInterestingRoutes(_this.getInterestingRoutes(game, train), _this.getN(), train));
             }
             _this.optimizeUnprofitableRoutes();
             _this.log('\n\n');
@@ -59,8 +60,11 @@ var Opponent = /** @class */ (function (_super) {
          * Iterate over each unique origin. Then iterate over routes from that origin.
          * Sort those routes after highest potential profitability.
          */
-        _this.getInterestingRoutes = function (game, train) { return (_this.getRoutePowerPotential(game, train).map(function (origin) { return (__assign(__assign({}, origin), { aRoutes: origin.aRoutes.filter(function (aRoute) { return (origin.pRoutes[aRoute.index].goldCost + train.cost <= _this._finance.getGold()); })
-                .sort(function (a, b) { return b.power.powerIndex - a.power.powerIndex; }) })); })); };
+        _this.getInterestingRoutes = function (game, train) { return (_this.getRoutePowerPotential(game, train).map(function (origin) {
+            _this.log("routes from " + origin.origin.name, [origin.aRoutes, origin.pRoutes]);
+            return __assign(__assign({}, origin), { aRoutes: origin.aRoutes.filter(function (aRoute) { return (origin.pRoutes[aRoute.index].goldCost + train.cost <= _this._finance.getGold()); })
+                    .sort(function (a, b) { return b.power.powerIndex - a.power.powerIndex; }) });
+        })); };
         /**
          * Reduce an array of OriginRoutePotential to a sorted array of BuyableRoutes with length n.
          */
@@ -84,9 +88,10 @@ var Opponent = /** @class */ (function (_super) {
         _this.buyAvailableUpgrades = function (info, game, maxSpend) {
             if (maxSpend === void 0) { maxSpend = _this._finance.getGold(); }
             var spent = 0;
-            info.data.upgrades.filter(function (upgrade) { return _this._level >= upgrade.levelRequired; })
-                .forEach(function (upgrade) {
+            info.data.upgrades.filter(function (upgrade) { return (_this._level >= upgrade.levelRequired &&
+                _this._upgrades.filter(function (boughtUpgrade) { return boughtUpgrade.equals(upgrade); }).length <= 0); }).forEach(function (upgrade) {
                 if (upgrade.cost + spent <= maxSpend) {
+                    _this.log("purchasing upgrade " + upgrade.name + " for " + upgrade.cost + "g");
                     game.addUpgradeToPlayer(upgrade.id);
                     spent += upgrade.cost;
                 }
@@ -138,8 +143,8 @@ var Opponent = /** @class */ (function (_super) {
             var c2p = c2Supply[0];
             var c2m = c2Supply[1];
             return {
-                cityOne: _this.getSuggestedCargo(c1Supply.filter(function (cr) { return !cr.resource.equals(c1p.resource) && !cr.resource.equals(c1m.resource); }), route.cityTwo, cargoConstraint, c1p.resource.getValue() > c1m.resource.getValue() ? c1p : c1m),
-                cityTwo: _this.getSuggestedCargo(c2Supply.filter(function (cr) { return !cr.resource.equals(c2p.resource) && !cr.resource.equals(c2m.resource); }), route.cityOne, cargoConstraint, c2p.resource.getValue() > c2m.resource.getValue() ? c2p : c2m)
+                cityOne: _this.getSuggestedCargo(c1Supply.filter(function (cr) { return !cr.resource.equals(c1p.resource) && !cr.resource.equals(c1m.resource); }), route.cityTwo, cargoConstraint, [c1p, c1m]),
+                cityTwo: _this.getSuggestedCargo(c2Supply.filter(function (cr) { return !cr.resource.equals(c2p.resource) && !cr.resource.equals(c2m.resource); }), route.cityOne, cargoConstraint, [c2p, c2m])
             };
         };
         /**
@@ -168,29 +173,47 @@ var Opponent = /** @class */ (function (_super) {
                 }
             });
             if (cargoConstraint > 0) {
-                result.push({
-                    resource: filler.resource,
-                    targetAmount: cargoConstraint,
-                    actualAmount: 0
-                });
+                var ini = Math.ceil(cargoConstraint / 2);
+                var diff = cargoConstraint - ini;
+                result.push.apply(result, [
+                    {
+                        resource: filler[0].resource,
+                        targetAmount: ini,
+                        actualAmount: 0
+                    },
+                    {
+                        resource: filler[1].resource,
+                        targetAmount: diff > 0 ? diff : 0,
+                        actualAmount: 0
+                    }
+                ]);
             }
             return result;
         };
-        _this.getN = function () {
-            // todo
-            return 3;
+        _this.getN = function () { return (_this._finance.getAverageRevenue() >= 0 && _this._finance.getGold() > 0 ? (_this._queue.length === 0 ? 3 : 1) : 0); };
+        _this.shouldPurchaseRoutes = function () {
+            var levelUpReq = constants_1.levelUpRequirements[_this._level + 1];
+            return !(_this._routes.length >= levelUpReq.routes &&
+                _this._finance.getAverageRevenue() >= levelUpReq.revenuePerTurn &&
+                !(_this._finance.getGold() >= levelUpReq.gold));
         };
-        _this.purchaseRoutes = function (routes) {
-            // todo
-            _this.log("best " + routes.length + " routes");
-            console.log(routes);
-        };
-        _this.shouldPurchaseRoute = function () {
-            // todo
-            return true;
+        _this.purchaseRoutes = function (game, routes) {
+            _this.log("attempting to purchase " + routes.length + " routes", routes);
+            for (var i = 0; i < routes.length; i++) {
+                if (_this._finance.getGold() - (routes[i].goldCost + routes[i].trainCost) < 0) {
+                    _this.log('cannot purchase anymore routes');
+                    break;
+                }
+                _this.log('purchasing route', routes[i]);
+                game.addRouteToPlayerQueue(routes[i]);
+            }
         };
         _this.optimizeUnprofitableRoutes = function () {
-            // todo
+            _this.log('active routes', _this._routes);
+            _this._routes.forEach(function (e, i) {
+                var p = e.getProfit();
+                _this.log((p > 0 ? 'profitable' : 'unprofitable') + " " + i);
+            });
         };
         /**
          * Find the valueRatio of each Train, which is cost (negative) over the sum of the speed and space (positive).
@@ -237,9 +260,10 @@ var Opponent = /** @class */ (function (_super) {
         /**
          * Temp for debug purposes
          */
-        _this.log = function (msg) {
+        _this.log = function (msg, obj) {
             if (!!parseInt(window['nardisNonHumanDebug'])) {
                 console.log(msg);
+                obj ? console.log(obj) : null;
             }
         };
         _this._lastLevel = _this._level;

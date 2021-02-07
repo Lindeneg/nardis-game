@@ -21,6 +21,7 @@ import {
     IRoute,
     BuyableRoute
 } from '../../../../types/types';
+import { levelUpRequirements } from '../../../../util/constants';
 
 
 export default class Opponent extends Player {
@@ -56,15 +57,15 @@ export default class Opponent extends Player {
      * Main function for deducing the best action for the non-human player in question.
      */
     private deduceAction = (info: HandleTurnInfo, game: Nardis): void => {
-        this.log(`turn #${info.turn} non-human ${this.name}`);
+        this.log(`turn=${info.turn};comp=${this.name};avgr=${this._finance.getAverageRevenue()}g;curg=${this._finance.getGold()};rout=${this._routes.length};queu=${this._queue.length};leve=${this._level};`);
         if (this._lastLevel < this._level || this._level === PlayerLevel.Novice) {
             this.buyAvailableUpgrades(info, game, Math.floor(this._finance.getGold() / 2));
             this._level !== PlayerLevel.Novice ? this._lastLevel++ : null;
         }
 
-        if (this.shouldPurchaseRoute()) {
+        if (this.shouldPurchaseRoutes) {
             const train: AdjustedTrain = this.getSuggestedTrain(game.getArrayOfAdjustedTrains());
-            this.purchaseRoutes(this.pickNInterestingRoutes(this.getInterestingRoutes(game, train), this.getN(), train));
+            this.purchaseRoutes(game, this.pickNInterestingRoutes(this.getInterestingRoutes(game, train), this.getN(), train));
         }
 
         this.optimizeUnprofitableRoutes();
@@ -76,15 +77,16 @@ export default class Opponent extends Player {
      * Sort those routes after highest potential profitability.
      */
     private getInterestingRoutes = (game: Nardis, train: AdjustedTrain): OriginRoutePotential[] => (
-        this.getRoutePowerPotential(game, train).map((origin: OriginRoutePotential): OriginRoutePotential => (
-            {
+        this.getRoutePowerPotential(game, train).map((origin: OriginRoutePotential): OriginRoutePotential => {
+            this.log(`routes from ${origin.origin.name}`, [origin.aRoutes, origin.pRoutes]);
+            return {
                 ...origin,
                 aRoutes: origin.aRoutes.filter((aRoute: RoutePowerPotential): boolean => (
                     origin.pRoutes[aRoute.index].goldCost + train.cost <= this._finance.getGold()
                 ))
                 .sort((a: RoutePowerPotential, b: RoutePowerPotential): number => b.power.powerIndex - a.power.powerIndex)
             }
-        ))
+        })
     )
 
     /**
@@ -119,9 +121,12 @@ export default class Opponent extends Player {
      */
     private buyAvailableUpgrades = (info: HandleTurnInfo, game: Nardis, maxSpend: number = this._finance.getGold()) => {
         let spent: number = 0;
-        info.data.upgrades.filter((upgrade: Upgrade): boolean => this._level >= upgrade.levelRequired)
-        .forEach((upgrade: Upgrade): void => {
+        info.data.upgrades.filter((upgrade: Upgrade): boolean => (
+            this._level >= upgrade.levelRequired && 
+            this._upgrades.filter((boughtUpgrade: Upgrade): boolean => boughtUpgrade.equals(upgrade)).length <= 0)
+        ).forEach((upgrade: Upgrade): void => {
             if (upgrade.cost + spent <= maxSpend) {
+                this.log(`purchasing upgrade ${upgrade.name} for ${upgrade.cost}g`);
                 game.addUpgradeToPlayer(upgrade.id);
                 spent += upgrade.cost;
             }
@@ -186,14 +191,14 @@ export default class Opponent extends Player {
                     c1Supply.filter((cr: CityResource): boolean => !cr.resource.equals(c1p.resource) && !cr.resource.equals(c1m.resource)),
                     route.cityTwo,
                     cargoConstraint,
-                    c1p.resource.getValue() > c1m.resource.getValue() ? c1p : c1m
+                    [c1p, c1m]
                 ), 
             cityTwo:
                 this.getSuggestedCargo(
                     c2Supply.filter((cr: CityResource): boolean => !cr.resource.equals(c2p.resource) && !cr.resource.equals(c2m.resource)),
                     route.cityOne,
                     cargoConstraint,
-                    c2p.resource.getValue() > c2m.resource.getValue() ? c2p : c2m
+                    [c2p, c2m]
                 )
         };
     }
@@ -203,7 +208,7 @@ export default class Opponent extends Player {
      * Prioritize supply but if all are either not demand in destination or weights more than current cargoConstraint,
      * then fill up the rest of the cargo space with filler Resource.
      */
-    private getSuggestedCargo = (supply: CityResource[], destination: City, cargoConstraint: number, filler: CityResource): RouteCargo[] => {
+    private getSuggestedCargo = (supply: CityResource[], destination: City, cargoConstraint: number, filler: [CityResource, CityResource]): RouteCargo[] => {
         const result: RouteCargo[] = [];
         supply.sort((a: CityResource, b: CityResource): number => b.resource.getValue() - a.resource.getValue())
         .forEach((cr: CityResource): void => {
@@ -226,33 +231,57 @@ export default class Opponent extends Player {
             }
         });
         if (cargoConstraint > 0) {
-            result.push({
-                resource: filler.resource,
-                targetAmount: cargoConstraint,
-                actualAmount: 0
-            })
+            const ini: number = Math.ceil(cargoConstraint / 2); const diff: number = cargoConstraint - ini;
+            result.push(...[
+                {
+                    resource: filler[0].resource,
+                    targetAmount: ini,
+                    actualAmount: 0
+                },
+                {
+                    resource: filler[1].resource,
+                    targetAmount: diff > 0 ? diff : 0,
+                    actualAmount: 0
+                }
+            ]);
         }
         return result;
     }
 
-    private getN = (): number => {
-        // todo
-        return 3;
+    private getN = (): number => (
+        this._finance.getAverageRevenue() >= 0 && this._finance.getGold() > 0 ? (
+            this._queue.length === 0 ? 3 : 1
+        ) : 0
+    )
+
+    private shouldPurchaseRoutes = (): boolean => {
+        const levelUpReq = levelUpRequirements[this._level + 1];
+        return !(
+            this._routes.length >= levelUpReq.routes && 
+            this._finance.getAverageRevenue() >= levelUpReq.revenuePerTurn && 
+            !(this._finance.getGold() >= levelUpReq.gold)
+        );
     }
 
-    private purchaseRoutes = (routes: BuyableRoute[]): void => {
-        // todo
-        this.log(`best ${routes.length} routes`);
-        console.log(routes);
+    private purchaseRoutes = (game: Nardis, routes: BuyableRoute[]): void => {
+        this.log(`attempting to purchase ${routes.length} routes`, routes);
+        for (let i = 0; i < routes.length; i++) {
+            if (this._finance.getGold() - (routes[i].goldCost + routes[i].trainCost) < 0) {
+                this.log('cannot purchase anymore routes');
+                break;
+            }
+            this.log('purchasing route', routes[i]);
+            game.addRouteToPlayerQueue(routes[i]);
+        }
     }
 
-    private shouldPurchaseRoute = (): boolean => {
-        // todo
-        return true;
-    }
-
+    // TODO
     private optimizeUnprofitableRoutes = (): void => {
-        // todo
+        this.log('active routes', this._routes);
+        this._routes.forEach((e, i) => {
+            let p = e.getProfit();
+            this.log(`${p > 0 ? 'profitable' : 'unprofitable'} ${i}`);
+        });
     }
 
     /**
@@ -301,9 +330,10 @@ export default class Opponent extends Player {
     /**
      * Temp for debug purposes
      */
-    private log = (msg: string): void => {
+    private log = (msg: string, obj?: Object): void => {
         if (!!parseInt(window['nardisNonHumanDebug'])) {
             console.log(msg);
+            obj ? console.log(obj) : null;
         }
     }
 }

@@ -12,6 +12,7 @@ import Upgrade from './modules/core/player/upgrade';
 export * from './types/types';
 export * from './util/util';
 export * from './util/constants';
+export { genericOpponentsName } from './data/preparedData';
 export {
     generateData,
     City,

@@ -47,8 +47,8 @@ export default class Opponent extends Player {
      */
     private getSuggestedCargo;
     private getN;
+    private shouldPurchaseRoutes;
     private purchaseRoutes;
-    private shouldPurchaseRoute;
     private optimizeUnprofitableRoutes;
     /**
      * Find the valueRatio of each Train, which is cost (negative) over the sum of the speed and space (positive).
