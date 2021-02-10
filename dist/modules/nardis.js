@@ -38,17 +38,17 @@ var Nardis = /** @class */ (function () {
          * Runs at the end of each Player turn.
          */
         this.endTurn = function () {
-            _this.handleComputerTurn();
-            var handleTurnInfo = {
+            _this._currentPlayer.handleTurn({
                 turn: _this._turn,
                 data: _this.data,
                 playerData: {
                     routes: _this._currentPlayer.getRoutes(),
                     upgrades: _this._currentPlayer.getUpgrades()
                 }
-            };
-            __spreadArrays([_this._currentPlayer], _this.data.cities, _this.data.resources).forEach(function (turnComponent) {
-                turnComponent.handleTurn(handleTurnInfo);
+            });
+            _this.handleComputerTurn();
+            __spreadArrays(_this.data.cities, _this.data.resources).forEach(function (turnComponent) {
+                turnComponent.handleTurn({ turn: _this._turn, data: _this.data, playerData: { routes: [], upgrades: [] } });
             });
             _this._turn++;
             _this.saveGame();
@@ -194,13 +194,14 @@ var Nardis = /** @class */ (function () {
         this.handleComputerTurn = function () {
             var actualPlayer = _this._currentPlayer;
             _this.players.forEach(function (player) {
-                if (!(player.equals(_this._currentPlayer)) && player.playerType === types_1.PlayerType.Computer) {
+                if (player.playerType === types_1.PlayerType.Computer) {
                     _this._currentPlayer = player;
-                    player.handleTurn({ turn: _this._turn, data: _this.data, playerData: {
+                    player.handleTurn({ turn: _this._turn,
+                        data: _this.data,
+                        playerData: {
                             routes: player.getRoutes(),
                             upgrades: player.getUpgrades()
-                        }
-                    }, _this);
+                        } }, _this);
                 }
             });
             _this._currentPlayer = actualPlayer;
@@ -265,14 +266,19 @@ var Nardis = /** @class */ (function () {
          * Save the complete state of the game to localStorage.
          */
         this.saveGame = function () {
-            window.localStorage.setItem(constants_1.localKeys[types_1.LocalKey.HasActiveGame], '1');
-            window.localStorage.setItem(constants_1.localKeys[types_1.LocalKey.Trains], btoa(JSON.stringify(_this.data.trains.map(function (e) { return e.deconstruct(); }))));
-            window.localStorage.setItem(constants_1.localKeys[types_1.LocalKey.Resources], btoa(JSON.stringify(_this.data.resources.map(function (e) { return e.deconstruct(); }))));
-            window.localStorage.setItem(constants_1.localKeys[types_1.LocalKey.Upgrades], btoa(JSON.stringify(_this.data.upgrades.map(function (e) { return e.deconstruct(); }))));
-            window.localStorage.setItem(constants_1.localKeys[types_1.LocalKey.Cities], btoa(JSON.stringify(_this.data.cities.map(function (e) { return e.deconstruct(); }))));
-            window.localStorage.setItem(constants_1.localKeys[types_1.LocalKey.Players], btoa(JSON.stringify(_this.players.map(function (e) { return e.deconstruct(); }))));
-            window.localStorage.setItem(constants_1.localKeys[types_1.LocalKey.CurrentPlayer], btoa(JSON.stringify(_this._currentPlayer.deconstruct())));
-            window.localStorage.setItem(constants_1.localKeys[types_1.LocalKey.Turn], btoa(_this._turn.toString()));
+            try {
+                window.localStorage.setItem(constants_1.localKeys[types_1.LocalKey.HasActiveGame], '1');
+                window.localStorage.setItem(constants_1.localKeys[types_1.LocalKey.Trains], btoa(JSON.stringify(_this.data.trains.map(function (e) { return e.deconstruct(); }))));
+                window.localStorage.setItem(constants_1.localKeys[types_1.LocalKey.Resources], btoa(JSON.stringify(_this.data.resources.map(function (e) { return e.deconstruct(); }))));
+                window.localStorage.setItem(constants_1.localKeys[types_1.LocalKey.Upgrades], btoa(JSON.stringify(_this.data.upgrades.map(function (e) { return e.deconstruct(); }))));
+                window.localStorage.setItem(constants_1.localKeys[types_1.LocalKey.Cities], btoa(JSON.stringify(_this.data.cities.map(function (e) { return e.deconstruct(); }))));
+                window.localStorage.setItem(constants_1.localKeys[types_1.LocalKey.Players], btoa(JSON.stringify(_this.players.map(function (e) { return e.deconstruct(); }))));
+                window.localStorage.setItem(constants_1.localKeys[types_1.LocalKey.CurrentPlayer], btoa(JSON.stringify(_this._currentPlayer.deconstruct())));
+                window.localStorage.setItem(constants_1.localKeys[types_1.LocalKey.Turn], btoa(_this._turn.toString()));
+            }
+            catch (err) {
+                //console.log(err);
+            }
         };
         this.players = players;
         this.data = gameData;
@@ -298,7 +304,15 @@ var Nardis = /** @class */ (function () {
         var upgrades = upgradesRaw.map(function (upgradeString) { return upgrade_1.default.createFromStringifiedJSON(upgradeString); });
         var resources = resourcesRaw.map(function (resourceString) { return resource_1.default.createFromStringifiedJSON(resourceString); });
         var cities = citiesRaw.map(function (cityString) { return city_1.default.createFromStringifiedJSON(cityString, resources); });
-        var players = playersRaw.map(function (playerString) { return player_1.default.createFromStringifiedJSON(playerString, cities, trains, resources); });
+        var players = playersRaw.map(function (playerString) {
+            var re = /^.+playerType\":(\d).+$/.exec(playerString);
+            if (re && re[1]) {
+                if (parseInt(re[1]) === types_1.PlayerType.Computer) {
+                    return opponent_1.default.createFromStringifiedJSON(playerString, cities, trains, resources);
+                }
+            }
+            return player_1.default.createFromStringifiedJSON(playerString, cities, trains, resources);
+        });
         var currentPlayer = players.filter(function (player) { return player.id === currentPlayerRaw.id; })[0];
         var turn = parseInt(atob(window.localStorage.getItem(constants_1.localKeys[types_1.LocalKey.Turn])));
         return new Nardis({

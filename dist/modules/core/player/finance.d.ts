@@ -15,11 +15,13 @@ export default class Finance extends BaseComponent implements ITurnable {
     private _history;
     private _totalHistory;
     private _totalProfits;
+    private _netWorth;
     constructor(name: string, gold: number, history?: FinanceHistory, totalHistory?: FinanceTotal, totalProfits?: number, id?: string);
     getGold: () => number;
     getHistory: () => FinanceHistory;
     getTotalHistory: () => FinanceTotal;
     getTotalProfits: () => number;
+    getNetWorth: () => number;
     /**
     * Handle Finance events at each turn
     *
@@ -52,6 +54,7 @@ export default class Finance extends BaseComponent implements ITurnable {
      * Add to gold from a deleted Route.
      *
      * @param {number} value - Number wih gold to recoup.
+     *
      */
     recoupDeletedRoute: (value: number) => void;
     /**
@@ -76,6 +79,10 @@ export default class Finance extends BaseComponent implements ITurnable {
     * @param {number} value - number with gold to be added
     */
     private addGold;
+    /**
+    * Update net worth
+    */
+    private updateNetWorth;
     /**
     * Remove gold from count
     *

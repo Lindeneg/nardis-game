@@ -35,6 +35,7 @@ var Finance = /** @class */ (function (_super) {
         _this.getHistory = function () { return _this._history; };
         _this.getTotalHistory = function () { return _this._totalHistory; };
         _this.getTotalProfits = function () { return _this._totalProfits; };
+        _this.getNetWorth = function () { return _this._netWorth; };
         /**
         * Handle Finance events at each turn
         *
@@ -47,6 +48,7 @@ var Finance = /** @class */ (function (_super) {
                     _this.handleRoute(route, info.playerData.upgrades);
                 });
             }
+            _this.updateNetWorth(info.playerData);
         };
         /**
         * Add entry to expense object from the turn at hand
@@ -101,9 +103,13 @@ var Finance = /** @class */ (function (_super) {
          * Add to gold from a deleted Route.
          *
          * @param {number} value - Number wih gold to recoup.
+         *
          */
         _this.recoupDeletedRoute = function (value) {
-            _this.addGold(value);
+            var id = constants_1.localKeys[types_1.FinanceType.Recoup];
+            _this.addToTotalHistory(id, value);
+            _this._totalProfits += value;
+            _this.addNthTurnObject(types_1.FinanceGeneralType.Income, types_1.FinanceType.Recoup, id, 1, value);
         };
         /**
         * Set nthTurn array of income and expense object to an empty array
@@ -157,6 +163,12 @@ var Finance = /** @class */ (function (_super) {
         */
         _this.addGold = function (value) {
             _this._gold += value;
+        };
+        /**
+        * Update net worth
+        */
+        _this.updateNetWorth = function (data) {
+            _this._netWorth = data.routes.map(function (route) { return (Math.floor(route.getCost() / 1.5) + Math.floor(route.getTrain().cost / 1.5)); }).reduce(function (a, b) { return a + b; }, data.upgrades.map(function (upgrade) { return (Math.floor(upgrade.cost / 2)); }).reduce(function (a, b) { return a + b; }, _this._gold));
         };
         /**
         * Remove gold from count
@@ -248,7 +260,9 @@ var Finance = /** @class */ (function (_super) {
             _a[constants_1.localKeys[types_1.FinanceType.Track]] = 0,
             _a[constants_1.localKeys[types_1.FinanceType.Upkeep]] = 0,
             _a[constants_1.localKeys[types_1.FinanceType.Upgrade]] = 0,
+            _a[constants_1.localKeys[types_1.FinanceType.Recoup]] = 0,
             _a);
+        _this._netWorth = _this._gold;
         return _this;
     }
     /**

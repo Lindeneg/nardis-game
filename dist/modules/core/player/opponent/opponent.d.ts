@@ -4,9 +4,10 @@ import Finance from '../finance';
 import Upgrade from '../upgrade';
 import Route from '../../route';
 import City from '../../city';
+import Train from '../../train';
+import Resource from '../../resource';
 import { HandleTurnInfo, QueuedRouteItem, PlayerLevel } from '../../../../types/types';
 export default class Opponent extends Player {
-    private _lastLevel;
     constructor(name: string, startCity: City, finance?: Finance, level?: PlayerLevel, queue?: QueuedRouteItem[], routes?: Route[], upgrades?: Upgrade[], id?: string);
     handleTurn: (info: HandleTurnInfo, game: Nardis) => void;
     /**
@@ -41,9 +42,9 @@ export default class Opponent extends Player {
      */
     private getSuggestedRoutePlan;
     /**
-     * supply will be medium-to-high-yield Resources. filler will be the highest valued low-yield Resource.
+     * Supply will be medium-to-high-yield Resources. Filler will be the two low-yield Resources.
      * Prioritize supply but if all are either not demand in destination or weights more than current cargoConstraint,
-     * then fill up the rest of the cargo space with filler Resource.
+     * then fill up the rest of the cargo space with filler Resources.
      */
     private getSuggestedCargo;
     private getN;
@@ -63,4 +64,14 @@ export default class Opponent extends Player {
      * Temp for debug purposes
      */
     private log;
+    /**
+     * Get Player instance from stringified JSON.
+     *
+     * @param {string}     stringifiedJSON - String with information to be used.
+     * @param {City[]}     cities          - City instances used in the current game.
+     * @param {Upgrades[]} upgrades        - Upgrade instances used in the current game.
+     *
+     * @return {Player}                      Player instance created from stringifiedJSON.
+     */
+    static createFromStringifiedJSON: (stringifiedJSON: string, cities: City[], trains: Train[], resources: Resource[]) => Player;
 }

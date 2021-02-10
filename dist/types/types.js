@@ -28,6 +28,7 @@ var FinanceType;
     FinanceType[FinanceType["Upkeep"] = 2] = "Upkeep";
     FinanceType[FinanceType["Upgrade"] = 3] = "Upgrade";
     FinanceType[FinanceType["Train"] = 4] = "Train";
+    FinanceType[FinanceType["Recoup"] = 5] = "Recoup";
 })(FinanceType = exports.FinanceType || (exports.FinanceType = {}));
 var FinanceGeneralType;
 (function (FinanceGeneralType) {

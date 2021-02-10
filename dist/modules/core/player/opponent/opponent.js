@@ -25,6 +25,9 @@ var __assign = (this && this.__assign) || function () {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 var player_1 = require("../player");
+var finance_1 = require("../finance");
+var upgrade_1 = require("../upgrade");
+var route_1 = require("../../route");
 var types_1 = require("../../../../types/types");
 var constants_1 = require("../../../../util/constants");
 var Opponent = /** @class */ (function (_super) {
@@ -45,13 +48,11 @@ var Opponent = /** @class */ (function (_super) {
          */
         _this.deduceAction = function (info, game) {
             _this.log("turn=" + info.turn + ";comp=" + _this.name + ";avgr=" + _this._finance.getAverageRevenue() + "g;curg=" + _this._finance.getGold() + ";rout=" + _this._routes.length + ";queu=" + _this._queue.length + ";leve=" + _this._level + ";");
-            if (_this._lastLevel < _this._level || _this._level === types_1.PlayerLevel.Novice) {
-                _this.buyAvailableUpgrades(info, game, Math.floor(_this._finance.getGold() / 2));
-                _this._level !== types_1.PlayerLevel.Novice ? _this._lastLevel++ : null;
-            }
-            if (_this.shouldPurchaseRoutes) {
+            _this.buyAvailableUpgrades(info, game);
+            if (_this.shouldPurchaseRoutes()) {
                 var train = _this.getSuggestedTrain(game.getArrayOfAdjustedTrains());
-                _this.purchaseRoutes(game, _this.pickNInterestingRoutes(_this.getInterestingRoutes(game, train), _this.getN(), train));
+                var originRoutes = _this.getInterestingRoutes(game, train);
+                _this.purchaseRoutes(game, _this.pickNInterestingRoutes(originRoutes, _this.getN(originRoutes), train));
             }
             _this.optimizeUnprofitableRoutes();
             _this.log('\n\n');
@@ -85,15 +86,12 @@ var Opponent = /** @class */ (function (_super) {
         /**
          * Buy all available upgrades but respect the maxSpend constraint.
          */
-        _this.buyAvailableUpgrades = function (info, game, maxSpend) {
-            if (maxSpend === void 0) { maxSpend = _this._finance.getGold(); }
-            var spent = 0;
+        _this.buyAvailableUpgrades = function (info, game) {
             info.data.upgrades.filter(function (upgrade) { return (_this._level >= upgrade.levelRequired &&
                 _this._upgrades.filter(function (boughtUpgrade) { return boughtUpgrade.equals(upgrade); }).length <= 0); }).forEach(function (upgrade) {
-                if (upgrade.cost + spent <= maxSpend) {
+                if (_this._finance.getGold() - upgrade.cost >= 0) {
                     _this.log("purchasing upgrade " + upgrade.name + " for " + upgrade.cost + "g");
                     game.addUpgradeToPlayer(upgrade.id);
-                    spent += upgrade.cost;
                 }
             });
         };
@@ -148,15 +146,15 @@ var Opponent = /** @class */ (function (_super) {
             };
         };
         /**
-         * supply will be medium-to-high-yield Resources. filler will be the highest valued low-yield Resource.
+         * Supply will be medium-to-high-yield Resources. Filler will be the two low-yield Resources.
          * Prioritize supply but if all are either not demand in destination or weights more than current cargoConstraint,
-         * then fill up the rest of the cargo space with filler Resource.
+         * then fill up the rest of the cargo space with filler Resources.
          */
         _this.getSuggestedCargo = function (supply, destination, cargoConstraint, filler) {
             var result = [];
             supply.sort(function (a, b) { return b.resource.getValue() - a.resource.getValue(); })
                 .forEach(function (cr) {
-                if (destination.isDemand(cr.resource)) {
+                if (destination.isDemand(cr.resource) && cr.available > 0) {
                     var weight = cr.resource.getWeight();
                     var weightRatio = Math.floor(cargoConstraint / weight);
                     if (weightRatio > 0) {
@@ -190,17 +188,31 @@ var Opponent = /** @class */ (function (_super) {
             }
             return result;
         };
-        _this.getN = function () { return (_this._finance.getAverageRevenue() >= 0 && _this._finance.getGold() > 0 ? (_this._queue.length === 0 ? 3 : 1) : 0); };
+        _this.getN = function (originRoutes) {
+            var amount = originRoutes
+                .map(function (origin) { return origin.aRoutes.length; })
+                .reduce(function (a, b) { return a + b; }, 0);
+            return _this._finance.getAverageRevenue() >= 0 && _this._finance.getGold() > 0 ? (_this._queue.length === 0 ? amount : Math.floor(amount / 2)) : 0;
+        };
         _this.shouldPurchaseRoutes = function () {
             var levelUpReq = constants_1.levelUpRequirements[_this._level + 1];
-            return !(_this._routes.length >= levelUpReq.routes &&
-                _this._finance.getAverageRevenue() >= levelUpReq.revenuePerTurn &&
-                !(_this._finance.getGold() >= levelUpReq.gold));
+            if (typeof levelUpReq !== 'undefined') {
+                if (_this._routes.length < levelUpReq.routes) {
+                    return true;
+                }
+                else {
+                    if (_this._finance.getAverageRevenue() >= levelUpReq.revenuePerTurn && _this._finance.getGold() >= levelUpReq.gold) {
+                        return false;
+                    }
+                    return true;
+                }
+            }
+            return false;
         };
         _this.purchaseRoutes = function (game, routes) {
             _this.log("attempting to purchase " + routes.length + " routes", routes);
             for (var i = 0; i < routes.length; i++) {
-                if (_this._finance.getGold() - (routes[i].goldCost + routes[i].trainCost) < 0) {
+                if (_this._finance.getGold() - (routes[i].goldCost + routes[i].trainCost) < 0 || _this._queue.length > 5) {
                     _this.log('cannot purchase anymore routes');
                     break;
                 }
@@ -208,6 +220,7 @@ var Opponent = /** @class */ (function (_super) {
                 game.addRouteToPlayerQueue(routes[i]);
             }
         };
+        // TODO
         _this.optimizeUnprofitableRoutes = function () {
             _this.log('active routes', _this._routes);
             _this._routes.forEach(function (e, i) {
@@ -224,7 +237,7 @@ var Opponent = /** @class */ (function (_super) {
             var valueRatio = Infinity;
             var i = 0;
             relevantTrains.forEach(function (train, index) {
-                var vr = train.cost / (train.train.speed + train.train.cargoSpace);
+                var vr = (train.cost + train.train.upkeep) / (train.train.speed + train.train.cargoSpace);
                 _this.log("possible train: nme=" + train.train.name + ";vr=" + vr.toFixed(3) + ";cst=" + train.cost + ";vel=" + train.train.speed + ";spa=" + train.train.cargoSpace);
                 if ((vr < valueRatio && train.train.cargoSpace >= currentSpace) || (Math.abs(vr - valueRatio) < Number.EPSILON && train.train.cargoSpace > currentSpace)) {
                     currentSpace = train.train.cargoSpace;
@@ -266,9 +279,26 @@ var Opponent = /** @class */ (function (_super) {
                 obj ? console.log(obj) : null;
             }
         };
-        _this._lastLevel = _this._level;
         return _this;
     }
+    /**
+     * Get Player instance from stringified JSON.
+     *
+     * @param {string}     stringifiedJSON - String with information to be used.
+     * @param {City[]}     cities          - City instances used in the current game.
+     * @param {Upgrades[]} upgrades        - Upgrade instances used in the current game.
+     *
+     * @return {Player}                      Player instance created from stringifiedJSON.
+     */
+    Opponent.createFromStringifiedJSON = function (stringifiedJSON, cities, trains, resources) {
+        var parsedJSON = JSON.parse(stringifiedJSON);
+        return new Opponent(parsedJSON.name, cities.filter(function (e) { return e.id === parsedJSON._startCity.id; })[0], new finance_1.default(parsedJSON._finance.name, parsedJSON._finance._gold, parsedJSON._finance._history, parsedJSON._finance._totalHistory, parsedJSON._finance._totalProfits, parsedJSON._finance.id), parsedJSON._level, parsedJSON._queue.map(function (e) {
+            return {
+                route: route_1.default.createFromStringifiedJSON(JSON.stringify(e.route), cities, trains, resources),
+                turnCost: e.turnCost
+            };
+        }), parsedJSON._routes.map(function (e) { return route_1.default.createFromStringifiedJSON(JSON.stringify(e), cities, trains, resources); }), parsedJSON._upgrades.map(function (e) { return upgrade_1.default.createFromStringifiedJSON(JSON.stringify(e)); }), parsedJSON.id);
+    };
     return Opponent;
 }(player_1.default));
 exports.default = Opponent;

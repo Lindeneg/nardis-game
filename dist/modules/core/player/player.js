@@ -51,12 +51,15 @@ var Player = /** @class */ (function (_super) {
          * @param {HandleTurnInfo} info - Object with relevant turn information.
          */
         _this.handleTurn = function (info, game) {
-            if (_this.shouldLevelBeIncreased()) {
-                _this.increaseLevel();
-            }
+            _this.checkLevel();
             _this.handleQueue();
             _this.handleRoutes(info);
             _this.handleFinance(info);
+        };
+        _this.checkLevel = function () {
+            if (_this.shouldLevelBeIncreased()) {
+                _this.increaseLevel();
+            }
         };
         /**
          * Add Route to queue.
@@ -160,11 +163,9 @@ var Player = /** @class */ (function (_super) {
         _this.shouldLevelBeIncreased = function () {
             if (_this._level < types_1.PlayerLevel.Master) {
                 var requirements = constants_1.levelUpRequirements[_this._level + 1];
-                if (requirements) {
-                    return (_this._routes.length >= requirements.routes &&
-                        _this._finance.getAverageRevenue() >= requirements.revenuePerTurn &&
-                        _this.gold >= requirements.gold);
-                }
+                return (_this._routes.length >= requirements.routes &&
+                    _this._finance.getAverageRevenue() >= requirements.revenuePerTurn &&
+                    _this._finance.getGold() >= requirements.gold);
             }
             return false;
         };

@@ -146,23 +146,23 @@ exports.highYieldData = [
     {
         name: "medicine",
         weight: 5,
-        value: [85, 120],
-        minValue: 85,
-        maxValue: 150,
-        valueVolatility: [1, 5]
+        value: [80, 180],
+        minValue: 80,
+        maxValue: 180,
+        valueVolatility: [3, 7]
     },
     {
         name: "technology",
         weight: 5,
-        value: [90, 120],
-        minValue: 90,
-        maxValue: 150,
-        valueVolatility: [1, 5]
+        value: [90, 155],
+        minValue: 80,
+        maxValue: 180,
+        valueVolatility: [1, 4]
     },
     {
         name: "arms",
         weight: 6,
-        value: [120, 250],
+        value: [140, 160],
         minValue: 100,
         maxValue: 300,
         valueVolatility: [1, 4]
@@ -172,9 +172,9 @@ exports.mediumYieldData = [
     {
         name: "grain",
         weight: 2,
-        value: [20, 30],
-        minValue: 15,
-        maxValue: 35,
+        value: [30, 45],
+        minValue: 30,
+        maxValue: 55,
         valueVolatility: [3, 7]
     },
     {
@@ -182,47 +182,47 @@ exports.mediumYieldData = [
         weight: 2,
         value: [25, 35],
         minValue: 20,
-        maxValue: 40,
+        maxValue: 45,
         valueVolatility: [3, 7]
     },
     {
         name: "beer",
         weight: 2,
-        value: [30, 35],
-        minValue: 10,
-        maxValue: 50,
+        value: [15, 35],
+        minValue: 14,
+        maxValue: 45,
         valueVolatility: [5, 7]
     },
     {
         name: "ore",
         weight: 3,
-        value: [35, 50],
+        value: [25, 80],
         minValue: 25,
-        maxValue: 65,
+        maxValue: 80,
         valueVolatility: [3, 5]
     },
     {
         name: "paper",
         weight: 3,
-        value: [35, 40],
+        value: [35, 55],
         minValue: 35,
-        maxValue: 55,
-        valueVolatility: [1, 7]
+        maxValue: 80,
+        valueVolatility: [4, 7]
     },
     {
         name: "coal",
         weight: 4,
-        value: [65, 75],
-        minValue: 50,
-        maxValue: 80,
+        value: [45, 75],
+        minValue: 45,
+        maxValue: 85,
         valueVolatility: [4, 7]
     },
     {
         name: "oil",
         weight: 4,
-        value: [65, 75],
+        value: [50, 75],
         minValue: 50,
-        maxValue: 80,
+        maxValue: 85,
         valueVolatility: [4, 7]
     },
 ];
@@ -233,7 +233,7 @@ exports.lowYieldData = [
         value: [10, 15],
         minValue: 5,
         maxValue: 15,
-        valueVolatility: [6, 7]
+        valueVolatility: [4, 7]
     },
     {
         name: "mail",
@@ -241,7 +241,7 @@ exports.lowYieldData = [
         value: [10, 15],
         minValue: 5,
         maxValue: 15,
-        valueVolatility: [6, 7]
+        valueVolatility: [4, 7]
     }
 ];
 exports.genericOpponentsName = [

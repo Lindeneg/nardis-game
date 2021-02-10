@@ -25,7 +25,8 @@ export declare enum FinanceType {
     Track = 1,
     Upkeep = 2,
     Upgrade = 3,
-    Train = 4
+    Train = 4,
+    Recoup = 5
 }
 export declare enum FinanceGeneralType {
     Income = 0,

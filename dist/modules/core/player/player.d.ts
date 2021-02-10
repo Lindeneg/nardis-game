@@ -45,6 +45,7 @@ export default class Player extends BaseComponent implements ITurnable {
      * @param {HandleTurnInfo} info - Object with relevant turn information.
      */
     handleTurn: (info: HandleTurnInfo, game?: Nardis) => void;
+    checkLevel: () => void;
     /**
      * Add Route to queue.
      *
