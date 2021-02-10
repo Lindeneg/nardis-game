@@ -349,29 +349,28 @@ export default class Opponent extends Player {
      * @return {Player}                      Player instance created from stringifiedJSON.
      */
 
-    public static createFromStringifiedJSON = (stringifiedJSON: string, cities: City[], trains: Train[], resources: Resource[]): Player => {
+    public static createFromStringifiedJSON = (stringifiedJSON: string, cities: City[], trains: Train[], resources: Resource[], upgrades: Upgrade[]): Player => {
         const parsedJSON: any = JSON.parse(stringifiedJSON);
         return new Opponent(
             parsedJSON.name,
-            cities.filter(e => e.id === parsedJSON._startCity.id)[0],
+            cities.filter(e => e.id === parsedJSON.startCityId)[0],
             new Finance(
-                parsedJSON._finance.name,
-                parsedJSON._finance._gold,
-                parsedJSON._finance._history,
-                parsedJSON._finance._totalHistory,
-                parsedJSON._finance._totalProfits,
-                parsedJSON._finance.id
+                parsedJSON.finance.name,
+                parsedJSON.finance._gold,
+                parsedJSON.finance._history,
+                parsedJSON.finance._totalHistory,
+                parsedJSON.finance._totalProfits,
+                parsedJSON.finance._netWorth,
+                parsedJSON.finance.id
             ),
-            parsedJSON._level,
-            parsedJSON._queue.map(e => {
-                return {
-                    route: Route.createFromStringifiedJSON(JSON.stringify(e.route), cities, trains, resources),
-                    turnCost: e.turnCost
-                };
-            }), 
-            parsedJSON._routes.map(e => Route.createFromStringifiedJSON(JSON.stringify(e), cities, trains, resources)),
-            parsedJSON._upgrades.map(e => Upgrade.createFromStringifiedJSON(JSON.stringify(e))),
+            parsedJSON.level,
+            parsedJSON.queue.map(e => ({
+                route: Route.createFromStringifiedJSON(JSON.stringify(e.route), cities, trains, resources),
+                turnCost: e.turnCost
+            })),
+            parsedJSON.routes.map(e => Route.createFromStringifiedJSON(JSON.stringify(e.route), cities, trains, resources)),
+            parsedJSON.upgrades.map(e => upgrades.filter(j => j.id === e.id)[0]),
             parsedJSON.id
-        );
+        )
     }
 }

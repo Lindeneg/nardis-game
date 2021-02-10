@@ -44,6 +44,12 @@ export default class Train extends BaseComponent {
         this.levelRequired = levelRequired;
     }
 
+    /** 
+     * @return {string} String with JSON stringified property keys and values.
+    */
+   
+    public deconstruct = (): string => JSON.stringify(this)
+
     /**
      * Get Train instance from a ResourceModel.
      * 

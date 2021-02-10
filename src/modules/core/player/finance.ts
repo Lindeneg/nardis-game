@@ -161,6 +161,12 @@ export default class Finance extends BaseComponent implements ITurnable {
         this.addNthTurnObject(FinanceGeneralType.Income, FinanceType.Recoup, id, 1, value);
     }
 
+    /** 
+     * @return {string} String with JSON stringified property keys and values.
+    */
+   
+    public deconstruct = (): string => JSON.stringify(this)
+
     /**
     * Set nthTurn array of income and expense object to an empty array
     */
@@ -348,14 +354,15 @@ export default class Finance extends BaseComponent implements ITurnable {
     * @return {Finance}                     Finance instance created from the model
     */
 
-    public static createFromStringifiedJSON = (stringifiedJSON: string): Finance => {
-        const parsedJSON: any = JSON.parse(stringifiedJSON);
+    public static createFromStringifiedJSON = (stringifiedJSON: string | object): Finance => {
+        const parsedJSON = typeof stringifiedJSON === 'string' ? JSON.parse(stringifiedJSON) : stringifiedJSON;
         return new Finance(
             parsedJSON.name,
             parsedJSON._gold,
             parsedJSON._history,
             parsedJSON._totalHistory,
             parsedJSON._totalProfits,
+            parsedJSON._netWorth,
             parsedJSON.id
         );
     }

@@ -33,9 +33,8 @@ export default abstract class BaseComponent implements ISaveable {
     }
 
     /** 
-     * @return {string} String with JSON stringified property keys and values.
+     * Deconstruction for localStorage use.
     */
 
     public abstract deconstruct(): string;
-    //public deconstruct = (): string => JSON.stringify(this);
 }

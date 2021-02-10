@@ -87,6 +87,12 @@ export default class Resource extends BaseComponent implements ITurnable {
         }
     }
 
+    /** 
+     * @return {string} String with JSON stringified property keys and values.
+    */
+   
+   public deconstruct = (): string => JSON.stringify(this)
+
     /**
      * Set a new value for the resource.
      * 

@@ -44,6 +44,12 @@ export default class Upgrade extends BaseComponent {
         this.cost          = cost;
     }
 
+    /** 
+     * @return {string} String with JSON stringified property keys and values.
+    */
+   
+    public deconstruct = (): string => JSON.stringify(this)
+
     /**
      * Get Upgrade instance from a UpgradeModel.
      * 

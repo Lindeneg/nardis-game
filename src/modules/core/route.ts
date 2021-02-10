@@ -148,6 +148,53 @@ export default class Route extends BaseComponent implements ITurnable {
         this.resetRouteState(true);
     }
 
+    /** 
+     * @return {string} String with JSON stringified property keys and values.
+    */
+   
+    public deconstruct = (): string => JSON.stringify({
+        name               : this.name,
+        id                 : this.id,
+        distance           : this._distance,
+        cost               : this._cost,
+        purchasedOnTurn    : this._purchasedOnTurn,
+        profit             : this._profit,
+        kilometersTravelled: this._kilometersTravelled,
+        cityOne            : this._cityOne.id,
+        cityTwo            : this._cityTwo.id,
+        train              : this._train.id,
+        routePlanCargo     : {
+            cityOne: this._routePlanCargo.cityOne.map(c1 => ({
+                resource: {
+                    id: c1.resource.id
+                },
+                targetAmount: c1.targetAmount,
+                actualAmount: c1.actualAmount
+            })),
+            cityTwo: this._routePlanCargo.cityTwo.map(c2 => ({
+                resource: {
+                    id: c2.resource.id
+                },
+                targetAmount: c2.targetAmount,
+                actualAmount: c2.actualAmount
+            }))
+        },
+        routeState: {
+            hasArrived: this._routeState.hasArrived,
+            destination: {
+                id: this._routeState.destination.id
+            },
+            distance: this._routeState.distance,
+            cargo: !!this._routeState.cargo ? this._routeState.cargo.map(c => ({
+                resource: {
+                    id: c.resource.id
+                },
+                targetAmount: c.targetAmount,
+                actualAmount: c.actualAmount
+            })) : null
+        }
+    })
+
     /**
      * Get Train speed with Player upgrades taken into consideration.
      * 
@@ -219,43 +266,41 @@ export default class Route extends BaseComponent implements ITurnable {
      * @return {Route}                       Route instance created from the string.
      */
 
-    public static createFromStringifiedJSON = (stringifiedJSON: string, cities: City[], trains: Train[], resources: Resource[]): Route => {
-        const parsedJSON: any = JSON.parse(stringifiedJSON);
-        const routeState: any = parsedJSON._routeState;
-        const cargo: any = !!routeState.cargo ? routeState.cargo.map(e => ({
-            ...e,
-            resource: resources.filter(j => j.id === e.resource.id)[0]
-        })) : routeState.cargo;
+    public static createFromStringifiedJSON = (stringifiedJSON: string | object, cities: City[], trains: Train[], resources: Resource[]): Route => {
+        const parsedJSON = typeof stringifiedJSON === 'string' ? JSON.parse(stringifiedJSON) : stringifiedJSON;
         return new Route(
             parsedJSON.name,
-            cities.filter(e => e.id === parsedJSON._cityOne.id)[0],
-            cities.filter(e => e.id === parsedJSON._cityTwo.id)[0],
-            trains.filter(e => e.id === parsedJSON._train.id)[0],
+            cities.filter(e => e.id === parsedJSON.cityOne)[0],
+            cities.filter(e => e.id === parsedJSON.cityTwo)[0],
+            trains.filter(e => e.id === parsedJSON.train)[0],
             {
-                cityOne: parsedJSON._routePlanCargo.cityOne.map(e => {
-                    return {
-                        ...e,
-                        resource: resources.filter(j => j.id === e.resource.id)[0],
-                    };
-                }),
-                cityTwo: parsedJSON._routePlanCargo.cityTwo.map(e => {
-                    return {
-                        ...e,
-                        resource: resources.filter(j => j.id === e.resource.id)[0],
-                    };
-                })
+                cityOne: parsedJSON.routePlanCargo.cityOne.map(c1 => ({
+                    resource: resources.filter(r => r.id === c1.resource.id)[0],
+                    targetAmount: c1.targetAmount,
+                    actualAmount: c1.actualAmount
+                })),
+                cityTwo: parsedJSON.routePlanCargo.cityTwo.map(c2 => ({
+                    resource: resources.filter(r => r.id === c2.resource.id)[0],
+                    targetAmount: c2.targetAmount,
+                    actualAmount: c2.actualAmount
+                }))
             },
-            parsedJSON._distance,
-            parsedJSON._cost,
-            parsedJSON._purchasedOnTurn,
-            parsedJSON._profit,
-            parsedJSON._kilometersTravelled,
+            parsedJSON.distance,
+            parsedJSON.cost,
+            parsedJSON.purchasedOnTurn,
+            parsedJSON.profit,
+            parsedJSON.kilometersTravelled,
             {
-                ...parsedJSON._routeState,
-                destination: cities.filter(e => e.id === parsedJSON._routeState.destination.id)[0],
-                cargo
+                hasArrived: parsedJSON.routeState.hasArrived,
+                destination: cities.filter(e => e.id === parsedJSON.routeState.destination.id)[0],
+                distance: parsedJSON.routeState.distance,
+                cargo: !!parsedJSON.routeState.cargo ? parsedJSON.routeState.cargo.map(c => ({
+                    resource: resources.filter(e => e.id === c.resource.id)[0],
+                    targetAmount: c.targetAmount,
+                    actualAmount: c.actualAmount
+                })) : null
             },
             parsedJSON.id
-        );
+        )
     }
 }

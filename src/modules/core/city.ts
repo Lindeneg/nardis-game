@@ -204,6 +204,36 @@ export default class City extends BaseComponent implements ITurnable {
         return result.length > 0 ? result[0] : null;
     }
 
+    /** 
+     * @return {string} String with JSON stringified property keys and values.
+    */
+   
+    public deconstruct = (): string => JSON.stringify({
+        name: this.name,
+        id: this.id,
+        _size: this._size,
+        _coords: this._coords,
+        _growthRate: this._growthRate,
+        _supplyRefillRate: this._supplyRefillRate,
+        _growthChangeDecider: this._growthChangeDecider,
+        _supplyRefillDecider: this._supplyRefillDecider,
+        _currentRouteCount: this._currentRouteCount,
+        _supply: this._supply.map(s => ({
+            resource: {
+                id: s.resource.id
+            },
+            amount: s.amount,
+            available: s.available
+        })),
+        _demand: this._demand.map(d => ({
+            resource: {
+                id: d.resource.id
+            },
+            amount: d.amount,
+            available: d.available
+        }))
+    })
+
     /**
      * @param {Resource} resource - Resource to match.
      * 
@@ -332,15 +362,15 @@ export default class City extends BaseComponent implements ITurnable {
     public static createFromStringifiedJSON = (stringifiedJSON: string, resources: Resource[]): City => {
         // it is not pretty but it does the job
         const parsedJSON: any = JSON.parse(stringifiedJSON);
-        const resource: {s: CityResource[], d: CityResource[]} = ((supply: any[], demand: any[]): {s: CityResource[], d: CityResource[]} => {
-            const s: CityResource[] = supply.map(su => {
+        const resource = ((supply, demand) => {
+            const s = supply.map(su => {
                 return {
                     resource: resources.filter(e => e.id === su.resource.id)[0],
                     amount: su.amount,
                     available: su.available
                 };
             });
-            const d: CityResource[] = demand.map(su => {
+            const d = demand.map(su => {
                 return {
                     resource: resources.filter(e => e.id === su.resource.id)[0],
                     amount: su.amount,

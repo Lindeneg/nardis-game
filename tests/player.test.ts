@@ -1,3 +1,4 @@
+import { Finance } from '../src';
 import Player from '../src/modules/core/player/player';
 import Route from '../src/modules/core/route';
 import { 
@@ -54,7 +55,7 @@ const config2 = {
     name: "christian2",
     playerType: PlayerType.Human,
     startCity: c1,
-    finance: null,
+    finance: new Finance('christian2', 5000),
     playerLevel: PlayerLevel.Novice,
     queue: [],
     routes: routes,
@@ -113,7 +114,7 @@ test('can increase level', () => {
         config2.upgrades
     );
     let didLevelIncrease: boolean = false;
-    for (let i = 0; i < 100; i++) {
+    for (let i = 0; i < 1000; i++) {
         if (player2.getLevel() > config2.playerLevel) {
             didLevelIncrease = true;
             break;
@@ -143,7 +144,7 @@ test('can handle queue item', () => {
 
 test('can reconstruct player base properties', () => {
     const str = player.deconstruct();
-    const rec = Player.createFromStringifiedJSON(str, data.data.cities, data.data.trains, data.data.resources);
+    const rec = Player.createFromStringifiedJSON(str, data.data.cities, data.data.trains, data.data.resources, data.data.upgrades);
 
     expect(rec.equals(player)).toBe(true);
     expect(rec.name).toEqual(player.name);
@@ -155,7 +156,7 @@ test('can reconstruct player base properties', () => {
 
 test('can reconstruct player finance properties', () => {
     const str = player.deconstruct();
-    const rec = Player.createFromStringifiedJSON(str, data.data.cities, data.data.trains, data.data.resources);
+    const rec = Player.createFromStringifiedJSON(str, data.data.cities, data.data.trains, data.data.resources, data.data.upgrades);
     const [f1, f2] = [rec.getFinance(), player.getFinance()];
     const [h1, h2] = [f1.getHistory(), f2.getHistory()];
 
@@ -174,7 +175,7 @@ test('can reconstruct player finance properties', () => {
 
 test('can reconstruct player routes', () => {
     const str = player.deconstruct();
-    const rec = Player.createFromStringifiedJSON(str, data.data.cities, data.data.trains, data.data.resources);
+    const rec = Player.createFromStringifiedJSON(str, data.data.cities, data.data.trains, data.data.resources, data.data.upgrades);
     const [r1, r2] = [rec.getRoutes(), player.getRoutes()];
 
     let i = 0; 
@@ -192,7 +193,7 @@ test('can reconstruct player routes', () => {
 
 test('can reconstruct player upgrades', () => {
     const str = player.deconstruct();
-    const rec = Player.createFromStringifiedJSON(str, data.data.cities, data.data.trains, data.data.resources);
+    const rec = Player.createFromStringifiedJSON(str, data.data.cities, data.data.trains, data.data.resources, data.data.upgrades);
     const [u1, u2] = [rec.getUpgrades(), player.getUpgrades()];
 
     expect(u1.length).toEqual(u2.length);

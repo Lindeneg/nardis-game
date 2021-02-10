@@ -172,6 +172,27 @@ export default class Player extends BaseComponent implements ITurnable {
         this._upgrades.push(upgrade);
     }
 
+    /** 
+     * @return {string} String with JSON stringified property keys and values.
+    */
+   
+    public deconstruct = (): string => JSON.stringify({
+        name: this.name,
+        playerType: this.playerType,
+        level: this._level,
+        id: this.id,
+        startCityId: this._startCity.id,
+        finance: this._finance.deconstruct(),
+        queue: this._queue.map(e => ({
+            route: e.route.deconstruct(),
+            turnCost: e.turnCost
+        })),
+        routes: this._routes.map(e => e.deconstruct()),
+        upgrades: this._upgrades.map(e => ({
+            id: e.id
+        }))
+    })
+
     /**
      * Handle all Routes in queue by checking current turn cost,
      * If non-positive, remove from queue and add to Routes,
@@ -261,30 +282,21 @@ export default class Player extends BaseComponent implements ITurnable {
      * @return {Player}                      Player instance created from stringifiedJSON.
      */
 
-    public static createFromStringifiedJSON = (stringifiedJSON: string, cities: City[], trains: Train[], resources: Resource[]): Player => {
+    public static createFromStringifiedJSON = (stringifiedJSON: string, cities: City[], trains: Train[], resources: Resource[], upgrades: Upgrade[]): Player => {
         const parsedJSON: any = JSON.parse(stringifiedJSON);
         return new Player(
             parsedJSON.name,
             parsedJSON.playerType,
-            cities.filter(e => e.id === parsedJSON._startCity.id)[0],
-            new Finance(
-                parsedJSON._finance.name,
-                parsedJSON._finance._gold,
-                parsedJSON._finance._history,
-                parsedJSON._finance._totalHistory,
-                parsedJSON._finance._totalProfits,
-                parsedJSON._finance.id
-            ),
-            parsedJSON._level,
-            parsedJSON._queue.map(e => {
-                return {
-                    route: Route.createFromStringifiedJSON(JSON.stringify(e.route), cities, trains, resources),
-                    turnCost: e.turnCost
-                };
-            }), 
-            parsedJSON._routes.map(e => Route.createFromStringifiedJSON(JSON.stringify(e), cities, trains, resources)),
-            parsedJSON._upgrades.map(e => Upgrade.createFromStringifiedJSON(JSON.stringify(e))),
+            cities.filter(e => e.id === parsedJSON.startCityId)[0],
+            Finance.createFromStringifiedJSON(parsedJSON.finance),
+            parsedJSON.level,
+            parsedJSON.queue.map(e => ({
+                route: Route.createFromStringifiedJSON(e.route, cities, trains, resources),
+                turnCost: e.turnCost
+            })),
+            parsedJSON.routes.map(e => Route.createFromStringifiedJSON(e, cities, trains, resources)),
+            parsedJSON.upgrades.map(e => upgrades.filter(j => j.id === e.id)[0]),
             parsedJSON.id
-        );
+        )
     }
 }

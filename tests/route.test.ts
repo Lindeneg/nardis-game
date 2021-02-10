@@ -17,7 +17,7 @@ const speedUpgrade = new Upgrade(
 );
 
 const route = new Route(
-    '',
+    'testRoute',
     c1,
     c2,
     t1,
