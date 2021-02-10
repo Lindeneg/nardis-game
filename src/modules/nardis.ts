@@ -73,17 +73,19 @@ export class Nardis {
      */
 
     public endTurn = (): void => {
-        this.handleComputerTurn();
-        const handleTurnInfo: HandleTurnInfo = {
-            turn: this._turn, 
-            data: this.data,
-            playerData: {
-                routes: this._currentPlayer.getRoutes(),
-                upgrades: this._currentPlayer.getUpgrades()
+        this._currentPlayer.handleTurn(
+            {
+                turn: this._turn, 
+                data: this.data,
+                playerData: {
+                    routes: this._currentPlayer.getRoutes(),
+                    upgrades: this._currentPlayer.getUpgrades()
+                }
             }
-        };
-        [this._currentPlayer, ...this.data.cities, ...this.data.resources].forEach(turnComponent => {
-            turnComponent.handleTurn(handleTurnInfo);
+        );
+        this.handleComputerTurn();
+        [...this.data.cities, ...this.data.resources].forEach(turnComponent => {
+            turnComponent.handleTurn({turn: this._turn, data: this.data, playerData: {routes: [], upgrades: []}});
         });
         this._turn++;
         this.saveGame();
@@ -263,13 +265,15 @@ export class Nardis {
     private handleComputerTurn = (): void => {
         const actualPlayer: Player = this._currentPlayer;
         this.players.forEach(player => {
-            if (!(player.equals(this._currentPlayer)) && player.playerType === PlayerType.Computer) {
+            if (player.playerType === PlayerType.Computer) {
                 this._currentPlayer = player;
                 player.handleTurn(
-                    {turn: this._turn, data: this.data, playerData: {
+                    {turn: this._turn, 
+                    data: this.data, 
+                    playerData: {
                         routes: player.getRoutes(), 
-                        upgrades: player.getUpgrades()}
-                    },
+                        upgrades: player.getUpgrades()
+                    }},
                     this
                 );
             }
@@ -345,30 +349,34 @@ export class Nardis {
      */
 
     private saveGame = (): void => {
-        window.localStorage.setItem(
-            localKeys[LocalKey.HasActiveGame], '1'
-        );
-        window.localStorage.setItem(
-            localKeys[LocalKey.Trains], btoa(JSON.stringify(this.data.trains.map(e => e.deconstruct())))
-        );
-        window.localStorage.setItem(
-            localKeys[LocalKey.Resources], btoa(JSON.stringify(this.data.resources.map(e => e.deconstruct())))
-        );
-        window.localStorage.setItem(
-            localKeys[LocalKey.Upgrades], btoa(JSON.stringify(this.data.upgrades.map(e => e.deconstruct())))
-        );
-        window.localStorage.setItem(
-            localKeys[LocalKey.Cities], btoa(JSON.stringify(this.data.cities.map(e => e.deconstruct())))
-        );
-        window.localStorage.setItem(
-            localKeys[LocalKey.Players], btoa(JSON.stringify(this.players.map(e => e.deconstruct())))
-        );
-        window.localStorage.setItem(
-            localKeys[LocalKey.CurrentPlayer], btoa(JSON.stringify(this._currentPlayer.deconstruct()))
-        );
-        window.localStorage.setItem(
-            localKeys[LocalKey.Turn], btoa(this._turn.toString())
-        );
+        try {
+            window.localStorage.setItem(
+                localKeys[LocalKey.HasActiveGame], '1'
+            );
+            window.localStorage.setItem(
+                localKeys[LocalKey.Trains], btoa(JSON.stringify(this.data.trains.map(e => e.deconstruct())))
+            );
+            window.localStorage.setItem(
+                localKeys[LocalKey.Resources], btoa(JSON.stringify(this.data.resources.map(e => e.deconstruct())))
+            );
+            window.localStorage.setItem(
+                localKeys[LocalKey.Upgrades], btoa(JSON.stringify(this.data.upgrades.map(e => e.deconstruct())))
+            );
+            window.localStorage.setItem(
+                localKeys[LocalKey.Cities], btoa(JSON.stringify(this.data.cities.map(e => e.deconstruct())))
+            );
+            window.localStorage.setItem(
+                localKeys[LocalKey.Players], btoa(JSON.stringify(this.players.map(e => e.deconstruct())))
+            );
+            window.localStorage.setItem(
+                localKeys[LocalKey.CurrentPlayer], btoa(JSON.stringify(this._currentPlayer.deconstruct()))
+            );
+            window.localStorage.setItem(
+                localKeys[LocalKey.Turn], btoa(this._turn.toString())
+            );
+        } catch(err) {
+            console.log(err);
+        }
     }
 
     /**
@@ -414,7 +422,15 @@ export class Nardis {
             cityString => City.createFromStringifiedJSON(cityString, resources)
         );
         const players      : Player[]   = playersRaw.map(
-            playerString => Player.createFromStringifiedJSON(playerString, cities, trains, resources)
+            playerString => {
+                const re: RegExpExecArray = /^.+playerType\":(\d).+$/.exec(playerString);
+                if (re && re[1]) {
+                    if (parseInt(re[1]) === PlayerType.Computer) {
+                        return Opponent.createFromStringifiedJSON(playerString, cities, trains, resources);
+                    }
+                }
+                return Player.createFromStringifiedJSON(playerString, cities, trains, resources);
+            }
         );
         const currentPlayer: Player     = players.filter(player => player.id === currentPlayerRaw.id)[0];
         const turn         : number     = parseInt(atob(window.localStorage.getItem(localKeys[LocalKey.Turn])));

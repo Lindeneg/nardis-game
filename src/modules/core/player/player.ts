@@ -92,12 +92,16 @@ export default class Player extends BaseComponent implements ITurnable {
      */
 
     public handleTurn = (info: HandleTurnInfo, game?: Nardis) => {
-        if (this.shouldLevelBeIncreased()) {
-            this.increaseLevel();
-        }
+        this.checkLevel();
         this.handleQueue();
         this.handleRoutes(info);
         this.handleFinance(info);
+    }
+
+    public checkLevel = (): void => {
+        if (this.shouldLevelBeIncreased()) {
+            this.increaseLevel();
+        }
     }
 
     /**
@@ -216,13 +220,11 @@ export default class Player extends BaseComponent implements ITurnable {
     protected shouldLevelBeIncreased = (): boolean => {
         if (this._level < PlayerLevel.Master) {
             const requirements = levelUpRequirements[this._level + 1];
-            if (requirements) {
-                return (
-                    this._routes.length >= requirements.routes &&
-                    this._finance.getAverageRevenue() >= requirements.revenuePerTurn &&
-                    this.gold >= requirements.gold
-                );
-            }
+            return (
+                this._routes.length >= requirements.routes &&
+                this._finance.getAverageRevenue() >= requirements.revenuePerTurn &&
+                this._finance.getGold() >= requirements.gold
+            );
         }
         return false;
     }

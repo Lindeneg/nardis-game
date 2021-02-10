@@ -5,6 +5,7 @@ import Upgrade from '../upgrade';
 import Route from '../../route';
 import City from '../../city';
 import Train from '../../train';
+import Resource from '../../resource';
 import {
     HandleTurnInfo,
     QueuedRouteItem,
@@ -26,8 +27,6 @@ import { levelUpRequirements } from '../../../../util/constants';
 
 export default class Opponent extends Player {
 
-    private _lastLevel: number
-
     constructor(
         name        : string,
         startCity   : City,
@@ -40,7 +39,6 @@ export default class Opponent extends Player {
     ) {
         super(name, PlayerType.Computer, startCity, finance, level, queue, routes, upgrades, id);
 
-        this._lastLevel = this._level;
     }
 
     public handleTurn = (info: HandleTurnInfo, game: Nardis) => {
@@ -58,14 +56,11 @@ export default class Opponent extends Player {
      */
     private deduceAction = (info: HandleTurnInfo, game: Nardis): void => {
         this.log(`turn=${info.turn};comp=${this.name};avgr=${this._finance.getAverageRevenue()}g;curg=${this._finance.getGold()};rout=${this._routes.length};queu=${this._queue.length};leve=${this._level};`);
-        if (this._lastLevel < this._level || this._level === PlayerLevel.Novice) {
-            this.buyAvailableUpgrades(info, game, Math.floor(this._finance.getGold() / 2));
-            this._level !== PlayerLevel.Novice ? this._lastLevel++ : null;
-        }
-
-        if (this.shouldPurchaseRoutes) {
+        this.buyAvailableUpgrades(info, game);
+        if (this.shouldPurchaseRoutes()) {
             const train: AdjustedTrain = this.getSuggestedTrain(game.getArrayOfAdjustedTrains());
-            this.purchaseRoutes(game, this.pickNInterestingRoutes(this.getInterestingRoutes(game, train), this.getN(), train));
+            const originRoutes: OriginRoutePotential[] = this.getInterestingRoutes(game, train);
+            this.purchaseRoutes(game, this.pickNInterestingRoutes(originRoutes, this.getN(originRoutes), train));
         }
 
         this.optimizeUnprofitableRoutes();
@@ -119,16 +114,14 @@ export default class Opponent extends Player {
     /**
      * Buy all available upgrades but respect the maxSpend constraint.
      */
-    private buyAvailableUpgrades = (info: HandleTurnInfo, game: Nardis, maxSpend: number = this._finance.getGold()) => {
-        let spent: number = 0;
+    private buyAvailableUpgrades = (info: HandleTurnInfo, game: Nardis): void => {
         info.data.upgrades.filter((upgrade: Upgrade): boolean => (
             this._level >= upgrade.levelRequired && 
             this._upgrades.filter((boughtUpgrade: Upgrade): boolean => boughtUpgrade.equals(upgrade)).length <= 0)
         ).forEach((upgrade: Upgrade): void => {
-            if (upgrade.cost + spent <= maxSpend) {
+            if (this._finance.getGold() - upgrade.cost >= 0) {
                 this.log(`purchasing upgrade ${upgrade.name} for ${upgrade.cost}g`);
                 game.addUpgradeToPlayer(upgrade.id);
-                spent += upgrade.cost;
             }
         });
     }
@@ -204,15 +197,15 @@ export default class Opponent extends Player {
     }
 
     /**
-     * supply will be medium-to-high-yield Resources. filler will be the highest valued low-yield Resource.
+     * Supply will be medium-to-high-yield Resources. Filler will be the two low-yield Resources.
      * Prioritize supply but if all are either not demand in destination or weights more than current cargoConstraint,
-     * then fill up the rest of the cargo space with filler Resource.
+     * then fill up the rest of the cargo space with filler Resources.
      */
     private getSuggestedCargo = (supply: CityResource[], destination: City, cargoConstraint: number, filler: [CityResource, CityResource]): RouteCargo[] => {
         const result: RouteCargo[] = [];
         supply.sort((a: CityResource, b: CityResource): number => b.resource.getValue() - a.resource.getValue())
-        .forEach((cr: CityResource): void => {
-            if (destination.isDemand(cr.resource)) {
+        .forEach((cr: CityResource): void => { 
+            if (destination.isDemand(cr.resource) && cr.available > 0) {
                 const weight: number = cr.resource.getWeight();
                 const weightRatio: number = Math.floor(cargoConstraint / weight);
                 if (weightRatio > 0) {
@@ -248,25 +241,34 @@ export default class Opponent extends Player {
         return result;
     }
 
-    private getN = (): number => (
-        this._finance.getAverageRevenue() >= 0 && this._finance.getGold() > 0 ? (
-            this._queue.length === 0 ? 3 : 1
+    private getN = (originRoutes: OriginRoutePotential[]): number => {
+        const amount: number = originRoutes
+        .map((origin: OriginRoutePotential): number => origin.aRoutes.length)
+        .reduce((a: number, b: number): number => a + b, 0);
+        return this._finance.getAverageRevenue() >= 0 && this._finance.getGold() > 0 ? (
+            this._queue.length === 0 ? amount : Math.floor(amount / 2)
         ) : 0
-    )
+    }
 
     private shouldPurchaseRoutes = (): boolean => {
         const levelUpReq = levelUpRequirements[this._level + 1];
-        return !(
-            this._routes.length >= levelUpReq.routes && 
-            this._finance.getAverageRevenue() >= levelUpReq.revenuePerTurn && 
-            !(this._finance.getGold() >= levelUpReq.gold)
-        );
+        if (typeof levelUpReq !== 'undefined') {
+            if (this._routes.length < levelUpReq.routes) {
+                return true;
+            } else {
+                if (this._finance.getAverageRevenue() >= levelUpReq.revenuePerTurn && this._finance.getGold() >= levelUpReq.gold) {
+                    return false;
+                }
+                return true;
+            }
+        }
+        return false;
     }
 
     private purchaseRoutes = (game: Nardis, routes: BuyableRoute[]): void => {
         this.log(`attempting to purchase ${routes.length} routes`, routes);
         for (let i = 0; i < routes.length; i++) {
-            if (this._finance.getGold() - (routes[i].goldCost + routes[i].trainCost) < 0) {
+            if (this._finance.getGold() - (routes[i].goldCost + routes[i].trainCost) < 0 || this._queue.length > 5) {
                 this.log('cannot purchase anymore routes');
                 break;
             }
@@ -291,7 +293,7 @@ export default class Opponent extends Player {
         const relevantTrains: AdjustedTrain[] = trains.filter((e: AdjustedTrain): boolean => this._level >= e.train.levelRequired);
         let currentSpace: number = 0; let valueRatio: number = Infinity; let i: number = 0;
         relevantTrains.forEach((train: AdjustedTrain, index: number): void => {
-            const vr: number = train.cost / (train.train.speed + train.train.cargoSpace);
+            const vr: number = (train.cost + train.train.upkeep) / (train.train.speed + train.train.cargoSpace);
             
             this.log(`possible train: nme=${train.train.name};vr=${vr.toFixed(3)};cst=${train.cost};vel=${train.train.speed};spa=${train.train.cargoSpace}`);
             
@@ -335,5 +337,41 @@ export default class Opponent extends Player {
             console.log(msg);
             obj ? console.log(obj) : null;
         }
+    }
+
+    /**
+     * Get Player instance from stringified JSON.
+     * 
+     * @param {string}     stringifiedJSON - String with information to be used.
+     * @param {City[]}     cities          - City instances used in the current game.
+     * @param {Upgrades[]} upgrades        - Upgrade instances used in the current game.
+     * 
+     * @return {Player}                      Player instance created from stringifiedJSON.
+     */
+
+    public static createFromStringifiedJSON = (stringifiedJSON: string, cities: City[], trains: Train[], resources: Resource[]): Player => {
+        const parsedJSON: any = JSON.parse(stringifiedJSON);
+        return new Opponent(
+            parsedJSON.name,
+            cities.filter(e => e.id === parsedJSON._startCity.id)[0],
+            new Finance(
+                parsedJSON._finance.name,
+                parsedJSON._finance._gold,
+                parsedJSON._finance._history,
+                parsedJSON._finance._totalHistory,
+                parsedJSON._finance._totalProfits,
+                parsedJSON._finance.id
+            ),
+            parsedJSON._level,
+            parsedJSON._queue.map(e => {
+                return {
+                    route: Route.createFromStringifiedJSON(JSON.stringify(e.route), cities, trains, resources),
+                    turnCost: e.turnCost
+                };
+            }), 
+            parsedJSON._routes.map(e => Route.createFromStringifiedJSON(JSON.stringify(e), cities, trains, resources)),
+            parsedJSON._upgrades.map(e => Upgrade.createFromStringifiedJSON(JSON.stringify(e))),
+            parsedJSON.id
+        );
     }
 }
