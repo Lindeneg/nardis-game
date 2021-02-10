@@ -76,6 +76,10 @@ export default class Player extends BaseComponent implements ITurnable {
      */
     addUpgrade: (upgrade: Upgrade) => void;
     /**
+     * @return {string} String with JSON stringified property keys and values.
+    */
+    deconstruct: () => string;
+    /**
      * Handle all Routes in queue by checking current turn cost,
      * If non-positive, remove from queue and add to Routes,
      * else decrement current turn cost by one.
@@ -114,5 +118,5 @@ export default class Player extends BaseComponent implements ITurnable {
      *
      * @return {Player}                      Player instance created from stringifiedJSON.
      */
-    static createFromStringifiedJSON: (stringifiedJSON: string, cities: City[], trains: Train[], resources: Resource[]) => Player;
+    static createFromStringifiedJSON: (stringifiedJSON: string, cities: City[], trains: Train[], resources: Resource[], upgrades: Upgrade[]) => Player;
 }

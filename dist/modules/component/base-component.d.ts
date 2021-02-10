@@ -15,7 +15,7 @@ export default abstract class BaseComponent implements ISaveable {
     */
     equals: (other: BaseComponent) => boolean;
     /**
-     * @return {string} String with JSON stringified property keys and values.
+     * Deconstruction for localStorage use.
     */
-    deconstruct: () => string;
+    abstract deconstruct(): string;
 }

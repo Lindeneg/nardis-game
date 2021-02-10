@@ -15,7 +15,6 @@ var __extends = (this && this.__extends) || (function () {
 Object.defineProperty(exports, "__esModule", { value: true });
 var base_component_1 = require("../../component/base-component");
 var finance_1 = require("./finance");
-var upgrade_1 = require("./upgrade");
 var route_1 = require("../route");
 var types_1 = require("../../../types/types");
 var util_1 = require("../../../util/util");
@@ -122,6 +121,25 @@ var Player = /** @class */ (function (_super) {
             _this._upgrades.push(upgrade);
         };
         /**
+         * @return {string} String with JSON stringified property keys and values.
+        */
+        _this.deconstruct = function () { return JSON.stringify({
+            name: _this.name,
+            playerType: _this.playerType,
+            level: _this._level,
+            id: _this.id,
+            startCityId: _this._startCity.id,
+            finance: _this._finance.deconstruct(),
+            queue: _this._queue.map(function (e) { return ({
+                route: e.route.deconstruct(),
+                turnCost: e.turnCost
+            }); }),
+            routes: _this._routes.map(function (e) { return e.deconstruct(); }),
+            upgrades: _this._upgrades.map(function (e) { return ({
+                id: e.id
+            }); })
+        }); };
+        /**
          * Handle all Routes in queue by checking current turn cost,
          * If non-positive, remove from queue and add to Routes,
          * else decrement current turn cost by one.
@@ -207,14 +225,12 @@ var Player = /** @class */ (function (_super) {
      *
      * @return {Player}                      Player instance created from stringifiedJSON.
      */
-    Player.createFromStringifiedJSON = function (stringifiedJSON, cities, trains, resources) {
+    Player.createFromStringifiedJSON = function (stringifiedJSON, cities, trains, resources, upgrades) {
         var parsedJSON = JSON.parse(stringifiedJSON);
-        return new Player(parsedJSON.name, parsedJSON.playerType, cities.filter(function (e) { return e.id === parsedJSON._startCity.id; })[0], new finance_1.default(parsedJSON._finance.name, parsedJSON._finance._gold, parsedJSON._finance._history, parsedJSON._finance._totalHistory, parsedJSON._finance._totalProfits, parsedJSON._finance.id), parsedJSON._level, parsedJSON._queue.map(function (e) {
-            return {
-                route: route_1.default.createFromStringifiedJSON(JSON.stringify(e.route), cities, trains, resources),
-                turnCost: e.turnCost
-            };
-        }), parsedJSON._routes.map(function (e) { return route_1.default.createFromStringifiedJSON(JSON.stringify(e), cities, trains, resources); }), parsedJSON._upgrades.map(function (e) { return upgrade_1.default.createFromStringifiedJSON(JSON.stringify(e)); }), parsedJSON.id);
+        return new Player(parsedJSON.name, parsedJSON.playerType, cities.filter(function (e) { return e.id === parsedJSON.startCityId; })[0], finance_1.default.createFromStringifiedJSON(parsedJSON.finance), parsedJSON.level, parsedJSON.queue.map(function (e) { return ({
+            route: route_1.default.createFromStringifiedJSON(e.route, cities, trains, resources),
+            turnCost: e.turnCost
+        }); }), parsedJSON.routes.map(function (e) { return route_1.default.createFromStringifiedJSON(e, cities, trains, resources); }), parsedJSON.upgrades.map(function (e) { return upgrades.filter(function (j) { return j.id === e.id; })[0]; }), parsedJSON.id);
     };
     return Player;
 }(base_component_1.default));

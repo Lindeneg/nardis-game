@@ -277,7 +277,7 @@ var Nardis = /** @class */ (function () {
                 window.localStorage.setItem(constants_1.localKeys[types_1.LocalKey.Turn], btoa(_this._turn.toString()));
             }
             catch (err) {
-                //console.log(err);
+                console.log(err);
             }
         };
         this.players = players;
@@ -308,10 +308,10 @@ var Nardis = /** @class */ (function () {
             var re = /^.+playerType\":(\d).+$/.exec(playerString);
             if (re && re[1]) {
                 if (parseInt(re[1]) === types_1.PlayerType.Computer) {
-                    return opponent_1.default.createFromStringifiedJSON(playerString, cities, trains, resources);
+                    return opponent_1.default.createFromStringifiedJSON(playerString, cities, trains, resources, upgrades);
                 }
             }
-            return player_1.default.createFromStringifiedJSON(playerString, cities, trains, resources);
+            return player_1.default.createFromStringifiedJSON(playerString, cities, trains, resources, upgrades);
         });
         var currentPlayer = players.filter(function (player) { return player.id === currentPlayerRaw.id; })[0];
         var turn = parseInt(atob(window.localStorage.getItem(constants_1.localKeys[types_1.LocalKey.Turn])));

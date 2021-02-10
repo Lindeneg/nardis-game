@@ -21,6 +21,10 @@ export default class Upgrade extends BaseComponent {
     readonly cost: number;
     constructor(name: string, cost: number, value: number, type: UpgradeType, levelRequired: PlayerLevel, id?: string);
     /**
+     * @return {string} String with JSON stringified property keys and values.
+    */
+    deconstruct: () => string;
+    /**
      * Get Upgrade instance from a UpgradeModel.
      *
      * @param {UpgradeModel}  model - UpgradeModel to be used.

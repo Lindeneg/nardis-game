@@ -21,6 +21,10 @@ export default class Train extends BaseComponent {
     readonly levelRequired: number;
     constructor(name: string, cost: number, upkeep: number, speed: number, cargoSpace: number, levelRequired: number, id?: string);
     /**
+     * @return {string} String with JSON stringified property keys and values.
+    */
+    deconstruct: () => string;
+    /**
      * Get Train instance from a ResourceModel.
      *
      * @param {TrainModel}  model - TrainModel to be used.

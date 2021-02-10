@@ -150,6 +150,34 @@ var City = /** @class */ (function (_super) {
             return result.length > 0 ? result[0] : null;
         };
         /**
+         * @return {string} String with JSON stringified property keys and values.
+        */
+        _this.deconstruct = function () { return JSON.stringify({
+            name: _this.name,
+            id: _this.id,
+            _size: _this._size,
+            _coords: _this._coords,
+            _growthRate: _this._growthRate,
+            _supplyRefillRate: _this._supplyRefillRate,
+            _growthChangeDecider: _this._growthChangeDecider,
+            _supplyRefillDecider: _this._supplyRefillDecider,
+            _currentRouteCount: _this._currentRouteCount,
+            _supply: _this._supply.map(function (s) { return ({
+                resource: {
+                    id: s.resource.id
+                },
+                amount: s.amount,
+                available: s.available
+            }); }),
+            _demand: _this._demand.map(function (d) { return ({
+                resource: {
+                    id: d.resource.id
+                },
+                amount: d.amount,
+                available: d.available
+            }); })
+        }); };
+        /**
          * @param {Resource} resource - Resource to match.
          *
          * @return {boolean}            True if Resource is found in supply or demand else false.

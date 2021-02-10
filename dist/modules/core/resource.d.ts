@@ -38,6 +38,10 @@ export default class Resource extends BaseComponent implements ITurnable {
      */
     handleTurn: (info: HandleTurnInfo) => void;
     /**
+     * @return {string} String with JSON stringified property keys and values.
+    */
+    deconstruct: () => string;
+    /**
      * Set a new value for the resource.
      *
      * @param {number}    value - Number with new value to be used.

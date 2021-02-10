@@ -73,5 +73,5 @@ export default class Opponent extends Player {
      *
      * @return {Player}                      Player instance created from stringifiedJSON.
      */
-    static createFromStringifiedJSON: (stringifiedJSON: string, cities: City[], trains: Train[], resources: Resource[]) => Player;
+    static createFromStringifiedJSON: (stringifiedJSON: string, cities: City[], trains: Train[], resources: Resource[], upgrades: Upgrade[]) => Player;
 }

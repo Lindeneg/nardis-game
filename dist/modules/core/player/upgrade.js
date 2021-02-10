@@ -31,6 +31,10 @@ var Upgrade = /** @class */ (function (_super) {
     __extends(Upgrade, _super);
     function Upgrade(name, cost, value, type, levelRequired, id) {
         var _this = _super.call(this, name, id) || this;
+        /**
+         * @return {string} String with JSON stringified property keys and values.
+        */
+        _this.deconstruct = function () { return JSON.stringify(_this); };
         _this.type = type;
         _this.value = value;
         _this.levelRequired = levelRequired;

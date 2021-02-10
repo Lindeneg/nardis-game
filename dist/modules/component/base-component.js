@@ -17,11 +17,6 @@ var BaseComponent = /** @class */ (function () {
         this.equals = function (other) {
             return _this.id === other.id;
         };
-        /**
-         * @return {string} String with JSON stringified property keys and values.
-        */
-        //public abstract deconstruct(): string;
-        this.deconstruct = function () { return JSON.stringify(_this); };
         this.id = id ? id : util_1.createId();
         this.name = name;
     }

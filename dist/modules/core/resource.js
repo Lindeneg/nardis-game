@@ -55,6 +55,10 @@ var Resource = /** @class */ (function (_super) {
             }
         };
         /**
+         * @return {string} String with JSON stringified property keys and values.
+        */
+        _this.deconstruct = function () { return JSON.stringify(_this); };
+        /**
          * Set a new value for the resource.
          *
          * @param {number}    value - Number with new value to be used.

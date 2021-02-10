@@ -12,17 +12,6 @@ var __extends = (this && this.__extends) || (function () {
         d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
     };
 })();
-var __assign = (this && this.__assign) || function () {
-    __assign = Object.assign || function(t) {
-        for (var s, i = 1, n = arguments.length; i < n; i++) {
-            s = arguments[i];
-            for (var p in s) if (Object.prototype.hasOwnProperty.call(s, p))
-                t[p] = s[p];
-        }
-        return t;
-    };
-    return __assign.apply(this, arguments);
-};
 Object.defineProperty(exports, "__esModule", { value: true });
 var base_component_1 = require("../component/base-component");
 var types_1 = require("../../types/types");
@@ -113,6 +102,51 @@ var Route = /** @class */ (function (_super) {
             _this.resetRouteState(true);
         };
         /**
+         * @return {string} String with JSON stringified property keys and values.
+        */
+        _this.deconstruct = function () { return JSON.stringify({
+            name: _this.name,
+            id: _this.id,
+            distance: _this._distance,
+            cost: _this._cost,
+            purchasedOnTurn: _this._purchasedOnTurn,
+            profit: _this._profit,
+            kilometersTravelled: _this._kilometersTravelled,
+            cityOne: _this._cityOne.id,
+            cityTwo: _this._cityTwo.id,
+            train: _this._train.id,
+            routePlanCargo: {
+                cityOne: _this._routePlanCargo.cityOne.map(function (c1) { return ({
+                    resource: {
+                        id: c1.resource.id
+                    },
+                    targetAmount: c1.targetAmount,
+                    actualAmount: c1.actualAmount
+                }); }),
+                cityTwo: _this._routePlanCargo.cityTwo.map(function (c2) { return ({
+                    resource: {
+                        id: c2.resource.id
+                    },
+                    targetAmount: c2.targetAmount,
+                    actualAmount: c2.actualAmount
+                }); })
+            },
+            routeState: {
+                hasArrived: _this._routeState.hasArrived,
+                destination: {
+                    id: _this._routeState.destination.id
+                },
+                distance: _this._routeState.distance,
+                cargo: !!_this._routeState.cargo ? _this._routeState.cargo.map(function (c) { return ({
+                    resource: {
+                        id: c.resource.id
+                    },
+                    targetAmount: c.targetAmount,
+                    actualAmount: c.actualAmount
+                }); }) : null
+            }
+        }); };
+        /**
          * Get Train speed with Player upgrades taken into consideration.
          *
          * @return {number} - Number with the correct Train speed.
@@ -198,17 +232,28 @@ var Route = /** @class */ (function (_super) {
      * @return {Route}                       Route instance created from the string.
      */
     Route.createFromStringifiedJSON = function (stringifiedJSON, cities, trains, resources) {
-        var parsedJSON = JSON.parse(stringifiedJSON);
-        var routeState = parsedJSON._routeState;
-        var cargo = !!routeState.cargo ? routeState.cargo.map(function (e) { return (__assign(__assign({}, e), { resource: resources.filter(function (j) { return j.id === e.resource.id; })[0] })); }) : routeState.cargo;
-        return new Route(parsedJSON.name, cities.filter(function (e) { return e.id === parsedJSON._cityOne.id; })[0], cities.filter(function (e) { return e.id === parsedJSON._cityTwo.id; })[0], trains.filter(function (e) { return e.id === parsedJSON._train.id; })[0], {
-            cityOne: parsedJSON._routePlanCargo.cityOne.map(function (e) {
-                return __assign(__assign({}, e), { resource: resources.filter(function (j) { return j.id === e.resource.id; })[0] });
-            }),
-            cityTwo: parsedJSON._routePlanCargo.cityTwo.map(function (e) {
-                return __assign(__assign({}, e), { resource: resources.filter(function (j) { return j.id === e.resource.id; })[0] });
-            })
-        }, parsedJSON._distance, parsedJSON._cost, parsedJSON._purchasedOnTurn, parsedJSON._profit, parsedJSON._kilometersTravelled, __assign(__assign({}, parsedJSON._routeState), { destination: cities.filter(function (e) { return e.id === parsedJSON._routeState.destination.id; })[0], cargo: cargo }), parsedJSON.id);
+        var parsedJSON = typeof stringifiedJSON === 'string' ? JSON.parse(stringifiedJSON) : stringifiedJSON;
+        return new Route(parsedJSON.name, cities.filter(function (e) { return e.id === parsedJSON.cityOne; })[0], cities.filter(function (e) { return e.id === parsedJSON.cityTwo; })[0], trains.filter(function (e) { return e.id === parsedJSON.train; })[0], {
+            cityOne: parsedJSON.routePlanCargo.cityOne.map(function (c1) { return ({
+                resource: resources.filter(function (r) { return r.id === c1.resource.id; })[0],
+                targetAmount: c1.targetAmount,
+                actualAmount: c1.actualAmount
+            }); }),
+            cityTwo: parsedJSON.routePlanCargo.cityTwo.map(function (c2) { return ({
+                resource: resources.filter(function (r) { return r.id === c2.resource.id; })[0],
+                targetAmount: c2.targetAmount,
+                actualAmount: c2.actualAmount
+            }); })
+        }, parsedJSON.distance, parsedJSON.cost, parsedJSON.purchasedOnTurn, parsedJSON.profit, parsedJSON.kilometersTravelled, {
+            hasArrived: parsedJSON.routeState.hasArrived,
+            destination: cities.filter(function (e) { return e.id === parsedJSON.routeState.destination.id; })[0],
+            distance: parsedJSON.routeState.distance,
+            cargo: !!parsedJSON.routeState.cargo ? parsedJSON.routeState.cargo.map(function (c) { return ({
+                resource: resources.filter(function (e) { return e.id === c.resource.id; })[0],
+                targetAmount: c.targetAmount,
+                actualAmount: c.actualAmount
+            }); }) : null
+        }, parsedJSON.id);
     };
     return Route;
 }(base_component_1.default));

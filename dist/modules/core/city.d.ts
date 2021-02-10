@@ -90,6 +90,10 @@ export default class City extends BaseComponent implements ITurnable {
      */
     getCityResourceFromResource: (resource: Resource) => CityResource;
     /**
+     * @return {string} String with JSON stringified property keys and values.
+    */
+    deconstruct: () => string;
+    /**
      * @param {Resource} resource - Resource to match.
      *
      * @return {boolean}            True if Resource is found in supply or demand else false.

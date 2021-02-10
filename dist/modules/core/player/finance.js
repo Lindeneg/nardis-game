@@ -24,11 +24,12 @@ var types_1 = require("../../../types/types");
  * @param {FinanceHistory} history      - (optional) FinanceHistory object
  * @param {FinanceTotal}   totalHistory - (optional) FinanceTotal object
  * @param {number}         totalProfits - (optional) Number with total profits.
+ * @param {number}         netWorth     - (optional) Number with net worth.
  * @param {string}         id           - (optional) string number describing id
  */
 var Finance = /** @class */ (function (_super) {
     __extends(Finance, _super);
-    function Finance(name, gold, history, totalHistory, totalProfits, id) {
+    function Finance(name, gold, history, totalHistory, totalProfits, netWorth, id) {
         var _a;
         var _this = _super.call(this, name, id) || this;
         _this.getGold = function () { return _this._gold; };
@@ -111,6 +112,10 @@ var Finance = /** @class */ (function (_super) {
             _this._totalProfits += value;
             _this.addNthTurnObject(types_1.FinanceGeneralType.Income, types_1.FinanceType.Recoup, id, 1, value);
         };
+        /**
+         * @return {string} String with JSON stringified property keys and values.
+        */
+        _this.deconstruct = function () { return JSON.stringify(_this); };
         /**
         * Set nthTurn array of income and expense object to an empty array
         */
@@ -262,7 +267,7 @@ var Finance = /** @class */ (function (_super) {
             _a[constants_1.localKeys[types_1.FinanceType.Upgrade]] = 0,
             _a[constants_1.localKeys[types_1.FinanceType.Recoup]] = 0,
             _a);
-        _this._netWorth = _this._gold;
+        _this._netWorth = typeof netWorth !== 'undefined' ? netWorth : _this._gold;
         return _this;
     }
     /**
@@ -273,8 +278,8 @@ var Finance = /** @class */ (function (_super) {
     * @return {Finance}                     Finance instance created from the model
     */
     Finance.createFromStringifiedJSON = function (stringifiedJSON) {
-        var parsedJSON = JSON.parse(stringifiedJSON);
-        return new Finance(parsedJSON.name, parsedJSON._gold, parsedJSON._history, parsedJSON._totalHistory, parsedJSON._totalProfits, parsedJSON.id);
+        var parsedJSON = typeof stringifiedJSON === 'string' ? JSON.parse(stringifiedJSON) : stringifiedJSON;
+        return new Finance(parsedJSON.name, parsedJSON._gold, parsedJSON._history, parsedJSON._totalHistory, parsedJSON._totalProfits, parsedJSON._netWorth, parsedJSON.id);
     };
     return Finance;
 }(base_component_1.default));

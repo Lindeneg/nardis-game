@@ -8,6 +8,7 @@ import { FinanceHistory, FinanceTotal, HandleTurnInfo, ITurnable, FinanceType } 
  * @param {FinanceHistory} history      - (optional) FinanceHistory object
  * @param {FinanceTotal}   totalHistory - (optional) FinanceTotal object
  * @param {number}         totalProfits - (optional) Number with total profits.
+ * @param {number}         netWorth     - (optional) Number with net worth.
  * @param {string}         id           - (optional) string number describing id
  */
 export default class Finance extends BaseComponent implements ITurnable {
@@ -16,7 +17,7 @@ export default class Finance extends BaseComponent implements ITurnable {
     private _totalHistory;
     private _totalProfits;
     private _netWorth;
-    constructor(name: string, gold: number, history?: FinanceHistory, totalHistory?: FinanceTotal, totalProfits?: number, id?: string);
+    constructor(name: string, gold: number, history?: FinanceHistory, totalHistory?: FinanceTotal, totalProfits?: number, netWorth?: number, id?: string);
     getGold: () => number;
     getHistory: () => FinanceHistory;
     getTotalHistory: () => FinanceTotal;
@@ -57,6 +58,10 @@ export default class Finance extends BaseComponent implements ITurnable {
      *
      */
     recoupDeletedRoute: (value: number) => void;
+    /**
+     * @return {string} String with JSON stringified property keys and values.
+    */
+    deconstruct: () => string;
     /**
     * Set nthTurn array of income and expense object to an empty array
     */
@@ -130,5 +135,5 @@ export default class Finance extends BaseComponent implements ITurnable {
     *
     * @return {Finance}                     Finance instance created from the model
     */
-    static createFromStringifiedJSON: (stringifiedJSON: string) => Finance;
+    static createFromStringifiedJSON: (stringifiedJSON: string | object) => Finance;
 }

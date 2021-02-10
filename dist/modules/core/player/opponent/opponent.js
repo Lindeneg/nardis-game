@@ -26,7 +26,6 @@ var __assign = (this && this.__assign) || function () {
 Object.defineProperty(exports, "__esModule", { value: true });
 var player_1 = require("../player");
 var finance_1 = require("../finance");
-var upgrade_1 = require("../upgrade");
 var route_1 = require("../../route");
 var types_1 = require("../../../../types/types");
 var constants_1 = require("../../../../util/constants");
@@ -290,14 +289,12 @@ var Opponent = /** @class */ (function (_super) {
      *
      * @return {Player}                      Player instance created from stringifiedJSON.
      */
-    Opponent.createFromStringifiedJSON = function (stringifiedJSON, cities, trains, resources) {
+    Opponent.createFromStringifiedJSON = function (stringifiedJSON, cities, trains, resources, upgrades) {
         var parsedJSON = JSON.parse(stringifiedJSON);
-        return new Opponent(parsedJSON.name, cities.filter(function (e) { return e.id === parsedJSON._startCity.id; })[0], new finance_1.default(parsedJSON._finance.name, parsedJSON._finance._gold, parsedJSON._finance._history, parsedJSON._finance._totalHistory, parsedJSON._finance._totalProfits, parsedJSON._finance.id), parsedJSON._level, parsedJSON._queue.map(function (e) {
-            return {
-                route: route_1.default.createFromStringifiedJSON(JSON.stringify(e.route), cities, trains, resources),
-                turnCost: e.turnCost
-            };
-        }), parsedJSON._routes.map(function (e) { return route_1.default.createFromStringifiedJSON(JSON.stringify(e), cities, trains, resources); }), parsedJSON._upgrades.map(function (e) { return upgrade_1.default.createFromStringifiedJSON(JSON.stringify(e)); }), parsedJSON.id);
+        return new Opponent(parsedJSON.name, cities.filter(function (e) { return e.id === parsedJSON.startCityId; })[0], new finance_1.default(parsedJSON.finance.name, parsedJSON.finance._gold, parsedJSON.finance._history, parsedJSON.finance._totalHistory, parsedJSON.finance._totalProfits, parsedJSON.finance._netWorth, parsedJSON.finance.id), parsedJSON.level, parsedJSON.queue.map(function (e) { return ({
+            route: route_1.default.createFromStringifiedJSON(JSON.stringify(e.route), cities, trains, resources),
+            turnCost: e.turnCost
+        }); }), parsedJSON.routes.map(function (e) { return route_1.default.createFromStringifiedJSON(JSON.stringify(e.route), cities, trains, resources); }), parsedJSON.upgrades.map(function (e) { return upgrades.filter(function (j) { return j.id === e.id; })[0]; }), parsedJSON.id);
     };
     return Opponent;
 }(player_1.default));

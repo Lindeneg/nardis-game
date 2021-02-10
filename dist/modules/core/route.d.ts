@@ -69,6 +69,10 @@ export default class Route extends BaseComponent implements ITurnable {
      */
     change: (train: Train, routePlan: RoutePlanCargo) => void;
     /**
+     * @return {string} String with JSON stringified property keys and values.
+    */
+    deconstruct: () => string;
+    /**
      * Get Train speed with Player upgrades taken into consideration.
      *
      * @return {number} - Number with the correct Train speed.
@@ -92,5 +96,5 @@ export default class Route extends BaseComponent implements ITurnable {
      *
      * @return {Route}                       Route instance created from the string.
      */
-    static createFromStringifiedJSON: (stringifiedJSON: string, cities: City[], trains: Train[], resources: Resource[]) => Route;
+    static createFromStringifiedJSON: (stringifiedJSON: string | object, cities: City[], trains: Train[], resources: Resource[]) => Route;
 }
