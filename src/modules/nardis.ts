@@ -426,10 +426,10 @@ export class Nardis {
                 const re: RegExpExecArray = /^.+playerType\":(\d).+$/.exec(playerString);
                 if (re && re[1]) {
                     if (parseInt(re[1]) === PlayerType.Computer) {
-                        return Opponent.createFromStringifiedJSON(playerString, cities, trains, resources);
+                        return Opponent.createFromStringifiedJSON(playerString, cities, trains, resources, upgrades);
                     }
                 }
-                return Player.createFromStringifiedJSON(playerString, cities, trains, resources);
+                return Player.createFromStringifiedJSON(playerString, cities, trains, resources, upgrades);
             }
         );
         const currentPlayer: Player     = players.filter(player => player.id === currentPlayerRaw.id)[0];
