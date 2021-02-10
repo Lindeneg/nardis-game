@@ -291,10 +291,10 @@ var Opponent = /** @class */ (function (_super) {
      */
     Opponent.createFromStringifiedJSON = function (stringifiedJSON, cities, trains, resources, upgrades) {
         var parsedJSON = JSON.parse(stringifiedJSON);
-        return new Opponent(parsedJSON.name, cities.filter(function (e) { return e.id === parsedJSON.startCityId; })[0], new finance_1.default(parsedJSON.finance.name, parsedJSON.finance._gold, parsedJSON.finance._history, parsedJSON.finance._totalHistory, parsedJSON.finance._totalProfits, parsedJSON.finance._netWorth, parsedJSON.finance.id), parsedJSON.level, parsedJSON.queue.map(function (e) { return ({
-            route: route_1.default.createFromStringifiedJSON(JSON.stringify(e.route), cities, trains, resources),
+        return new Opponent(parsedJSON.name, cities.filter(function (e) { return e.id === parsedJSON.startCityId; })[0], finance_1.default.createFromStringifiedJSON(parsedJSON.finance), parsedJSON.level, parsedJSON.queue.map(function (e) { return ({
+            route: route_1.default.createFromStringifiedJSON(e.route, cities, trains, resources),
             turnCost: e.turnCost
-        }); }), parsedJSON.routes.map(function (e) { return route_1.default.createFromStringifiedJSON(JSON.stringify(e.route), cities, trains, resources); }), parsedJSON.upgrades.map(function (e) { return upgrades.filter(function (j) { return j.id === e.id; })[0]; }), parsedJSON.id);
+        }); }), parsedJSON.routes.map(function (e) { return route_1.default.createFromStringifiedJSON(e, cities, trains, resources); }), parsedJSON.upgrades.map(function (e) { return upgrades.filter(function (j) { return j.id === e.id; })[0]; }), parsedJSON.id);
     };
     return Opponent;
 }(player_1.default));

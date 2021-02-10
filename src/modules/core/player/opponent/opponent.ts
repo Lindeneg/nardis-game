@@ -354,21 +354,13 @@ export default class Opponent extends Player {
         return new Opponent(
             parsedJSON.name,
             cities.filter(e => e.id === parsedJSON.startCityId)[0],
-            new Finance(
-                parsedJSON.finance.name,
-                parsedJSON.finance._gold,
-                parsedJSON.finance._history,
-                parsedJSON.finance._totalHistory,
-                parsedJSON.finance._totalProfits,
-                parsedJSON.finance._netWorth,
-                parsedJSON.finance.id
-            ),
+            Finance.createFromStringifiedJSON(parsedJSON.finance),
             parsedJSON.level,
             parsedJSON.queue.map(e => ({
-                route: Route.createFromStringifiedJSON(JSON.stringify(e.route), cities, trains, resources),
+                route: Route.createFromStringifiedJSON(e.route, cities, trains, resources),
                 turnCost: e.turnCost
             })),
-            parsedJSON.routes.map(e => Route.createFromStringifiedJSON(JSON.stringify(e.route), cities, trains, resources)),
+            parsedJSON.routes.map(e => Route.createFromStringifiedJSON(e, cities, trains, resources)),
             parsedJSON.upgrades.map(e => upgrades.filter(j => j.id === e.id)[0]),
             parsedJSON.id
         )
