@@ -30,7 +30,8 @@ export enum FinanceType {
     Track,
     Upkeep,
     Upgrade,
-    Train
+    Train,
+    Recoup
 }
 
 export enum FinanceGeneralType {

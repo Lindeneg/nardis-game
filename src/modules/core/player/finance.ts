@@ -13,7 +13,8 @@ import {
     ITurnable,
     FinanceType,
     FinanceGeneralType,
-    UpgradeType
+    UpgradeType,
+    PlayerData
 } from '../../../types/types';
 
 
@@ -25,6 +26,7 @@ import {
  * @param {FinanceHistory} history      - (optional) FinanceHistory object
  * @param {FinanceTotal}   totalHistory - (optional) FinanceTotal object
  * @param {number}         totalProfits - (optional) Number with total profits.
+ * @param {number}         netWorth     - (optional) Number with net worth.
  * @param {string}         id           - (optional) string number describing id
  */
 
@@ -34,6 +36,7 @@ export default class Finance extends BaseComponent implements ITurnable {
     private _history     : FinanceHistory;
     private _totalHistory: FinanceTotal;
     private _totalProfits: number;
+    private _netWorth    : number;
 
     constructor(
             name         : string,
@@ -41,6 +44,7 @@ export default class Finance extends BaseComponent implements ITurnable {
             history     ?: FinanceHistory,
             totalHistory?: FinanceTotal,
             totalProfits?: number,
+            netWorth    ?: number,
             id          ?: string
     ) {
         super(name, id);
@@ -52,14 +56,17 @@ export default class Finance extends BaseComponent implements ITurnable {
             [localKeys[FinanceType.Train]]  : 0,
             [localKeys[FinanceType.Track]]  : 0,
             [localKeys[FinanceType.Upkeep]] : 0,
-            [localKeys[FinanceType.Upgrade]]: 0
+            [localKeys[FinanceType.Upgrade]]: 0,
+            [localKeys[FinanceType.Recoup]] : 0
         };
+        this._netWorth        = typeof netWorth !== 'undefined' ? netWorth : this._gold;
     }
 
     public getGold         = (): number         => this._gold;
     public getHistory      = (): FinanceHistory => this._history;
     public getTotalHistory = (): FinanceTotal   => this._totalHistory;
     public getTotalProfits = (): number         => this._totalProfits;
+    public getNetWorth     = (): number         => this._netWorth;
 
     /**
     * Handle Finance events at each turn 
@@ -74,6 +81,7 @@ export default class Finance extends BaseComponent implements ITurnable {
                 this.handleRoute(route, info.playerData.upgrades);
             });
         }
+        this.updateNetWorth(info.playerData)
     }
 
     /**
@@ -143,10 +151,14 @@ export default class Finance extends BaseComponent implements ITurnable {
      * Add to gold from a deleted Route.
      * 
      * @param {number} value - Number wih gold to recoup. 
+     *  
      */
 
     public recoupDeletedRoute = (value: number): void => {
-        this.addGold(value);
+        const id: string = localKeys[FinanceType.Recoup];
+        this.addToTotalHistory(id, value);
+        this._totalProfits += value;
+        this.addNthTurnObject(FinanceGeneralType.Income, FinanceType.Recoup, id, 1, value);
     }
 
     /**
@@ -215,6 +227,19 @@ export default class Finance extends BaseComponent implements ITurnable {
     private addGold = (value: number): void => {
         this._gold += value;
     }
+
+    /**
+    * Update net worth
+    */
+
+   private updateNetWorth = (data: PlayerData): void => {
+       this._netWorth = data.routes.map((route: Route): number => (
+           Math.floor(route.getCost() / 1.5) + Math.floor(route.getTrain().cost / 1.5)
+       )).reduce((a: number, b: number): number => a + b, data.upgrades.map((upgrade: Upgrade): number => (
+           Math.floor(upgrade.cost / 2)
+       )).reduce((a: number, b: number): number => a + b, this._gold));
+    }
+
 
     /**
     * Remove gold from count
