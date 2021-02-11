@@ -34,12 +34,20 @@ export const localKeys: string[] = [
     '0nfKAvFjzJY8H1h9tacz9zzdf0RLlcbl'
 ];
 
-export const eventLogLevelName = [
+export const eventLogLevelName: string[] = [
     'game',
     'debug',
     'warning',
     'error'
 ];
+
+export const netWorthMultiplier = {
+    gold   : 1,
+    stock  : 1,
+    tracks : 1.5,
+    train  : 2,
+    upgrade: 2.5
+}
 
 export const rangeCost = {
     "0,100"    : 1,
@@ -86,7 +94,7 @@ export const resourcesPerSize: number[] = [2, 3, 3, 4, 5, 5];
 export const resourcePerSize: [number, number][] = [[4, 6], [6, 8], [8, 12], [12, 16], [16, 20], [20, 25]];
 
 // distribution of possible city sizes
-export const citySizes = [6, 5, 5, 5, 4, 4, 4, 3, 3, 3, 3, 2, 2, 2, 2, 2, 2, 1, 1, 1, 1];
+export const citySizes: number[] = [6, 5, 5, 5, 4, 4, 4, 3, 3, 3, 3, 2, 2, 2, 2, 2, 2, 1, 1, 1, 1];
 
 export const CitySizeMaxConcurrentRoutes: { size: number, maxRoutes: number}[] = [
     {
