@@ -2,7 +2,9 @@ import BaseComponent from '../../component/base-component';
 import Upgrade from './upgrade';
 import Route from '../route';
 import Train from '../train';
-import { localKeys } from '../../../util/constants';
+import {
+    localKeys, netWorthMultiplier
+} from '../../../util/constants';
 import {
     FinanceHistory,
     FinanceHistoryItem,
@@ -39,27 +41,27 @@ export default class Finance extends BaseComponent implements ITurnable {
     private _netWorth    : number;
 
     constructor(
-            name         : string,
-            gold         : number,
-            history     ?: FinanceHistory,
-            totalHistory?: FinanceTotal,
-            totalProfits?: number,
-            netWorth    ?: number,
-            id          ?: string
+        name             : string,
+        gold             : number,
+        history         ?: FinanceHistory,
+        totalHistory    ?: FinanceTotal,
+        totalProfits    ?: number,
+        netWorth        ?: number,
+        id              ?: string
     ) {
         super(name, id);
 
-        this._gold            = gold;
-        this._history         = history ? history : this.getInitialHistoryState();
-        this._totalProfits    = totalProfits ? totalProfits : 0;
-        this._totalHistory    = totalHistory ? totalHistory : {
+        this._gold         = gold;
+        this._history      = history ? history : this.getInitialHistoryState();
+        this._totalProfits = totalProfits ? totalProfits : 0;
+        this._totalHistory = totalHistory ? totalHistory : {
             [localKeys[FinanceType.Train]]  : 0,
             [localKeys[FinanceType.Track]]  : 0,
             [localKeys[FinanceType.Upkeep]] : 0,
             [localKeys[FinanceType.Upgrade]]: 0,
             [localKeys[FinanceType.Recoup]] : 0
         };
-        this._netWorth        = typeof netWorth !== 'undefined' ? netWorth : this._gold;
+        this._netWorth     = typeof netWorth !== 'undefined' ? netWorth : this._gold;
     }
 
     public getGold         = (): number         => this._gold;
@@ -69,35 +71,34 @@ export default class Finance extends BaseComponent implements ITurnable {
     public getNetWorth     = (): number         => this._netWorth;
 
     /**
-    * Handle Finance events at each turn 
-    * 
-    * @param  {HandleTurnInfo}  info - object with relevant turn information
-    */
+     * Handle Finance events at each turn 
+     * 
+     * @param  {HandleTurnInfo}  info - object with relevant turn information
+     */
 
     public handleTurn = (info: HandleTurnInfo): void => {
-        this.handleStartTurn();
+        this.handleStartTurn(info.playerData);
         if (info.playerData.routes.length > 0) {
             info.playerData.routes.forEach(route => {
                 this.handleRoute(route, info.playerData.upgrades);
             });
         }
-        this.updateNetWorth(info.playerData)
     }
 
     /**
-    * Add entry to expense object from the turn at hand
-    * 
-    * @param {FinanceType} type   - FinanceType of the expense
-    * @param {string}      id     - string with id of the expense
-    * @param {number}      amount - number with amount of the expense
-    * @param {number}      value  - number with value of the expense
-    */
+     * Add entry to expense object from the turn at hand
+     * 
+     * @param {FinanceType} type   - FinanceType of the expense
+     * @param {string}      id     - string with id of the expense
+     * @param {number}      amount - number with amount of the expense
+     * @param {number}      value  - number with value of the expense
+     */
 
     public addToFinanceExpense = (
-            type  : FinanceType, 
-            id    : string, 
-            amount: number, 
-            value : number
+        type  : FinanceType,
+        id    : string,
+        amount: number,
+        value : number
     ): void => {
         this.addToTotalHistory(localKeys[type], amount * value);
         this._totalProfits -= amount * value;
@@ -105,19 +106,19 @@ export default class Finance extends BaseComponent implements ITurnable {
     }
 
     /**
-    * Remove entry from expense object.
-    * 
-    * @param {FinanceType} type   - FinanceType of the expense to be removed
-    * @param {string}      id     - string with id of the expense to be removed
-    * 
-    * @returns {boolean}            true if removed else false
-    */
+     * Remove entry from expense object.
+     * 
+     * @param {FinanceType} type   - FinanceType of the expense to be removed
+     * @param {string}      id     - string with id of the expense to be removed
+     * 
+     * @returns {boolean}            true if removed else false
+     */
 
-    public removeFromFinanceExpense = ( 
-            type: FinanceType, 
-            id  : string
+    public removeFromFinanceExpense = (
+        type: FinanceType,
+        id  : string
     ): boolean => {
-        const targets: Array<FinanceTurnItem[]> = Object.keys(this._history.expense).map(e => this._history.expense[e]);
+        const targets: Array < FinanceTurnItem[] > = Object.keys(this._history.expense).map(e => this._history.expense[e]);
         for (let i: number = 0; i < targets.length; i++) {
             const target: FinanceTurnItem[] = targets[i];
             for (let j = 0; j < target.length; j++) {
@@ -135,17 +136,16 @@ export default class Finance extends BaseComponent implements ITurnable {
     }
 
     /**
-    * @returns {number} number that describes the revenue in gold over the last three turns
-    */
+     * @returns {number} number that describes the revenue in gold over the last three turns
+     */
 
-    public getAverageRevenue = (): number => {
-        const keys: string[] = Object.keys(this._history.income);
-        let sum: number = 0;
-        keys.forEach(key => {
-            sum += this._history.income[key].reduce((prev, cur) => prev + (cur.amount * cur.value), 0);
-        });
-        return Math.round(sum / keys.length);
-    }
+    public getAverageRevenue = (): number => this.getAverageHistory(this._history.income);
+
+    /**
+     * @returns {number} number that describes the expense in gold over the last three turns
+     */
+
+    public getAverageExpense = (): number => this.getAverageHistory(this._history.expense);
 
     /**
      * Add to gold from a deleted Route.
@@ -163,24 +163,42 @@ export default class Finance extends BaseComponent implements ITurnable {
 
     /** 
      * @return {string} String with JSON stringified property keys and values.
-    */
-   
+     */
+
     public deconstruct = (): string => JSON.stringify(this)
 
     /**
-    * Set nthTurn array of income and expense object to an empty array
-    */
+     * Set nthTurn array of income and expense object to an empty array
+     */
 
-    private handleStartTurn = (): void => {
+    private handleStartTurn = (playerData: PlayerData): void => {
+        this.updateNetWorth(playerData)
         this.updateHistoryItemsOnStartedTurn(this._history.income);
         this.updateHistoryItemsOnStartedTurn(this._history.expense);
     }
 
     /**
-    * Check if a Route has arrived and handle income accordingly
-    * 
-    * @param {Route} route - Route to be checked and handled
-    */
+     * @param {FinanceHistoryItem} historyItem history object to average
+     * 
+     * @returns {number}           number that describes the average value of the given object
+     */
+
+    private getAverageHistory = (historyItem: FinanceHistoryItem): number => {
+        const keys: string[] = Object.keys(historyItem);
+        return Math.round(
+            keys.map((key: string): number => historyItem[key]
+                .reduce((a: number, b: FinanceTurnItem): number => a + (b.amount * b.value), 0))
+            .reduce((a: number, b: number): number => a + b, 0) /
+            keys.length
+        );
+    }
+
+    /**
+     * Check if a Route has arrived and handle income accordingly
+     * 
+     * @param {Route}     route    - Route to be checked and handled
+     * @param {Upgrade[]} upgrades - Upgrades to be accounted for
+     */
 
     private handleRoute = (route: Route, upgrades: Upgrade[]): void => {
         const state: RouteState = route.getRouteState();
@@ -196,7 +214,7 @@ export default class Finance extends BaseComponent implements ITurnable {
                     this._totalProfits += value;
                     this.addToTotalHistory(cargo.resource.id, value);
                     this.addNthTurnObject(
-                        FinanceGeneralType.Income, 
+                        FinanceGeneralType.Income,
                         FinanceType.Resource,
                         cargo.resource.id,
                         cargo.actualAmount,
@@ -210,8 +228,11 @@ export default class Finance extends BaseComponent implements ITurnable {
     /**
      * Get Train upkeep with Player upgrades taken into consideration
      * 
-    * @return {number} - number with the correct Train upkeep
-    */
+     * @param {Train}     train    - Train to get upkeep from
+     * @param {Upgrade[]} upgrades - Upgrades to be accounted for
+     * 
+     * @return {number} - number with the correct Train upkeep
+     */
 
     private getTrainUpkeep = (train: Train, upgrades: Upgrade[]): number => {
         const relevantUpgrades: Upgrade[] = upgrades.filter(e => e.type === UpgradeType.TrainUpkeepCheaper);
@@ -225,44 +246,48 @@ export default class Finance extends BaseComponent implements ITurnable {
     }
 
     /**
-    * Add to gold count
-    * 
-    * @param {number} value - number with gold to be added
-    */
+     * Add to gold count
+     * 
+     * @param {number} value - number with gold to be added
+     */
 
     private addGold = (value: number): void => {
         this._gold += value;
+        this._netWorth += value;
     }
 
     /**
-    * Update net worth
-    */
+     * Update net worth
+     * // TODO add stocks
+     */
 
-   private updateNetWorth = (data: PlayerData): void => {
-       this._netWorth = data.routes.map((route: Route): number => (
-           Math.floor(route.getCost() / 1.5) + Math.floor(route.getTrain().cost / 1.5)
-       )).reduce((a: number, b: number): number => a + b, data.upgrades.map((upgrade: Upgrade): number => (
-           Math.floor(upgrade.cost / 2)
-       )).reduce((a: number, b: number): number => a + b, this._gold));
+    private updateNetWorth = (data: PlayerData): void => {
+        this._netWorth = data.routes.map((route: Route): number => (
+            Math.floor(route.getCost() / netWorthMultiplier.tracks) +
+            Math.floor(route.getTrain().cost / netWorthMultiplier.train)
+        )).reduce((a: number, b: number): number => a + b, data.upgrades.map((upgrade: Upgrade): number => (
+            Math.floor(upgrade.cost / netWorthMultiplier.upgrade)
+        )).reduce((a: number, b: number): number => a + b, Math.floor(this._gold / netWorthMultiplier.gold)));
     }
 
 
     /**
-    * Remove gold from count
-    * 
-    * @param {number} value - number with gold to be subtracted
-    */
+     * Remove gold from count
+     * 
+     * @param {number} value - number with gold to be subtracted
+     */
 
     private removeGold = (value: number): void => {
         this._gold -= value;
+        this._netWorth -= value;
     }
 
     /**
-    * Add entry to FinanceTotal.
-    * 
-    * @param {string} id    - string with id of the entry target
-    * @param {number} value - number with value to add to target
-    */
+     * Add entry to FinanceTotal.
+     * 
+     * @param {string} id    - string with id of the entry target
+     * @param {number} value - number with value to add to target
+     */
 
     private addToTotalHistory = (id: string, value: number): void => {
         if (typeof this._totalHistory[id] !== 'undefined') {
@@ -273,11 +298,11 @@ export default class Finance extends BaseComponent implements ITurnable {
     }
 
     /**
-    * Remove entry from FinanceTotal.
-    * 
-    * @param {string} id    - string with id of the entry target
-    * @param {number} value - number with value to remove from target
-    */
+     * Remove entry from FinanceTotal.
+     * 
+     * @param {string} id    - string with id of the entry target
+     * @param {number} value - number with value to remove from target
+     */
 
     private removeFromTotalHistory = (id: string, value: number): void => {
         if (typeof this._totalHistory[id] !== 'undefined') {
@@ -286,28 +311,28 @@ export default class Finance extends BaseComponent implements ITurnable {
     }
 
     /**
-    * Add entry to any nthTurn object
-    * 
-    * @param {FinanceGeneralType} generalType - FinanceGeneralType of the entry
-    * @param {FinanceType}        type   - FinanceType of the expense
-    * @param {string}             id     - string with id of the expense
-    * @param {number}             amount - number with amount of the expense
-    * @param {number}             value  - number with value of the expense
-    */
+     * Add entry to any nthTurn object
+     * 
+     * @param {FinanceGeneralType} generalType - FinanceGeneralType of the entry
+     * @param {FinanceType}        type   - FinanceType of the expense
+     * @param {string}             id     - string with id of the expense
+     * @param {number}             amount - number with amount of the expense
+     * @param {number}             value  - number with value of the expense
+     */
 
     private addNthTurnObject = (
-            generalType: FinanceGeneralType, 
-            type: FinanceType, 
-            id: string, 
-            amount: number, 
-            value: number
+        generalType: FinanceGeneralType,
+        type       : FinanceType,
+        id         : string,
+        amount     : number,
+        value      : number
     ) => {
         const isIncome: boolean = generalType === FinanceGeneralType.Income;
         const object: FinanceTurnItem = {
-            type: type,
-            id: id,
+            type  : type,
+            id    : id,
             amount: amount,
-            value: value
+            value : value
         };
         const target: FinanceHistoryItem = isIncome ? this._history.income : this._history.expense;
         const goldTarget: (value: number) => void = isIncome ? this.addGold : this.removeGold;
@@ -316,10 +341,10 @@ export default class Finance extends BaseComponent implements ITurnable {
     }
 
     /**
-    * Shift each entry one place forward and then reset the nthTurn array
-    * 
-    * @param {FinanceHistoryItem} item - FinanceHistoryItem to be shifted
-    */
+     * Shift each entry one place forward and then reset the nthTurn array
+     * 
+     * @param {FinanceHistoryItem} item - FinanceHistoryItem to be shifted
+     */
 
     private updateHistoryItemsOnStartedTurn = (item: FinanceHistoryItem): void => {
         item.nthTurnMinusTwo = item.nthTurnMinusOne;
@@ -328,8 +353,8 @@ export default class Finance extends BaseComponent implements ITurnable {
     }
 
     /**
-    * @returns {FinanceHistory} FinanceHistory default starting state
-    */
+     * @returns {FinanceHistory} FinanceHistory default starting state
+     */
 
     private getInitialHistoryState = (): FinanceHistory => {
         return {
@@ -349,10 +374,10 @@ export default class Finance extends BaseComponent implements ITurnable {
     /**
      * Get Finance instance from stringified JSON.
      * 
-    * @param {string}     stringifiedJSON - string with information to be used
-    * 
-    * @return {Finance}                     Finance instance created from the model
-    */
+     * @param {string}     stringifiedJSON - string with information to be used
+     * 
+     * @return {Finance}                     Finance instance created from the model
+     */
 
     public static createFromStringifiedJSON = (stringifiedJSON: string | object): Finance => {
         const parsedJSON = typeof stringifiedJSON === 'string' ? JSON.parse(stringifiedJSON) : stringifiedJSON;
