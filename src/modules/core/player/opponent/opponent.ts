@@ -25,7 +25,16 @@ import {
 import { levelUpRequirements } from '../../../../util/constants';
 
 
+interface ActionSave {
+    should: boolean,
+    turn: number,
+    diff: number
+};
+
+
 export default class Opponent extends Player {
+
+    private _save: ActionSave
 
     constructor(
         name        : string,
@@ -35,15 +44,27 @@ export default class Opponent extends Player {
         queue      ?: QueuedRouteItem[],
         routes     ?: Route[],
         upgrades   ?: Upgrade[],
+        save       ?: ActionSave,
         id         ?: string
     ) {
         super(name, PlayerType.Computer, startCity, finance, level, queue, routes, upgrades, id);
 
+        this._save = save ? save : {
+            should: false,
+            turn: 1,
+            diff: 0
+        };
     }
 
+    // TODO
     public handleTurn = (info: HandleTurnInfo, game: Nardis) => {
         if (this.shouldLevelBeIncreased()) {
             this.increaseLevel();
+            this._save = {
+                should: false,
+                turn: info.turn,
+                diff: 0
+            };
         }
         this.handleQueue();
         this.handleRoutes(info);
@@ -51,19 +72,44 @@ export default class Opponent extends Player {
         this.deduceAction(info, game);
     }
 
+    // TODO
+    public setSave = (save: ActionSave): void => {
+        this._save = save;
+    }
+
+    // TODO
+   public deconstruct = (): string => JSON.stringify({
+        name: this.name,
+        playerType: this.playerType,
+        level: this._level,
+        id: this.id,
+        startCityId: this._startCity.id,
+        finance: this._finance.deconstruct(),
+        save: this._save,
+        queue: this._queue.map(e => ({
+            route: e.route.deconstruct(),
+            turnCost: e.turnCost
+        })),
+        routes: this._routes.map(e => e.deconstruct()),
+        upgrades: this._upgrades.map(e => ({
+            id: e.id
+        }))
+    });
+
     /**
      * Main function for deducing the best action for the non-human player in question.
      */
     private deduceAction = (info: HandleTurnInfo, game: Nardis): void => {
         this.log(`turn=${info.turn};comp=${this.name};avgr=${this._finance.getAverageRevenue()}g;curg=${this._finance.getGold()};rout=${this._routes.length};queu=${this._queue.length};leve=${this._level};`);
         this.buyAvailableUpgrades(info, game);
-        if (this.shouldPurchaseRoutes()) {
+        const stockOptions = this.inspectStockOptions();
+        if (this.shouldPurchaseRoutes(info.turn)) {
             const train: AdjustedTrain = this.getSuggestedTrain(game.getArrayOfAdjustedTrains());
             const originRoutes: OriginRoutePotential[] = this.getInterestingRoutes(game, train);
             this.purchaseRoutes(game, this.pickNInterestingRoutes(originRoutes, this.getN(originRoutes), train));
         }
 
-        this.optimizeUnprofitableRoutes();
+        this.deleteConsistentlyUnprofitableRoutes();
         this.log('\n\n');
     }
 
@@ -196,6 +242,11 @@ export default class Opponent extends Player {
         };
     }
 
+    // TODO 
+    private inspectStockOptions = () => {
+
+    }
+
     /**
      * Supply will be medium-to-high-yield Resources. Filler will be the two low-yield Resources.
      * Prioritize supply but if all are either not demand in destination or weights more than current cargoConstraint,
@@ -241,6 +292,7 @@ export default class Opponent extends Player {
         return result;
     }
 
+    // TODO
     private getN = (originRoutes: OriginRoutePotential[]): number => {
         const amount: number = originRoutes
         .map((origin: OriginRoutePotential): number => origin.aRoutes.length)
@@ -250,25 +302,42 @@ export default class Opponent extends Player {
         ) : 0
     }
 
-    private shouldPurchaseRoutes = (): boolean => {
-        const levelUpReq = levelUpRequirements[this._level + 1];
-        if (typeof levelUpReq !== 'undefined') {
-            if (this._routes.length < levelUpReq.routes) {
-                return true;
-            } else {
-                if (this._finance.getAverageRevenue() >= levelUpReq.revenuePerTurn && this._finance.getGold() >= levelUpReq.gold) {
-                    return false;
+    // TODO
+    private shouldPurchaseRoutes = (turn: number): boolean => {
+        let shouldPurchase: boolean;
+        if (this._save.should && turn < this._save.turn + this._save.diff) {
+            shouldPurchase = false;
+        } else {
+            const levelUpReq = levelUpRequirements[this._level + 1];
+            if (typeof levelUpReq !== 'undefined') {
+                if (this._routes.length < levelUpReq.routes) {
+                    shouldPurchase = true;
+                } else {
+                    if (this._finance.getAverageRevenue() >= levelUpReq.revenuePerTurn && this._finance.getGold() < levelUpReq.gold) {
+                        this._save = {
+                            should: true,
+                            turn: turn,
+                            diff: 5
+                        };
+                        shouldPurchase = false;
+                    } else {
+                        shouldPurchase = true;
+                    }
                 }
-                return true;
+            } else {
+                shouldPurchase = true;
             }
         }
-        return false;
+        this.log(`should purchase: ${shouldPurchase}`);
+        return shouldPurchase;
     }
 
+    // TODO
     private purchaseRoutes = (game: Nardis, routes: BuyableRoute[]): void => {
         this.log(`attempting to purchase ${routes.length} routes`, routes);
+        const min: number = Math.floor(this._finance.getGold() * 0.1);
         for (let i = 0; i < routes.length; i++) {
-            if (this._finance.getGold() - (routes[i].goldCost + routes[i].trainCost) < 0 || this._queue.length > 5) {
+            if (this._finance.getGold() - (routes[i].goldCost + routes[i].trainCost) <= min || this._queue.length > 5) {
                 this.log('cannot purchase anymore routes');
                 break;
             }
@@ -278,7 +347,7 @@ export default class Opponent extends Player {
     }
 
     // TODO
-    private optimizeUnprofitableRoutes = (): void => {
+    private deleteConsistentlyUnprofitableRoutes = (): void => {
         this.log('active routes', this._routes);
         this._routes.forEach((e, i) => {
             let p = e.getProfit();
@@ -362,6 +431,7 @@ export default class Opponent extends Player {
             })),
             parsedJSON.routes.map(e => Route.createFromStringifiedJSON(e, cities, trains, resources)),
             parsedJSON.upgrades.map(e => upgrades.filter(j => j.id === e.id)[0]),
+            parsedJSON.save,
             parsedJSON.id
         )
     }
