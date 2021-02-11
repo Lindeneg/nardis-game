@@ -213,7 +213,6 @@ var Player = /** @class */ (function (_super) {
         _this._routes = routes ? routes : [];
         _this._upgrades = upgrades ? upgrades : [];
         _this._range = _this.getRangeFromLevel();
-        _this.gold = (function () { return _this._finance.getGold(); })();
         return _this;
     }
     /**

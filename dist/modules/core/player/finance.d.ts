@@ -24,33 +24,37 @@ export default class Finance extends BaseComponent implements ITurnable {
     getTotalProfits: () => number;
     getNetWorth: () => number;
     /**
-    * Handle Finance events at each turn
-    *
-    * @param  {HandleTurnInfo}  info - object with relevant turn information
-    */
+     * Handle Finance events at each turn
+     *
+     * @param  {HandleTurnInfo}  info - object with relevant turn information
+     */
     handleTurn: (info: HandleTurnInfo) => void;
     /**
-    * Add entry to expense object from the turn at hand
-    *
-    * @param {FinanceType} type   - FinanceType of the expense
-    * @param {string}      id     - string with id of the expense
-    * @param {number}      amount - number with amount of the expense
-    * @param {number}      value  - number with value of the expense
-    */
+     * Add entry to expense object from the turn at hand
+     *
+     * @param {FinanceType} type   - FinanceType of the expense
+     * @param {string}      id     - string with id of the expense
+     * @param {number}      amount - number with amount of the expense
+     * @param {number}      value  - number with value of the expense
+     */
     addToFinanceExpense: (type: FinanceType, id: string, amount: number, value: number) => void;
     /**
-    * Remove entry from expense object.
-    *
-    * @param {FinanceType} type   - FinanceType of the expense to be removed
-    * @param {string}      id     - string with id of the expense to be removed
-    *
-    * @returns {boolean}            true if removed else false
-    */
+     * Remove entry from expense object.
+     *
+     * @param {FinanceType} type   - FinanceType of the expense to be removed
+     * @param {string}      id     - string with id of the expense to be removed
+     *
+     * @returns {boolean}            true if removed else false
+     */
     removeFromFinanceExpense: (type: FinanceType, id: string) => boolean;
     /**
-    * @returns {number} number that describes the revenue in gold over the last three turns
-    */
+     * @returns {number} number that describes the revenue in gold over the last three turns
+     */
     getAverageRevenue: () => number;
+    /**
+     * @returns {number} number that describes the expense in gold over the last three turns
+     */
+    getAverageExpense: () => number;
     /**
      * Add to gold from a deleted Route.
      *
@@ -60,80 +64,91 @@ export default class Finance extends BaseComponent implements ITurnable {
     recoupDeletedRoute: (value: number) => void;
     /**
      * @return {string} String with JSON stringified property keys and values.
-    */
+     */
     deconstruct: () => string;
     /**
-    * Set nthTurn array of income and expense object to an empty array
-    */
+     * Set nthTurn array of income and expense object to an empty array
+     */
     private handleStartTurn;
     /**
-    * Check if a Route has arrived and handle income accordingly
-    *
-    * @param {Route} route - Route to be checked and handled
-    */
+     * @param {FinanceHistoryItem} historyItem history object to average
+     *
+     * @returns {number}           number that describes the average value of the given object
+     */
+    private getAverageHistory;
+    /**
+     * Check if a Route has arrived and handle income accordingly
+     *
+     * @param {Route}     route    - Route to be checked and handled
+     * @param {Upgrade[]} upgrades - Upgrades to be accounted for
+     */
     private handleRoute;
     /**
      * Get Train upkeep with Player upgrades taken into consideration
      *
-    * @return {number} - number with the correct Train upkeep
-    */
+     * @param {Train}     train    - Train to get upkeep from
+     * @param {Upgrade[]} upgrades - Upgrades to be accounted for
+     *
+     * @return {number} - number with the correct Train upkeep
+     */
     private getTrainUpkeep;
     /**
-    * Add to gold count
-    *
-    * @param {number} value - number with gold to be added
-    */
+     * Add to gold count
+     *
+     * @param {number} value - number with gold to be added
+     */
     private addGold;
     /**
-    * Update net worth
-    */
+     * Update net worth
+     * // TODO add stocks
+     */
     private updateNetWorth;
     /**
-    * Remove gold from count
-    *
-    * @param {number} value - number with gold to be subtracted
-    */
+     * Remove gold from count
+     *
+     * @param {number} value - number with gold to be subtracted
+     */
     private removeGold;
     /**
-    * Add entry to FinanceTotal.
-    *
-    * @param {string} id    - string with id of the entry target
-    * @param {number} value - number with value to add to target
-    */
+     * Add entry to FinanceTotal.
+     *
+     * @param {string} id    - string with id of the entry target
+     * @param {number} value - number with value to add to target
+     */
     private addToTotalHistory;
     /**
-    * Remove entry from FinanceTotal.
-    *
-    * @param {string} id    - string with id of the entry target
-    * @param {number} value - number with value to remove from target
-    */
+     * Remove entry from FinanceTotal.
+     *
+     * @param {string} id    - string with id of the entry target
+     * @param {number} value - number with value to remove from target
+     */
     private removeFromTotalHistory;
     /**
-    * Add entry to any nthTurn object
-    *
-    * @param {FinanceGeneralType} generalType - FinanceGeneralType of the entry
-    * @param {FinanceType}        type   - FinanceType of the expense
-    * @param {string}             id     - string with id of the expense
-    * @param {number}             amount - number with amount of the expense
-    * @param {number}             value  - number with value of the expense
-    */
+     * Add entry to any nthTurn object
+     *
+     * @param {FinanceGeneralType} generalType - FinanceGeneralType of the entry
+     * @param {FinanceType}        type   - FinanceType of the expense
+     * @param {string}             id     - string with id of the expense
+     * @param {number}             amount - number with amount of the expense
+     * @param {number}             value  - number with value of the expense
+     */
     private addNthTurnObject;
     /**
-    * Shift each entry one place forward and then reset the nthTurn array
-    *
-    * @param {FinanceHistoryItem} item - FinanceHistoryItem to be shifted
-    */
+     * Shift each entry one place forward and then reset the nthTurn array
+     *
+     * @param {FinanceHistoryItem} item - FinanceHistoryItem to be shifted
+     */
     private updateHistoryItemsOnStartedTurn;
     /**
-    * @returns {FinanceHistory} FinanceHistory default starting state
-    */
+     * @returns {FinanceHistory} FinanceHistory default starting state
+     */
     private getInitialHistoryState;
     /**
      * Get Finance instance from stringified JSON.
      *
-    * @param {string}     stringifiedJSON - string with information to be used
-    *
-    * @return {Finance}                     Finance instance created from the model
-    */
+     * @param {string}     stringifiedJSON - string with information to be used
+     *
+     * @return {Finance}                     Finance instance created from the model
+     */
     static createFromStringifiedJSON: (stringifiedJSON: string | object) => Finance;
 }

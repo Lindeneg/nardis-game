@@ -13,6 +13,13 @@ export declare const CONSONANTS: string[];
 export declare const playerLevelMapping: PlayerLevel[];
 export declare const localKeys: string[];
 export declare const eventLogLevelName: string[];
+export declare const netWorthMultiplier: {
+    gold: number;
+    stock: number;
+    tracks: number;
+    train: number;
+    upgrade: number;
+};
 export declare const rangeCost: {
     "0,100": number;
     "100,175": number;

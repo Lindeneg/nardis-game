@@ -38,40 +38,39 @@ var Finance = /** @class */ (function (_super) {
         _this.getTotalProfits = function () { return _this._totalProfits; };
         _this.getNetWorth = function () { return _this._netWorth; };
         /**
-        * Handle Finance events at each turn
-        *
-        * @param  {HandleTurnInfo}  info - object with relevant turn information
-        */
+         * Handle Finance events at each turn
+         *
+         * @param  {HandleTurnInfo}  info - object with relevant turn information
+         */
         _this.handleTurn = function (info) {
-            _this.handleStartTurn();
+            _this.handleStartTurn(info.playerData);
             if (info.playerData.routes.length > 0) {
                 info.playerData.routes.forEach(function (route) {
                     _this.handleRoute(route, info.playerData.upgrades);
                 });
             }
-            _this.updateNetWorth(info.playerData);
         };
         /**
-        * Add entry to expense object from the turn at hand
-        *
-        * @param {FinanceType} type   - FinanceType of the expense
-        * @param {string}      id     - string with id of the expense
-        * @param {number}      amount - number with amount of the expense
-        * @param {number}      value  - number with value of the expense
-        */
+         * Add entry to expense object from the turn at hand
+         *
+         * @param {FinanceType} type   - FinanceType of the expense
+         * @param {string}      id     - string with id of the expense
+         * @param {number}      amount - number with amount of the expense
+         * @param {number}      value  - number with value of the expense
+         */
         _this.addToFinanceExpense = function (type, id, amount, value) {
             _this.addToTotalHistory(constants_1.localKeys[type], amount * value);
             _this._totalProfits -= amount * value;
             _this.addNthTurnObject(types_1.FinanceGeneralType.Expense, type, id, amount, value);
         };
         /**
-        * Remove entry from expense object.
-        *
-        * @param {FinanceType} type   - FinanceType of the expense to be removed
-        * @param {string}      id     - string with id of the expense to be removed
-        *
-        * @returns {boolean}            true if removed else false
-        */
+         * Remove entry from expense object.
+         *
+         * @param {FinanceType} type   - FinanceType of the expense to be removed
+         * @param {string}      id     - string with id of the expense to be removed
+         *
+         * @returns {boolean}            true if removed else false
+         */
         _this.removeFromFinanceExpense = function (type, id) {
             var targets = Object.keys(_this._history.expense).map(function (e) { return _this._history.expense[e]; });
             for (var i = 0; i < targets.length; i++) {
@@ -90,16 +89,13 @@ var Finance = /** @class */ (function (_super) {
             return false;
         };
         /**
-        * @returns {number} number that describes the revenue in gold over the last three turns
-        */
-        _this.getAverageRevenue = function () {
-            var keys = Object.keys(_this._history.income);
-            var sum = 0;
-            keys.forEach(function (key) {
-                sum += _this._history.income[key].reduce(function (prev, cur) { return prev + (cur.amount * cur.value); }, 0);
-            });
-            return Math.round(sum / keys.length);
-        };
+         * @returns {number} number that describes the revenue in gold over the last three turns
+         */
+        _this.getAverageRevenue = function () { return _this.getAverageHistory(_this._history.income); };
+        /**
+         * @returns {number} number that describes the expense in gold over the last three turns
+         */
+        _this.getAverageExpense = function () { return _this.getAverageHistory(_this._history.expense); };
         /**
          * Add to gold from a deleted Route.
          *
@@ -114,20 +110,34 @@ var Finance = /** @class */ (function (_super) {
         };
         /**
          * @return {string} String with JSON stringified property keys and values.
-        */
+         */
         _this.deconstruct = function () { return JSON.stringify(_this); };
         /**
-        * Set nthTurn array of income and expense object to an empty array
-        */
-        _this.handleStartTurn = function () {
+         * Set nthTurn array of income and expense object to an empty array
+         */
+        _this.handleStartTurn = function (playerData) {
+            _this.updateNetWorth(playerData);
             _this.updateHistoryItemsOnStartedTurn(_this._history.income);
             _this.updateHistoryItemsOnStartedTurn(_this._history.expense);
         };
         /**
-        * Check if a Route has arrived and handle income accordingly
-        *
-        * @param {Route} route - Route to be checked and handled
-        */
+         * @param {FinanceHistoryItem} historyItem history object to average
+         *
+         * @returns {number}           number that describes the average value of the given object
+         */
+        _this.getAverageHistory = function (historyItem) {
+            var keys = Object.keys(historyItem);
+            return Math.round(keys.map(function (key) { return historyItem[key]
+                .reduce(function (a, b) { return a + (b.amount * b.value); }, 0); })
+                .reduce(function (a, b) { return a + b; }, 0) /
+                keys.length);
+        };
+        /**
+         * Check if a Route has arrived and handle income accordingly
+         *
+         * @param {Route}     route    - Route to be checked and handled
+         * @param {Upgrade[]} upgrades - Upgrades to be accounted for
+         */
         _this.handleRoute = function (route, upgrades) {
             var state = route.getRouteState();
             var train = route.getTrain();
@@ -149,8 +159,11 @@ var Finance = /** @class */ (function (_super) {
         /**
          * Get Train upkeep with Player upgrades taken into consideration
          *
-        * @return {number} - number with the correct Train upkeep
-        */
+         * @param {Train}     train    - Train to get upkeep from
+         * @param {Upgrade[]} upgrades - Upgrades to be accounted for
+         *
+         * @return {number} - number with the correct Train upkeep
+         */
         _this.getTrainUpkeep = function (train, upgrades) {
             var relevantUpgrades = upgrades.filter(function (e) { return e.type === types_1.UpgradeType.TrainUpkeepCheaper; });
             var upkeep = train.upkeep;
@@ -162,33 +175,37 @@ var Finance = /** @class */ (function (_super) {
             return upkeep;
         };
         /**
-        * Add to gold count
-        *
-        * @param {number} value - number with gold to be added
-        */
+         * Add to gold count
+         *
+         * @param {number} value - number with gold to be added
+         */
         _this.addGold = function (value) {
             _this._gold += value;
+            _this._netWorth += value;
         };
         /**
-        * Update net worth
-        */
+         * Update net worth
+         * // TODO add stocks
+         */
         _this.updateNetWorth = function (data) {
-            _this._netWorth = data.routes.map(function (route) { return (Math.floor(route.getCost() / 1.5) + Math.floor(route.getTrain().cost / 1.5)); }).reduce(function (a, b) { return a + b; }, data.upgrades.map(function (upgrade) { return (Math.floor(upgrade.cost / 2)); }).reduce(function (a, b) { return a + b; }, _this._gold));
+            _this._netWorth = data.routes.map(function (route) { return (Math.floor(route.getCost() / constants_1.netWorthMultiplier.tracks) +
+                Math.floor(route.getTrain().cost / constants_1.netWorthMultiplier.train)); }).reduce(function (a, b) { return a + b; }, data.upgrades.map(function (upgrade) { return (Math.floor(upgrade.cost / constants_1.netWorthMultiplier.upgrade)); }).reduce(function (a, b) { return a + b; }, Math.floor(_this._gold / constants_1.netWorthMultiplier.gold)));
         };
         /**
-        * Remove gold from count
-        *
-        * @param {number} value - number with gold to be subtracted
-        */
+         * Remove gold from count
+         *
+         * @param {number} value - number with gold to be subtracted
+         */
         _this.removeGold = function (value) {
             _this._gold -= value;
+            _this._netWorth -= value;
         };
         /**
-        * Add entry to FinanceTotal.
-        *
-        * @param {string} id    - string with id of the entry target
-        * @param {number} value - number with value to add to target
-        */
+         * Add entry to FinanceTotal.
+         *
+         * @param {string} id    - string with id of the entry target
+         * @param {number} value - number with value to add to target
+         */
         _this.addToTotalHistory = function (id, value) {
             if (typeof _this._totalHistory[id] !== 'undefined') {
                 _this._totalHistory[id] += value;
@@ -198,25 +215,25 @@ var Finance = /** @class */ (function (_super) {
             }
         };
         /**
-        * Remove entry from FinanceTotal.
-        *
-        * @param {string} id    - string with id of the entry target
-        * @param {number} value - number with value to remove from target
-        */
+         * Remove entry from FinanceTotal.
+         *
+         * @param {string} id    - string with id of the entry target
+         * @param {number} value - number with value to remove from target
+         */
         _this.removeFromTotalHistory = function (id, value) {
             if (typeof _this._totalHistory[id] !== 'undefined') {
                 _this._totalHistory[id] -= value;
             }
         };
         /**
-        * Add entry to any nthTurn object
-        *
-        * @param {FinanceGeneralType} generalType - FinanceGeneralType of the entry
-        * @param {FinanceType}        type   - FinanceType of the expense
-        * @param {string}             id     - string with id of the expense
-        * @param {number}             amount - number with amount of the expense
-        * @param {number}             value  - number with value of the expense
-        */
+         * Add entry to any nthTurn object
+         *
+         * @param {FinanceGeneralType} generalType - FinanceGeneralType of the entry
+         * @param {FinanceType}        type   - FinanceType of the expense
+         * @param {string}             id     - string with id of the expense
+         * @param {number}             amount - number with amount of the expense
+         * @param {number}             value  - number with value of the expense
+         */
         _this.addNthTurnObject = function (generalType, type, id, amount, value) {
             var isIncome = generalType === types_1.FinanceGeneralType.Income;
             var object = {
@@ -231,18 +248,18 @@ var Finance = /** @class */ (function (_super) {
             goldTarget(object.amount * object.value);
         };
         /**
-        * Shift each entry one place forward and then reset the nthTurn array
-        *
-        * @param {FinanceHistoryItem} item - FinanceHistoryItem to be shifted
-        */
+         * Shift each entry one place forward and then reset the nthTurn array
+         *
+         * @param {FinanceHistoryItem} item - FinanceHistoryItem to be shifted
+         */
         _this.updateHistoryItemsOnStartedTurn = function (item) {
             item.nthTurnMinusTwo = item.nthTurnMinusOne;
             item.nthTurnMinusOne = item.nthTurn;
             item.nthTurn = [];
         };
         /**
-        * @returns {FinanceHistory} FinanceHistory default starting state
-        */
+         * @returns {FinanceHistory} FinanceHistory default starting state
+         */
         _this.getInitialHistoryState = function () {
             return {
                 income: {
@@ -273,10 +290,10 @@ var Finance = /** @class */ (function (_super) {
     /**
      * Get Finance instance from stringified JSON.
      *
-    * @param {string}     stringifiedJSON - string with information to be used
-    *
-    * @return {Finance}                     Finance instance created from the model
-    */
+     * @param {string}     stringifiedJSON - string with information to be used
+     *
+     * @return {Finance}                     Finance instance created from the model
+     */
     Finance.createFromStringifiedJSON = function (stringifiedJSON) {
         var parsedJSON = typeof stringifiedJSON === 'string' ? JSON.parse(stringifiedJSON) : stringifiedJSON;
         return new Finance(parsedJSON.name, parsedJSON._gold, parsedJSON._history, parsedJSON._totalHistory, parsedJSON._totalProfits, parsedJSON._netWorth, parsedJSON.id);

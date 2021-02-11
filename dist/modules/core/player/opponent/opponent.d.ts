@@ -7,9 +7,17 @@ import City from '../../city';
 import Train from '../../train';
 import Resource from '../../resource';
 import { HandleTurnInfo, QueuedRouteItem, PlayerLevel } from '../../../../types/types';
+interface ActionSave {
+    should: boolean;
+    turn: number;
+    diff: number;
+}
 export default class Opponent extends Player {
-    constructor(name: string, startCity: City, finance?: Finance, level?: PlayerLevel, queue?: QueuedRouteItem[], routes?: Route[], upgrades?: Upgrade[], id?: string);
+    private _save;
+    constructor(name: string, startCity: City, finance?: Finance, level?: PlayerLevel, queue?: QueuedRouteItem[], routes?: Route[], upgrades?: Upgrade[], save?: ActionSave, id?: string);
     handleTurn: (info: HandleTurnInfo, game: Nardis) => void;
+    setSave: (save: ActionSave) => void;
+    deconstruct: () => string;
     /**
      * Main function for deducing the best action for the non-human player in question.
      */
@@ -41,6 +49,7 @@ export default class Opponent extends Player {
      * Try and deduce the best RoutePlanCargo for a given route between two cities.
      */
     private getSuggestedRoutePlan;
+    private inspectStockOptions;
     /**
      * Supply will be medium-to-high-yield Resources. Filler will be the two low-yield Resources.
      * Prioritize supply but if all are either not demand in destination or weights more than current cargoConstraint,
@@ -50,7 +59,7 @@ export default class Opponent extends Player {
     private getN;
     private shouldPurchaseRoutes;
     private purchaseRoutes;
-    private optimizeUnprofitableRoutes;
+    private deleteConsistentlyUnprofitableRoutes;
     /**
      * Find the valueRatio of each Train, which is cost (negative) over the sum of the speed and space (positive).
      */
@@ -75,3 +84,4 @@ export default class Opponent extends Player {
      */
     static createFromStringifiedJSON: (stringifiedJSON: string, cities: City[], trains: Train[], resources: Resource[], upgrades: Upgrade[]) => Player;
 }
+export {};

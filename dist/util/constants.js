@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.possibleCityCoords = exports.CitySizeMaxConcurrentRoutes = exports.citySizes = exports.resourcePerSize = exports.resourcesPerSize = exports.rangePerLevel = exports.levelUpRequirements = exports.rangeCost = exports.eventLogLevelName = exports.localKeys = exports.playerLevelMapping = exports.CONSONANTS = exports.VOWELS = exports.ID_CHARS = exports.ID_LENGTH = exports.START_OPPONENTS = exports.START_GOLD = exports.MAP_RADIUS_IN_KILOMETERS = exports.MAX_CITY_SIZE = exports.RESOURCE_VALUE_DECISION_TARGET = exports.CITY_GROWTH_DECISION_TARGET = exports.MAX_START_CITY_SIZE = void 0;
+exports.possibleCityCoords = exports.CitySizeMaxConcurrentRoutes = exports.citySizes = exports.resourcePerSize = exports.resourcesPerSize = exports.rangePerLevel = exports.levelUpRequirements = exports.rangeCost = exports.netWorthMultiplier = exports.eventLogLevelName = exports.localKeys = exports.playerLevelMapping = exports.CONSONANTS = exports.VOWELS = exports.ID_CHARS = exports.ID_LENGTH = exports.START_OPPONENTS = exports.START_GOLD = exports.MAP_RADIUS_IN_KILOMETERS = exports.MAX_CITY_SIZE = exports.RESOURCE_VALUE_DECISION_TARGET = exports.CITY_GROWTH_DECISION_TARGET = exports.MAX_START_CITY_SIZE = void 0;
 var types_1 = require("../types/types");
 exports.MAX_START_CITY_SIZE = 2;
 exports.CITY_GROWTH_DECISION_TARGET = 5;
@@ -36,6 +36,13 @@ exports.eventLogLevelName = [
     'warning',
     'error'
 ];
+exports.netWorthMultiplier = {
+    gold: 1,
+    stock: 1,
+    tracks: 1.5,
+    train: 2,
+    upgrade: 2.5
+};
 exports.rangeCost = {
     "0,100": 1,
     "100,175": 2,

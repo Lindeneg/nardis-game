@@ -101,7 +101,7 @@ var Nardis = /** @class */ (function () {
          * // TODO update winning condition when net worth and stock is implemented
          */
         this.hasAnyPlayerWon = function () {
-            var result = _this.players.filter(function (player) { return player.gold > 10000; });
+            var result = _this.players.filter(function (player) { return player.getFinance().getGold() > 10000; });
             return {
                 player: result ? result[0] : null,
                 hasWon: !!result

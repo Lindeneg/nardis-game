@@ -21,7 +21,6 @@ import { Nardis } from '../../..';
  * @param {string}            id         - (optional) String number describing id.
  */
 export default class Player extends BaseComponent implements ITurnable {
-    readonly gold: number;
     readonly playerType: PlayerType;
     protected _startCity: City;
     protected _finance: Finance;

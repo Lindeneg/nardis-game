@@ -29,31 +29,61 @@ var finance_1 = require("../finance");
 var route_1 = require("../../route");
 var types_1 = require("../../../../types/types");
 var constants_1 = require("../../../../util/constants");
+;
 var Opponent = /** @class */ (function (_super) {
     __extends(Opponent, _super);
-    function Opponent(name, startCity, finance, level, queue, routes, upgrades, id) {
+    function Opponent(name, startCity, finance, level, queue, routes, upgrades, save, id) {
         var _this = _super.call(this, name, types_1.PlayerType.Computer, startCity, finance, level, queue, routes, upgrades, id) || this;
+        // TODO
         _this.handleTurn = function (info, game) {
             if (_this.shouldLevelBeIncreased()) {
                 _this.increaseLevel();
+                _this._save = {
+                    should: false,
+                    turn: info.turn,
+                    diff: 0
+                };
             }
             _this.handleQueue();
             _this.handleRoutes(info);
             _this.handleFinance(info);
             _this.deduceAction(info, game);
         };
+        // TODO
+        _this.setSave = function (save) {
+            _this._save = save;
+        };
+        // TODO
+        _this.deconstruct = function () { return JSON.stringify({
+            name: _this.name,
+            playerType: _this.playerType,
+            level: _this._level,
+            id: _this.id,
+            startCityId: _this._startCity.id,
+            finance: _this._finance.deconstruct(),
+            save: _this._save,
+            queue: _this._queue.map(function (e) { return ({
+                route: e.route.deconstruct(),
+                turnCost: e.turnCost
+            }); }),
+            routes: _this._routes.map(function (e) { return e.deconstruct(); }),
+            upgrades: _this._upgrades.map(function (e) { return ({
+                id: e.id
+            }); })
+        }); };
         /**
          * Main function for deducing the best action for the non-human player in question.
          */
         _this.deduceAction = function (info, game) {
             _this.log("turn=" + info.turn + ";comp=" + _this.name + ";avgr=" + _this._finance.getAverageRevenue() + "g;curg=" + _this._finance.getGold() + ";rout=" + _this._routes.length + ";queu=" + _this._queue.length + ";leve=" + _this._level + ";");
             _this.buyAvailableUpgrades(info, game);
-            if (_this.shouldPurchaseRoutes()) {
+            var stockOptions = _this.inspectStockOptions();
+            if (_this.shouldPurchaseRoutes(info.turn)) {
                 var train = _this.getSuggestedTrain(game.getArrayOfAdjustedTrains());
                 var originRoutes = _this.getInterestingRoutes(game, train);
                 _this.purchaseRoutes(game, _this.pickNInterestingRoutes(originRoutes, _this.getN(originRoutes), train));
             }
-            _this.optimizeUnprofitableRoutes();
+            _this.deleteConsistentlyUnprofitableRoutes();
             _this.log('\n\n');
         };
         /**
@@ -144,6 +174,9 @@ var Opponent = /** @class */ (function (_super) {
                 cityTwo: _this.getSuggestedCargo(c2Supply.filter(function (cr) { return !cr.resource.equals(c2p.resource) && !cr.resource.equals(c2m.resource); }), route.cityOne, cargoConstraint, [c2p, c2m])
             };
         };
+        // TODO 
+        _this.inspectStockOptions = function () {
+        };
         /**
          * Supply will be medium-to-high-yield Resources. Filler will be the two low-yield Resources.
          * Prioritize supply but if all are either not demand in destination or weights more than current cargoConstraint,
@@ -187,31 +220,52 @@ var Opponent = /** @class */ (function (_super) {
             }
             return result;
         };
+        // TODO
         _this.getN = function (originRoutes) {
             var amount = originRoutes
                 .map(function (origin) { return origin.aRoutes.length; })
                 .reduce(function (a, b) { return a + b; }, 0);
             return _this._finance.getAverageRevenue() >= 0 && _this._finance.getGold() > 0 ? (_this._queue.length === 0 ? amount : Math.floor(amount / 2)) : 0;
         };
-        _this.shouldPurchaseRoutes = function () {
-            var levelUpReq = constants_1.levelUpRequirements[_this._level + 1];
-            if (typeof levelUpReq !== 'undefined') {
-                if (_this._routes.length < levelUpReq.routes) {
-                    return true;
+        // TODO
+        _this.shouldPurchaseRoutes = function (turn) {
+            var shouldPurchase;
+            if (_this._save.should && turn < _this._save.turn + _this._save.diff) {
+                shouldPurchase = false;
+            }
+            else {
+                var levelUpReq = constants_1.levelUpRequirements[_this._level + 1];
+                if (typeof levelUpReq !== 'undefined') {
+                    if (_this._routes.length < levelUpReq.routes) {
+                        shouldPurchase = true;
+                    }
+                    else {
+                        if (_this._finance.getAverageRevenue() >= levelUpReq.revenuePerTurn && _this._finance.getGold() < levelUpReq.gold) {
+                            _this._save = {
+                                should: true,
+                                turn: turn,
+                                diff: 5
+                            };
+                            shouldPurchase = false;
+                        }
+                        else {
+                            shouldPurchase = true;
+                        }
+                    }
                 }
                 else {
-                    if (_this._finance.getAverageRevenue() >= levelUpReq.revenuePerTurn && _this._finance.getGold() >= levelUpReq.gold) {
-                        return false;
-                    }
-                    return true;
+                    shouldPurchase = true;
                 }
             }
-            return false;
+            _this.log("should purchase: " + shouldPurchase);
+            return shouldPurchase;
         };
+        // TODO
         _this.purchaseRoutes = function (game, routes) {
             _this.log("attempting to purchase " + routes.length + " routes", routes);
+            var min = Math.floor(_this._finance.getGold() * 0.1);
             for (var i = 0; i < routes.length; i++) {
-                if (_this._finance.getGold() - (routes[i].goldCost + routes[i].trainCost) < 0 || _this._queue.length > 5) {
+                if (_this._finance.getGold() - (routes[i].goldCost + routes[i].trainCost) <= min || _this._queue.length > 5) {
                     _this.log('cannot purchase anymore routes');
                     break;
                 }
@@ -220,7 +274,7 @@ var Opponent = /** @class */ (function (_super) {
             }
         };
         // TODO
-        _this.optimizeUnprofitableRoutes = function () {
+        _this.deleteConsistentlyUnprofitableRoutes = function () {
             _this.log('active routes', _this._routes);
             _this._routes.forEach(function (e, i) {
                 var p = e.getProfit();
@@ -278,6 +332,11 @@ var Opponent = /** @class */ (function (_super) {
                 obj ? console.log(obj) : null;
             }
         };
+        _this._save = save ? save : {
+            should: false,
+            turn: 1,
+            diff: 0
+        };
         return _this;
     }
     /**
@@ -294,7 +353,7 @@ var Opponent = /** @class */ (function (_super) {
         return new Opponent(parsedJSON.name, cities.filter(function (e) { return e.id === parsedJSON.startCityId; })[0], finance_1.default.createFromStringifiedJSON(parsedJSON.finance), parsedJSON.level, parsedJSON.queue.map(function (e) { return ({
             route: route_1.default.createFromStringifiedJSON(e.route, cities, trains, resources),
             turnCost: e.turnCost
-        }); }), parsedJSON.routes.map(function (e) { return route_1.default.createFromStringifiedJSON(e, cities, trains, resources); }), parsedJSON.upgrades.map(function (e) { return upgrades.filter(function (j) { return j.id === e.id; })[0]; }), parsedJSON.id);
+        }); }), parsedJSON.routes.map(function (e) { return route_1.default.createFromStringifiedJSON(e, cities, trains, resources); }), parsedJSON.upgrades.map(function (e) { return upgrades.filter(function (j) { return j.id === e.id; })[0]; }), parsedJSON.save, parsedJSON.id);
     };
     return Opponent;
 }(player_1.default));
