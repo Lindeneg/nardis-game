@@ -144,7 +144,7 @@ export class Nardis {
      */
 
     public hasAnyPlayerWon = (): {player: Player, hasWon: boolean} => {
-        const result = this.players.filter(player => player.gold > 10000);
+        const result = this.players.filter(player => player.getFinance().getGold() > 10000);
         return {
             player: result ? result[0] : null,
             hasWon: !!result
