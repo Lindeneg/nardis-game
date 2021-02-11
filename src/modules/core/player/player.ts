@@ -40,7 +40,6 @@ import { Nardis } from '../../..';
 
 export default class Player extends BaseComponent implements ITurnable {
 
-    readonly gold       : number;
     readonly playerType : PlayerType;
 
     protected _startCity: City;
@@ -73,7 +72,6 @@ export default class Player extends BaseComponent implements ITurnable {
         this._upgrades  = upgrades ? upgrades : [];
         this._range     = this.getRangeFromLevel();
 
-        this.gold = ((): number => this._finance.getGold())();
     }
 
     public getStartCity = (): City              => this._startCity;
@@ -191,7 +189,7 @@ export default class Player extends BaseComponent implements ITurnable {
         upgrades: this._upgrades.map(e => ({
             id: e.id
         }))
-    })
+    });
 
     /**
      * Handle all Routes in queue by checking current turn cost,
