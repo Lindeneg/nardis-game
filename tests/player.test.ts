@@ -1,12 +1,12 @@
-import { Finance } from '../src';
 import Player from '../src/modules/core/player/player';
+import Stock from '../src/modules/core/player/stock';
 import Route from '../src/modules/core/route';
 import { 
     PlayerType, 
     PlayerLevel 
 } from '../src/types/types';
 import {
-    rangePerLevel
+    rangePerLevel, START_GOLD
 } from '../src/util/constants';
 import {
     randomNumber
@@ -51,22 +51,24 @@ const config = {
     startCity: c1
 };
 
-const config2 = {
-    name: "christian2",
-    playerType: PlayerType.Human,
-    startCity: c1,
-    finance: new Finance('christian2', 5000),
-    playerLevel: PlayerLevel.Novice,
-    queue: [],
-    routes: routes,
-    upgrades: []
-};
-
 const player = new Player(
     config.name,
+    START_GOLD,
     config.playerType,
     config.startCity
 );
+
+const stock = new Stock('test', player.id, 0);
+
+const handleTurnData = {
+    ...data.data.handleTurnData,
+    playerData: {
+        ...data.data.handleTurnData.playerData,
+        gameStock: {
+            [player.id]: stock
+        }
+    }
+};
 
 const upgrade = data.data.upgrades[0];
 
@@ -101,43 +103,10 @@ test('can add upgrade', () => {
     expect(player.getUpgrades()[0].equals(upgrade)).toBe(true);
 });
 
-/*
-test('can increase level', () => {
-    const player2 = new Player(
-        config2.name,
-        config2.playerType,
-        config2.startCity,
-        config2.finance,
-        config2.playerLevel,
-        config2.queue,
-        config2.routes,
-        config2.upgrades
-    );
-    let didLevelIncrease: boolean = false;
-    for (let i = 0; i < 1000; i++) {
-        if (player2.getLevel() > config2.playerLevel) {
-            didLevelIncrease = true;
-            break;
-        }
-        player2.handleTurn({
-            ...data.data.handleTurnData,
-            turn: i,
-            playerData: {
-                routes: routes,
-                upgrades: []
-            }
-        });
-    }
-
-    expect(didLevelIncrease).toBe(true);
-});
-*/
-
-
 test('can handle queue item', () => {
     player.addRouteToQueue(route, 1);
-    player.handleTurn(data.data.handleTurnData);
-    player.handleTurn(data.data.handleTurnData);
+    player.handleTurn(handleTurnData);
+    player.handleTurn(handleTurnData);
 
     expect(player.getQueue().length).toEqual(0);
     expect(player.getRoutes().length).toEqual(1);

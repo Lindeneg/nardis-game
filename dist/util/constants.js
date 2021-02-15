@@ -1,7 +1,8 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.possibleCityCoords = exports.CitySizeMaxConcurrentRoutes = exports.citySizes = exports.resourcePerSize = exports.resourcesPerSize = exports.rangePerLevel = exports.levelUpRequirements = exports.rangeCost = exports.netWorthMultiplier = exports.eventLogLevelName = exports.localKeys = exports.playerLevelMapping = exports.CONSONANTS = exports.VOWELS = exports.ID_CHARS = exports.ID_LENGTH = exports.START_OPPONENTS = exports.START_GOLD = exports.MAP_RADIUS_IN_KILOMETERS = exports.MAX_CITY_SIZE = exports.RESOURCE_VALUE_DECISION_TARGET = exports.CITY_GROWTH_DECISION_TARGET = exports.MAX_START_CITY_SIZE = void 0;
+exports.possibleCityCoords = exports.CitySizeMaxConcurrentRoutes = exports.citySizes = exports.resourcePerSize = exports.resourcesPerSize = exports.rangePerLevel = exports.levelUpRequirements = exports.rangeCost = exports.stockConstant = exports.netWorthDivisors = exports.eventLogLevelName = exports.localKeys = exports.playerLevelMapping = exports.CONSONANTS = exports.VOWELS = exports.ID_CHARS = exports.ID_LENGTH = exports.START_OPPONENTS = exports.START_GOLD = exports.MAP_RADIUS_IN_KILOMETERS = exports.MAX_CITY_SIZE = exports.RESOURCE_VALUE_DECISION_TARGET = exports.CITY_GROWTH_DECISION_TARGET = exports.MAX_START_CITY_SIZE = exports.MAX_VALUE_HISTORY_LENGTH = void 0;
 var types_1 = require("../types/types");
+exports.MAX_VALUE_HISTORY_LENGTH = 100;
 exports.MAX_START_CITY_SIZE = 2;
 exports.CITY_GROWTH_DECISION_TARGET = 5;
 exports.RESOURCE_VALUE_DECISION_TARGET = 1;
@@ -36,12 +37,25 @@ exports.eventLogLevelName = [
     'warning',
     'error'
 ];
-exports.netWorthMultiplier = {
+exports.netWorthDivisors = {
     gold: 1,
     stock: 1,
     tracks: 1.5,
     train: 2,
     upgrade: 2.5
+};
+exports.stockConstant = {
+    maxStockAmount: 10,
+    startingShares: 4,
+    multipliers: {
+        stockBuy: 1.1,
+        routeLength: 1.8,
+        stockHolder: 12.5
+    },
+    divisors: {
+        avgRevenue: 35,
+        totalProfits: 70
+    }
 };
 exports.rangeCost = {
     "0,100": 1,

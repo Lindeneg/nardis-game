@@ -3,6 +3,7 @@ import City from '../modules/core/city';
 import Route from '../modules/core/route';
 import Train from '../modules/core/train';
 import Upgrade from '../modules/core/player/upgrade';
+import Stock from '../modules/core/player/stock';
 export declare enum PlayerLevel {
     None = 0,
     Novice = 1,
@@ -26,7 +27,8 @@ export declare enum FinanceType {
     Upkeep = 2,
     Upgrade = 3,
     Train = 4,
-    Recoup = 5
+    Recoup = 5,
+    Stock = 6
 }
 export declare enum FinanceGeneralType {
     Income = 0,
@@ -47,7 +49,11 @@ export declare enum LocalKey {
     Players = 4,
     CurrentPlayer = 5,
     Turn = 6,
-    HasActiveGame = 7
+    Stocks = 7,
+    HasActiveGame = 8
+}
+interface Indexable<T> {
+    [key: string]: T;
 }
 export interface ISaveable {
     deconstruct: () => string;
@@ -60,9 +66,15 @@ export interface GameEvent {
     origin: string;
     message: string;
 }
-export interface ResourceValueHistory {
+export interface ValueHistory {
     value: number;
     turn: number;
+}
+export interface Stocks extends Indexable<Stock> {
+}
+export interface StockSupply extends Indexable<number> {
+}
+export interface StockHolding extends Indexable<number> {
 }
 export interface GameData {
     cities: City[];
@@ -73,6 +85,8 @@ export interface GameData {
 export interface PlayerData {
     routes: Route[];
     upgrades: Upgrade[];
+    queue: QueuedRouteItem[];
+    gameStocks?: Stocks;
 }
 export interface HandleTurnInfo {
     turn: number;
@@ -113,8 +127,7 @@ export interface FinanceTurnItem {
     amount: number;
     value: number;
 }
-export interface FinanceHistoryItem {
-    [key: string]: FinanceTurnItem[];
+export interface FinanceHistoryItem extends Indexable<FinanceTurnItem[]> {
     nthTurn: FinanceTurnItem[];
     nthTurnMinusOne: FinanceTurnItem[];
     nthTurnMinusTwo: FinanceTurnItem[];
@@ -123,8 +136,7 @@ export interface FinanceHistory {
     income: FinanceHistoryItem;
     expense: FinanceHistoryItem;
 }
-export interface FinanceTotal {
-    [key: string]: number;
+export interface FinanceTotal extends Indexable<number> {
 }
 export interface PotentialRoute {
     cityOne: City;
@@ -164,3 +176,4 @@ export interface IRoute {
     aRouteIndex: number;
     powerIndex: number;
 }
+export {};

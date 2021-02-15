@@ -4,7 +4,7 @@ import {
 } from '../../types/model';
 import { 
     HandleTurnInfo, 
-    ResourceValueHistory, 
+    ValueHistory, 
     ITurnable 
 } from '../../types/types';
 import { 
@@ -25,7 +25,7 @@ import {
  * @param {number}                 valueVolatility    - Number with value volatility.
  * 
  * @param {number}                 valueChangeDecider - (optional) Number with value decider.
- * @param {ResourceValueHistory[]} valueHistory       - (optional) Object with history.
+ * @param {ValueHistory[]} valueHistory       - (optional) Object with history.
  * @param {string}                 id                 - (optional) String number describing id.
  */
 
@@ -37,7 +37,7 @@ export default class Resource extends BaseComponent implements ITurnable {
     private _maxValue          : number;
     private _valueVolatility   : number;
     private _valueChangeDecider: number;
-    private _valueHistory      : ResourceValueHistory[];
+    private _valueHistory      : ValueHistory[];
 
     constructor(
             name               : string,
@@ -47,7 +47,7 @@ export default class Resource extends BaseComponent implements ITurnable {
             maxValue           : number,
             valueVolatility    : number,
             valueChangeDecider?: number,
-            valueHistory      ?: ResourceValueHistory[],
+            valueHistory      ?: ValueHistory[],
             id                ?: string
     ) {
         super(name, id);
@@ -70,7 +70,7 @@ export default class Resource extends BaseComponent implements ITurnable {
     public getValueVolatility = (): number                 => this._valueVolatility;
     public getChangeDecider   = (): number                 => this._valueChangeDecider;
     public getWeight          = (): number                 => this._weight;
-    public getValueHistory    = (): ResourceValueHistory[] => this._valueHistory;
+    public getValueHistory    = (): ValueHistory[]         => this._valueHistory;
 
     /**
      * Handle Resource events by checking the decision variable. If the decision is greater than the decision target,

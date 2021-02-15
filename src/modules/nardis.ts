@@ -7,7 +7,6 @@ import Resource from './core/resource';
 import Finance from './core/player/finance';
 import {
     GameData,
-    HandleTurnInfo,
     PotentialRoute,
     BuyableRoute,
     FinanceType,
@@ -15,7 +14,8 @@ import {
     PlayerType,
     LocalKey,
     RoutePlanCargo,
-    AdjustedTrain
+    AdjustedTrain,
+    Stocks
 } from '../types/types';
 import {
     localKeys, START_GOLD, START_OPPONENTS
@@ -24,7 +24,6 @@ import {
     generateData
 } from '../data/data';
 import {
-    generateArrayOfRandomNames,
     getRangeTurnCost
 } from '../util/util';
 import { 
@@ -32,6 +31,7 @@ import {
 } from '../types/model';
 import Opponent from './core/player/opponent/opponent';
 import { genericOpponentsName } from '../data/preparedData';
+import Stock from './core/player/stock';
 
 
 /**
@@ -47,6 +47,7 @@ export class Nardis {
 
     readonly data         : GameData;
     readonly players      : Player[];
+    readonly stocks       : Stocks;
 
     private _currentPlayer: Player;
     private _turn         : number;
@@ -55,14 +56,26 @@ export class Nardis {
     constructor(
         gameData          : GameData,
         players           : Player[],
+        stocks            : Stocks,
         currentPlayer    ?: Player,
         turn             ?: number
     ) {
 
-        this.players        = players;
         this.data           = gameData;
+        this.players        = players;
+        this.stocks         = stocks;
+
         this._currentPlayer = currentPlayer ? currentPlayer : this.players[0];
         this._turn          = turn          ? turn          : 1;
+
+        this.players.forEach((player: Player): void => {
+            player.getFinance().updateNetWorth({
+                routes: player.getRoutes(),
+                upgrades: player.getUpgrades(),
+                queue: player.getQueue(),
+                gameStocks: this.stocks
+            });
+        });
     }
 
     public getCurrentPlayer = (): Player => this._currentPlayer;
@@ -73,19 +86,34 @@ export class Nardis {
      */
 
     public endTurn = (): void => {
+        //console.log(this.stocks);
         this._currentPlayer.handleTurn(
             {
                 turn: this._turn, 
                 data: this.data,
                 playerData: {
                     routes: this._currentPlayer.getRoutes(),
-                    upgrades: this._currentPlayer.getUpgrades()
+                    upgrades: this._currentPlayer.getUpgrades(),
+                    queue: this._currentPlayer.getQueue()
                 }
             }
         );
         this.handleComputerTurn();
         [...this.data.cities, ...this.data.resources].forEach(turnComponent => {
-            turnComponent.handleTurn({turn: this._turn, data: this.data, playerData: {routes: [], upgrades: []}});
+            turnComponent.handleTurn({turn: this._turn, data: this.data, playerData: {routes: [], upgrades: [], queue: []}});
+        });
+        this.players.forEach((player: Player): void => {
+            this.stocks[player.id].updateValue(
+                player.getFinance(), 
+                player.getRoutes().length + player.getQueue().length, 
+                this._turn
+            );
+            player.getFinance().updateNetWorth({
+                routes: player.getRoutes(),
+                upgrades: player.getUpgrades(),
+                queue: player.getQueue(),
+                gameStocks: this.stocks
+            });
         });
         this._turn++;
         this.saveGame();
@@ -272,7 +300,8 @@ export class Nardis {
                     data: this.data, 
                     playerData: {
                         routes: player.getRoutes(), 
-                        upgrades: player.getUpgrades()
+                        upgrades: player.getUpgrades(),
+                        queue: player.getQueue()
                     }},
                     this
                 );
@@ -372,6 +401,12 @@ export class Nardis {
                 localKeys[LocalKey.CurrentPlayer], btoa(JSON.stringify(this._currentPlayer.deconstruct()))
             );
             window.localStorage.setItem(
+                localKeys[LocalKey.Stocks], btoa(JSON.stringify(Object.keys(this.stocks).map(key => ({
+                    key,
+                    stock: this.stocks[key].deconstruct()
+                }))))
+            );
+            window.localStorage.setItem(
                 localKeys[LocalKey.Turn], btoa(this._turn.toString())
             );
         } catch(err) {
@@ -408,6 +443,12 @@ export class Nardis {
         const currentPlayerRaw          = JSON.parse(atob(
             window.localStorage.getItem(localKeys[LocalKey.CurrentPlayer])
         ));
+        const stocks                    = {};
+        JSON.parse(atob(
+            window.localStorage.getItem(localKeys[LocalKey.Stocks])
+        )).forEach(e => {
+            stocks[e.key] = Stock.createFromStringifiedJSON(e.stock);
+        });
 
         const trains       : Train[]    = trainsRaw.map(
             trainString   => Train.createFromStringifiedJSON(trainString)
@@ -443,6 +484,7 @@ export class Nardis {
                 cities
             },
             players,
+            stocks,
             currentPlayer,
             turn
         );
@@ -464,6 +506,7 @@ export class Nardis {
         const cities: City[] = data.cities.map(city => City.createFromModel(city, resources));
         const startCities: City[] = cities.filter(city => city.isStartCity);
         const nStartCities: number = startCities.length; const nOpponents: number = opponents + 1;
+        const [players, stocks]: [Player[], Stocks] = Nardis.createPlayersAndStock(name, gold, opponents, startCities);
         if (nStartCities >= nOpponents) {
             return new Nardis({
                 resources,
@@ -471,18 +514,22 @@ export class Nardis {
                 trains: data.trains.map(train => Train.createFromModel(train)),
                 upgrades: data.upgrades.map(upgrade => Upgrade.createFromModel(upgrade))
             },
-            Nardis.createPlayers(name, gold, opponents, startCities));
+            players, stocks);
         } else {
             throw new Error(`not enough start cities '${nStartCities}' to satisfy number of players '${nOpponents}'`)
         }
     }
 
-    private static createPlayers = (name: string, gold: number, opponents: number, cities: City[]): Player[] => {
+    private static createPlayersAndStock = (name: string, gold: number, opponents: number, cities: City[]): [Player[], Stocks] => {
         const players: Player[] = [];
+        const stocks: Stocks = {};
         for (let i = 0; i < opponents; i++) {
-            const a_name: string = genericOpponentsName.pop();
-            players.push(new Opponent(a_name, cities.pop(), new Finance(a_name, gold)))
+            const opponent: Opponent = new Opponent(genericOpponentsName.pop(), gold, cities.pop());
+            stocks[opponent.id] = new Stock(opponent.name, opponent.id);
+            players.push(opponent);
         }
-        return [new Player(name, PlayerType.Human, cities.pop(), new Finance(name, gold)), ...players];
+        const player: Player = new Player(name, gold, PlayerType.Human, cities.pop());
+        stocks[player.id] = new Stock(player.name, player.id);
+        return [[player, ...players], stocks];
     }
 }

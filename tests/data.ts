@@ -24,7 +24,9 @@ export const getTestData = () => {
         data: standardData,
         playerData: {
             routes: [],
-            upgrades: []
+            upgrades: [],
+            queue: [],
+            gameStocks: {}
         }
     };
     const distance = standardData.cities[0].distanceTo(standardData.cities[1]);

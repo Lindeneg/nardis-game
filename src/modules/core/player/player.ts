@@ -16,7 +16,6 @@ import {
     getPlayerLevelFromNumber
 } from '../../../util/util';
 import {
-    START_GOLD,
     rangePerLevel,
     levelUpRequirements
 } from '../../../util/constants';
@@ -26,6 +25,7 @@ import { Nardis } from '../../..';
 /**
  * @constructor
  * @param {string}            name       - String with name.
+ * @param {number}            startGold  - Number with start gold.
  * @param {PlayerType}        playerType - PlayerType either human or computer.
  * @param {City}              startCity  - City describing the start location.
  * 
@@ -40,6 +40,7 @@ import { Nardis } from '../../..';
 
 export default class Player extends BaseComponent implements ITurnable {
 
+    readonly startGold  : number;
     readonly playerType : PlayerType;
 
     protected _startCity: City;
@@ -52,6 +53,7 @@ export default class Player extends BaseComponent implements ITurnable {
 
     constructor(
             name        : string,
+            startGold   : number,
             playerType  : PlayerType,
             startCity   : City,
             finance    ?: Finance,
@@ -63,9 +65,11 @@ export default class Player extends BaseComponent implements ITurnable {
     ) {
         super(name, id);
 
+        this.startGold  = startGold;
         this.playerType = playerType;
+        
         this._startCity = startCity;
-        this._finance   = finance  ? finance  : new Finance(this.name, START_GOLD);
+        this._finance   = finance  ? finance  : new Finance(this.name, this.id, this.startGold);
         this._level     = level    ? level    : PlayerLevel.Novice;
         this._queue     = queue    ? queue    : [];
         this._routes    = routes   ? routes   : [];
@@ -89,12 +93,16 @@ export default class Player extends BaseComponent implements ITurnable {
      * @param {HandleTurnInfo} info - Object with relevant turn information.
      */
 
-    public handleTurn = (info: HandleTurnInfo, game?: Nardis) => {
+    public handleTurn = (info: HandleTurnInfo, game?: Nardis): void => {
         this.checkLevel();
         this.handleQueue();
         this.handleRoutes(info);
         this.handleFinance(info);
     }
+
+    /**
+     * Checks if level should be increased and acts accordingly. 
+     */
 
     public checkLevel = (): void => {
         if (this.shouldLevelBeIncreased()) {
@@ -127,7 +135,7 @@ export default class Player extends BaseComponent implements ITurnable {
      */
 
     public removeRouteFromQueue = (id: string): boolean => {
-        for (let i = 0; i < this._queue.length; i++) {
+        for (let i: number = 0; i < this._queue.length; i++) {
             const route: Route = this._queue[i].route;
             if (route.id === id) {
                 route.getCityOne().decrementRouteCount();
@@ -148,7 +156,7 @@ export default class Player extends BaseComponent implements ITurnable {
      */
 
     public removeRouteFromRoutes = (id: string): boolean => {
-        for (let i = 0; i < this._routes.length; i++) {
+        for (let i: number = 0; i < this._routes.length; i++) {
             const route: Route = this._routes[i];
             if (route.id === id) {
                 route.getCityOne().decrementRouteCount();
@@ -199,7 +207,7 @@ export default class Player extends BaseComponent implements ITurnable {
 
     protected handleQueue = (): void => {
         const completed: string[] = [];
-        for (let i = 0; i < this._queue.length; i++) {
+        for (let i: number = 0; i < this._queue.length; i++) {
             if (this._queue[i].turnCost <= 0) {
                 this._routes.push(this._queue[i].route);
                 completed.push(this._queue[i].route.id);
@@ -207,7 +215,7 @@ export default class Player extends BaseComponent implements ITurnable {
                 this._queue[i].turnCost--;
             }
         }
-        this._queue = this._queue.filter(e => !(completed.indexOf(e.route.id) > -1));
+        this._queue = this._queue.filter((item: QueuedRouteItem): boolean => !(completed.indexOf(item.route.id) > -1));
     }
 
     /**
@@ -217,7 +225,7 @@ export default class Player extends BaseComponent implements ITurnable {
      */
 
     protected handleRoutes = (info: HandleTurnInfo): void => {
-        this._routes.forEach(route => {
+        this._routes.forEach((route: Route): void => {
             route.handleTurn(info);
         });
     }
@@ -275,6 +283,7 @@ export default class Player extends BaseComponent implements ITurnable {
      * 
      * @param {string}     stringifiedJSON - String with information to be used.
      * @param {City[]}     cities          - City instances used in the current game.
+     * @param {Train[]}    trains          - Train instances used in the current game.
      * @param {Upgrades[]} upgrades        - Upgrade instances used in the current game.
      * 
      * @return {Player}                      Player instance created from stringifiedJSON.
@@ -284,6 +293,7 @@ export default class Player extends BaseComponent implements ITurnable {
         const parsedJSON: any = JSON.parse(stringifiedJSON);
         return new Player(
             parsedJSON.name,
+            parsedJSON.startGold,
             parsedJSON.playerType,
             cities.filter(e => e.id === parsedJSON.startCityId)[0],
             Finance.createFromStringifiedJSON(parsedJSON.finance),

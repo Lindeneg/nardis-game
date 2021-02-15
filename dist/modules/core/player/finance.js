@@ -12,51 +12,62 @@ var __extends = (this && this.__extends) || (function () {
         d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
     };
 })();
+var __spreadArrays = (this && this.__spreadArrays) || function () {
+    for (var s = 0, i = 0, il = arguments.length; i < il; i++) s += arguments[i].length;
+    for (var r = Array(s), k = 0, i = 0; i < il; i++)
+        for (var a = arguments[i], j = 0, jl = a.length; j < jl; j++, k++)
+            r[k] = a[j];
+    return r;
+};
 Object.defineProperty(exports, "__esModule", { value: true });
 var base_component_1 = require("../../component/base-component");
+var util_1 = require("../../../util/util");
 var constants_1 = require("../../../util/constants");
 var types_1 = require("../../../types/types");
 /**
  * @constructor
- * @param {string}         name         - string with name
- * @param {number}         gold         - number with current gold
+ * @param {string}         name         - String with name.
+ * @param {number}         gold         - Number with current gold.
  *
- * @param {FinanceHistory} history      - (optional) FinanceHistory object
- * @param {FinanceTotal}   totalHistory - (optional) FinanceTotal object
+ * @param {FinanceHistory} history      - (optional) FinanceHistory object.
+ * @param {FinanceTotal}   totalHistory - (optional) FinanceTotal object.
  * @param {number}         totalProfits - (optional) Number with total profits.
  * @param {number}         netWorth     - (optional) Number with net worth.
- * @param {string}         id           - (optional) string number describing id
+ * @param {StockHolding}   stock        - (optional) StockHolding object.
+ * @param {string}         id           - (optional) String number describing id.
  */
 var Finance = /** @class */ (function (_super) {
     __extends(Finance, _super);
-    function Finance(name, gold, history, totalHistory, totalProfits, netWorth, id) {
-        var _a;
+    function Finance(name, playerId, gold, history, totalHistory, totalProfits, netWorth, stocks, id) {
+        var _a, _b;
         var _this = _super.call(this, name, id) || this;
         _this.getGold = function () { return _this._gold; };
         _this.getHistory = function () { return _this._history; };
         _this.getTotalHistory = function () { return _this._totalHistory; };
         _this.getTotalProfits = function () { return _this._totalProfits; };
         _this.getNetWorth = function () { return _this._netWorth; };
+        _this.getStocks = function () { return _this._stocks; };
         /**
-         * Handle Finance events at each turn
+         * Handle Finance events at each turn.
          *
-         * @param  {HandleTurnInfo}  info - object with relevant turn information
+         * @param  {HandleTurnInfo}  info - Object with relevant turn information.
          */
         _this.handleTurn = function (info) {
-            _this.handleStartTurn(info.playerData);
+            _this.handleStartTurn();
             if (info.playerData.routes.length > 0) {
                 info.playerData.routes.forEach(function (route) {
                     _this.handleRoute(route, info.playerData.upgrades);
                 });
             }
+            _this.updateNetWorth(info.playerData);
         };
         /**
-         * Add entry to expense object from the turn at hand
+         * Add entry to expense object from the turn at hand.
          *
-         * @param {FinanceType} type   - FinanceType of the expense
-         * @param {string}      id     - string with id of the expense
-         * @param {number}      amount - number with amount of the expense
-         * @param {number}      value  - number with value of the expense
+         * @param {FinanceType} type   - FinanceType of the expense.
+         * @param {string}      id     - String with id of the expense.
+         * @param {number}      amount - Number with amount of the expense.
+         * @param {number}      value  - Number with value of the expense.
          */
         _this.addToFinanceExpense = function (type, id, amount, value) {
             _this.addToTotalHistory(constants_1.localKeys[type], amount * value);
@@ -66,10 +77,10 @@ var Finance = /** @class */ (function (_super) {
         /**
          * Remove entry from expense object.
          *
-         * @param {FinanceType} type   - FinanceType of the expense to be removed
-         * @param {string}      id     - string with id of the expense to be removed
+         * @param {FinanceType} type   - FinanceType of the expense to be removed.
+         * @param {string}      id     - string with id of the expense to be removed.
          *
-         * @returns {boolean}            true if removed else false
+         * @returns {boolean}            True if removed else false.
          */
         _this.removeFromFinanceExpense = function (type, id) {
             var targets = Object.keys(_this._history.expense).map(function (e) { return _this._history.expense[e]; });
@@ -89,11 +100,11 @@ var Finance = /** @class */ (function (_super) {
             return false;
         };
         /**
-         * @returns {number} number that describes the revenue in gold over the last three turns
+         * @returns {number} Number that describes the revenue in gold over the last three turns.
          */
         _this.getAverageRevenue = function () { return _this.getAverageHistory(_this._history.income); };
         /**
-         * @returns {number} number that describes the expense in gold over the last three turns
+         * @returns {number} Number that describes the expense in gold over the last three turns.
          */
         _this.getAverageExpense = function () { return _this.getAverageHistory(_this._history.expense); };
         /**
@@ -109,21 +120,29 @@ var Finance = /** @class */ (function (_super) {
             _this.addNthTurnObject(types_1.FinanceGeneralType.Income, types_1.FinanceType.Recoup, id, 1, value);
         };
         /**
+         * Update the net worth of the owning Player.
+         *
+         * @param {PlayerData} data - Object with PlayerData.
+         */
+        _this.updateNetWorth = function (data) {
+            _this._netWorth = __spreadArrays(data.queue.map(function (queue) { return queue.route; }), data.routes).map(function (route) { return (Math.floor(route.getCost() / constants_1.netWorthDivisors.tracks) +
+                Math.floor(route.getTrain().cost / constants_1.netWorthDivisors.train)); }).reduce(function (a, b) { return a + b; }, data.upgrades.map(function (upgrade) { return (Math.floor(upgrade.cost / constants_1.netWorthDivisors.upgrade)); }).reduce(function (a, b) { return a + b; }, _this.getValueOfOwnedStock(data.gameStocks) + Math.floor(_this._gold / constants_1.netWorthDivisors.gold)));
+        };
+        /**
          * @return {string} String with JSON stringified property keys and values.
          */
         _this.deconstruct = function () { return JSON.stringify(_this); };
         /**
-         * Set nthTurn array of income and expense object to an empty array
+         * Set nthTurn array of income and expense object to an empty array.
          */
-        _this.handleStartTurn = function (playerData) {
-            _this.updateNetWorth(playerData);
+        _this.handleStartTurn = function () {
             _this.updateHistoryItemsOnStartedTurn(_this._history.income);
             _this.updateHistoryItemsOnStartedTurn(_this._history.expense);
         };
         /**
-         * @param {FinanceHistoryItem} historyItem history object to average
+         * @param   {FinanceHistoryItem} historyItem - History object to average.
          *
-         * @returns {number}           number that describes the average value of the given object
+         * @returns {number}                           Number with average value of the history item.
          */
         _this.getAverageHistory = function (historyItem) {
             var keys = Object.keys(historyItem);
@@ -133,10 +152,10 @@ var Finance = /** @class */ (function (_super) {
                 keys.length);
         };
         /**
-         * Check if a Route has arrived and handle income accordingly
+         * Check if a Route has arrived and handle income accordingly.
          *
-         * @param {Route}     route    - Route to be checked and handled
-         * @param {Upgrade[]} upgrades - Upgrades to be accounted for
+         * @param {Route}     route    - Route to be checked and handled.
+         * @param {Upgrade[]} upgrades - Upgrades to be accounted for.
          */
         _this.handleRoute = function (route, upgrades) {
             var state = route.getRouteState();
@@ -157,12 +176,12 @@ var Finance = /** @class */ (function (_super) {
             }
         };
         /**
-         * Get Train upkeep with Player upgrades taken into consideration
+         * Get Train upkeep with Player upgrades taken into consideration.
          *
-         * @param {Train}     train    - Train to get upkeep from
-         * @param {Upgrade[]} upgrades - Upgrades to be accounted for
+         * @param {Train}     train    - Train to get upkeep from.
+         * @param {Upgrade[]} upgrades - Upgrades to be accounted for.
          *
-         * @return {number} - number with the correct Train upkeep
+         * @returns {number}           - Number with the correct Train upkeep.
          */
         _this.getTrainUpkeep = function (train, upgrades) {
             var relevantUpgrades = upgrades.filter(function (e) { return e.type === types_1.UpgradeType.TrainUpkeepCheaper; });
@@ -175,39 +194,42 @@ var Finance = /** @class */ (function (_super) {
             return upkeep;
         };
         /**
-         * Add to gold count
+         * Add to gold count.
          *
-         * @param {number} value - number with gold to be added
+         * @param {number} value - Number with gold to be added.
          */
         _this.addGold = function (value) {
             _this._gold += value;
-            _this._netWorth += value;
         };
         /**
-         * Update net worth
-         * // TODO add stocks
-         */
-        _this.updateNetWorth = function (data) {
-            _this._netWorth = data.routes.map(function (route) { return (Math.floor(route.getCost() / constants_1.netWorthMultiplier.tracks) +
-                Math.floor(route.getTrain().cost / constants_1.netWorthMultiplier.train)); }).reduce(function (a, b) { return a + b; }, data.upgrades.map(function (upgrade) { return (Math.floor(upgrade.cost / constants_1.netWorthMultiplier.upgrade)); }).reduce(function (a, b) { return a + b; }, Math.floor(_this._gold / constants_1.netWorthMultiplier.gold)));
-        };
-        /**
-         * Remove gold from count
+         * Remove gold from count.
          *
-         * @param {number} value - number with gold to be subtracted
+         * @param {number} value - number with gold to be subtracted.
          */
         _this.removeGold = function (value) {
             _this._gold -= value;
-            _this._netWorth -= value;
+        };
+        /**
+         * Get total value of the owning Player's current stock holdings.
+         *
+         * @param {Stocks} - Stocks object with all game Stock objects.
+         *
+         * @returns {number} Number with value of Stocks.
+         */
+        _this.getValueOfOwnedStock = function (stocks) {
+            if (util_1.isDefined(stocks)) {
+                return Object.keys(_this._stocks).map(function (key) { return (util_1.isDefined(stocks[key]) ? stocks[key].getSellValue() * _this._stocks[key] : 0); }).reduce(function (a, b) { return a + b; }, 0);
+            }
+            return 0;
         };
         /**
          * Add entry to FinanceTotal.
          *
-         * @param {string} id    - string with id of the entry target
-         * @param {number} value - number with value to add to target
+         * @param {string} id    - String with id of the entry target.
+         * @param {number} value - Number with value to add to target.
          */
         _this.addToTotalHistory = function (id, value) {
-            if (typeof _this._totalHistory[id] !== 'undefined') {
+            if (util_1.isDefined(_this._totalHistory[id])) {
                 _this._totalHistory[id] += value;
             }
             else {
@@ -217,22 +239,22 @@ var Finance = /** @class */ (function (_super) {
         /**
          * Remove entry from FinanceTotal.
          *
-         * @param {string} id    - string with id of the entry target
-         * @param {number} value - number with value to remove from target
+         * @param {string} id    - String with id of the entry target.
+         * @param {number} value - Number with value to remove from target.
          */
         _this.removeFromTotalHistory = function (id, value) {
-            if (typeof _this._totalHistory[id] !== 'undefined') {
+            if (util_1.isDefined(_this._totalHistory[id])) {
                 _this._totalHistory[id] -= value;
             }
         };
         /**
-         * Add entry to any nthTurn object
+         * Add entry to any nthTurn object.
          *
-         * @param {FinanceGeneralType} generalType - FinanceGeneralType of the entry
-         * @param {FinanceType}        type   - FinanceType of the expense
-         * @param {string}             id     - string with id of the expense
-         * @param {number}             amount - number with amount of the expense
-         * @param {number}             value  - number with value of the expense
+         * @param {FinanceGeneralType} generalType - FinanceGeneralType of the entry.
+         * @param {FinanceType}        type        - FinanceType of the expense.
+         * @param {string}             id          - string with id of the expense.
+         * @param {number}             amount      - number with amount of the expense.
+         * @param {number}             value       - number with value of the expense.
          */
         _this.addNthTurnObject = function (generalType, type, id, amount, value) {
             var isIncome = generalType === types_1.FinanceGeneralType.Income;
@@ -248,9 +270,9 @@ var Finance = /** @class */ (function (_super) {
             goldTarget(object.amount * object.value);
         };
         /**
-         * Shift each entry one place forward and then reset the nthTurn array
+         * Shift each entry one place forward and then reset the nthTurn array.
          *
-         * @param {FinanceHistoryItem} item - FinanceHistoryItem to be shifted
+         * @param {FinanceHistoryItem} item - FinanceHistoryItem to be shifted.
          */
         _this.updateHistoryItemsOnStartedTurn = function (item) {
             item.nthTurnMinusTwo = item.nthTurnMinusOne;
@@ -258,7 +280,7 @@ var Finance = /** @class */ (function (_super) {
             item.nthTurn = [];
         };
         /**
-         * @returns {FinanceHistory} FinanceHistory default starting state
+         * @returns {FinanceHistory} FinanceHistory default starting state.
          */
         _this.getInitialHistoryState = function () {
             return {
@@ -274,6 +296,7 @@ var Finance = /** @class */ (function (_super) {
                 }
             };
         };
+        _this._playerId = playerId;
         _this._gold = gold;
         _this._history = history ? history : _this.getInitialHistoryState();
         _this._totalProfits = totalProfits ? totalProfits : 0;
@@ -283,20 +306,24 @@ var Finance = /** @class */ (function (_super) {
             _a[constants_1.localKeys[types_1.FinanceType.Upkeep]] = 0,
             _a[constants_1.localKeys[types_1.FinanceType.Upgrade]] = 0,
             _a[constants_1.localKeys[types_1.FinanceType.Recoup]] = 0,
+            _a[constants_1.localKeys[types_1.FinanceType.Stock]] = 0,
             _a);
-        _this._netWorth = typeof netWorth !== 'undefined' ? netWorth : _this._gold;
+        _this._netWorth = util_1.isDefined(netWorth) ? netWorth : _this._gold + Math.floor(constants_1.stockConstant.startingShares * constants_1.stockConstant.multipliers.stockHolder);
+        _this._stocks = util_1.isDefined(stocks) ? stocks : (_b = {},
+            _b[_this._playerId] = constants_1.stockConstant.startingShares,
+            _b);
         return _this;
     }
     /**
      * Get Finance instance from stringified JSON.
      *
-     * @param {string}     stringifiedJSON - string with information to be used
+     * @param {string}     stringifiedJSON - String with information to be used.
      *
-     * @return {Finance}                     Finance instance created from the model
+     * @return {Finance}                     Finance instance created from the model.
      */
     Finance.createFromStringifiedJSON = function (stringifiedJSON) {
         var parsedJSON = typeof stringifiedJSON === 'string' ? JSON.parse(stringifiedJSON) : stringifiedJSON;
-        return new Finance(parsedJSON.name, parsedJSON._gold, parsedJSON._history, parsedJSON._totalHistory, parsedJSON._totalProfits, parsedJSON._netWorth, parsedJSON.id);
+        return new Finance(parsedJSON.name, parsedJSON._playerId, parsedJSON._gold, parsedJSON._history, parsedJSON._totalHistory, parsedJSON._totalProfits, parsedJSON._netWorth, parsedJSON._stocks, parsedJSON.id);
     };
     return Finance;
 }(base_component_1.default));

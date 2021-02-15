@@ -1,6 +1,14 @@
 import { PlayerLevel } from '../types/types';
 import { ResourceModel, TrainModel, UpgradeModel } from '../types/model';
 /**
+ * Check if a variable is defined
+ *
+ * @param  {any} target - Target to check if defined.
+ *
+ * @return {boolean}      True if target defined else false.
+ */
+export declare const isDefined: (target: any) => boolean;
+/**
  * Generate a random number between two given whole numbers.
  *
  * @param {number} from - Number describing minimum value, default 1.

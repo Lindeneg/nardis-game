@@ -14,7 +14,7 @@ interface ActionSave {
 }
 export default class Opponent extends Player {
     private _save;
-    constructor(name: string, startCity: City, finance?: Finance, level?: PlayerLevel, queue?: QueuedRouteItem[], routes?: Route[], upgrades?: Upgrade[], save?: ActionSave, id?: string);
+    constructor(name: string, startGold: number, startCity: City, finance?: Finance, level?: PlayerLevel, queue?: QueuedRouteItem[], routes?: Route[], upgrades?: Upgrade[], save?: ActionSave, id?: string);
     handleTurn: (info: HandleTurnInfo, game: Nardis) => void;
     setSave: (save: ActionSave) => void;
     deconstruct: () => string;
@@ -32,7 +32,7 @@ export default class Opponent extends Player {
      */
     private pickNInterestingRoutes;
     /**
-     * Buy all available upgrades but respect the maxSpend constraint.
+     * Buy all available upgrades.
      */
     private buyAvailableUpgrades;
     /**
@@ -56,6 +56,7 @@ export default class Opponent extends Player {
      * then fill up the rest of the cargo space with filler Resources.
      */
     private getSuggestedCargo;
+    private getFillerCargo;
     private getN;
     private shouldPurchaseRoutes;
     private purchaseRoutes;

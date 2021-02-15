@@ -9,11 +9,12 @@ import {
     UpgradeType
 } from '../src/types/types';
 import {
-    localKeys
+    localKeys, START_GOLD
 } from '../src/util/constants';
 import {
     getRangeTurnCost
 } from '../src/util/util';
+import Stock from '../src/modules/core/player/stock';
 
 
 const data = getRouteConfig();
@@ -24,24 +25,34 @@ const { c1, c2, t1, distance } = data.data.initiated;
 
 const player = new Player(
     "Christian",
+    START_GOLD,
     PlayerType.Human,
     cities[0]
 );
 
+const stock1 = new Stock('test', player.id);
+
 const player2 = new Player(
     "Miles",
+    START_GOLD,
     PlayerType.Computer,
     cities[2]
 );
+
+const stock2 = new Stock('test2', player2.id);
 
 const nardis = new Nardis(
     {
         cities,
         resources,
         trains,
-        upgrades
+        upgrades,
     },
-    [player, player2]
+    [player, player2],
+    {
+        [player.id]: stock1,
+        [player2.id]: stock2
+    }
 );
 
 const upgradeTrack = upgrades.filter(e => e.type === UpgradeType.TrackValueCheaper)[0];

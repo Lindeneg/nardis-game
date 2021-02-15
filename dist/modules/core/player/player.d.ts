@@ -10,6 +10,7 @@ import { Nardis } from '../../..';
 /**
  * @constructor
  * @param {string}            name       - String with name.
+ * @param {number}            startGold  - Number with start gold.
  * @param {PlayerType}        playerType - PlayerType either human or computer.
  * @param {City}              startCity  - City describing the start location.
  *
@@ -21,6 +22,7 @@ import { Nardis } from '../../..';
  * @param {string}            id         - (optional) String number describing id.
  */
 export default class Player extends BaseComponent implements ITurnable {
+    readonly startGold: number;
     readonly playerType: PlayerType;
     protected _startCity: City;
     protected _finance: Finance;
@@ -29,7 +31,7 @@ export default class Player extends BaseComponent implements ITurnable {
     protected _queue: QueuedRouteItem[];
     protected _routes: Route[];
     protected _upgrades: Upgrade[];
-    constructor(name: string, playerType: PlayerType, startCity: City, finance?: Finance, level?: PlayerLevel, queue?: QueuedRouteItem[], routes?: Route[], upgrades?: Upgrade[], id?: string);
+    constructor(name: string, startGold: number, playerType: PlayerType, startCity: City, finance?: Finance, level?: PlayerLevel, queue?: QueuedRouteItem[], routes?: Route[], upgrades?: Upgrade[], id?: string);
     getStartCity: () => City;
     getFinance: () => Finance;
     getLevel: () => PlayerLevel;
@@ -44,6 +46,9 @@ export default class Player extends BaseComponent implements ITurnable {
      * @param {HandleTurnInfo} info - Object with relevant turn information.
      */
     handleTurn: (info: HandleTurnInfo, game?: Nardis) => void;
+    /**
+     * Checks if level should be increased and acts accordingly.
+     */
     checkLevel: () => void;
     /**
      * Add Route to queue.
@@ -113,6 +118,7 @@ export default class Player extends BaseComponent implements ITurnable {
      *
      * @param {string}     stringifiedJSON - String with information to be used.
      * @param {City[]}     cities          - City instances used in the current game.
+     * @param {Train[]}    trains          - Train instances used in the current game.
      * @param {Upgrades[]} upgrades        - Upgrade instances used in the current game.
      *
      * @return {Player}                      Player instance created from stringifiedJSON.

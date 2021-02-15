@@ -69,6 +69,16 @@ const generateName = (min: number, max: number): string => {
 }
 
 /**
+ * Check if a variable is defined
+ * 
+ * @param  {any} target - Target to check if defined.
+ * 
+ * @return {boolean}      True if target defined else false.
+ */
+
+export const isDefined = (target: any): boolean => typeof target !== 'undefined';
+
+/**
  * Generate a random number between two given whole numbers.
  * 
  * @param {number} from - Number describing minimum value, default 1.

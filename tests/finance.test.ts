@@ -1,14 +1,16 @@
 import Finance from '../src/modules/core/player/finance';
+import Stock from '../src/modules/core/player/stock';
 import Upgrade from '../src/modules/core/player/upgrade';
 import Route from '../src/modules/core/route';
 import {
-    localKeys,
-    netWorthMultiplier,
-    START_GOLD
-} from '../src/util/constants';
-import {
     FinanceType
 } from '../src/types/types';
+import {
+    localKeys,
+    netWorthDivisors,
+    START_GOLD,
+    stockConstant
+} from '../src/util/constants';
 import { getRouteConfig } from './data';
 
 const data = getRouteConfig();
@@ -35,14 +37,19 @@ const route = new Route(
     0
 );
 
-const finance = new Finance('test', START_GOLD);
+const finance = new Finance('test', 'test2', START_GOLD);
+const stock = new Stock('test', 'test2', 0);
 const history = finance.getHistory();
 
 const handleTurn = {
     ...handleTurnData,
     playerData: {
         routes: [route],
-        upgrades: []
+        upgrades: [],
+        queue: [],
+        gameStocks: {
+            test2: stock
+        }
     }
 };
 
@@ -51,7 +58,7 @@ let turnCount = 1;
 test('can initialize Finance correctly', () => {
     expect(finance.name).toEqual('test');
     expect(finance.getGold()).toEqual(START_GOLD);
-    expect(finance.getNetWorth()).toEqual(START_GOLD);
+    expect(finance.getNetWorth()).toEqual(START_GOLD + stockConstant.startingShares * stockConstant.multipliers.stockHolder);
 });
 
 test('can add to Finance expense history', () => {
@@ -103,9 +110,9 @@ test('can handle route on turns', () => {
     expect(history.income.nthTurn[0].value).toEqual(r1.resource.getValue());
     expect(finance.getGold()).toEqual(START_GOLD + value - route.getTrain().upkeep);
     expect(finance.getNetWorth()).toEqual(
-        ((Math.floor(START_GOLD / netWorthMultiplier.gold)) + value - route.getTrain().upkeep) +
-        Math.floor(route.getCost() / netWorthMultiplier.tracks) +
-        Math.floor(route.getTrain().cost / netWorthMultiplier.train) 
+        ((Math.floor(START_GOLD / netWorthDivisors.gold)) + value - route.getTrain().upkeep) +
+        Math.floor(route.getCost() / netWorthDivisors.tracks) +
+        Math.floor(route.getTrain().cost / netWorthDivisors.train) 
     );
     expect(finance.getTotalHistory()[r1.resource.id]).toEqual(value);
     expect(finance.getTotalProfits()).toEqual(value - route.getTrain().upkeep);
@@ -169,15 +176,17 @@ test('can handle player upgrades', () => {
         ...handleTurn,
         playerData: {
             routes: [route],
-            upgrades: [upkeepUpgrade]
+            upgrades: [upkeepUpgrade],
+            queue: [],
+            gameStocks: {}
         },
         turn: 10
     });
     expect(finance.getHistory().expense.nthTurn[0].value).toEqual(predictedUpkeep);
     expect(finance.getNetWorth()).toEqual(
-        Math.floor(finance.getGold() / netWorthMultiplier.gold) +
-        Math.floor(route.getCost() / netWorthMultiplier.tracks) +
-        Math.floor(route.getTrain().cost / netWorthMultiplier.train) +
-        Math.floor(upkeepUpgrade.cost / netWorthMultiplier.upgrade)
+        Math.floor(finance.getGold() / netWorthDivisors.gold) +
+        Math.floor(route.getCost() / netWorthDivisors.tracks) +
+        Math.floor(route.getTrain().cost / netWorthDivisors.train) +
+        Math.floor(upkeepUpgrade.cost / netWorthDivisors.upgrade)
     );
 });

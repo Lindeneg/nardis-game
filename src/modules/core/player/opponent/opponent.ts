@@ -37,17 +37,18 @@ export default class Opponent extends Player {
     private _save: ActionSave
 
     constructor(
-        name        : string,
-        startCity   : City,
-        finance    ?: Finance,
-        level      ?: PlayerLevel,
-        queue      ?: QueuedRouteItem[],
-        routes     ?: Route[],
-        upgrades   ?: Upgrade[],
-        save       ?: ActionSave,
-        id         ?: string
+        name: string,
+        startGold: number,
+        startCity: City,
+        finance?: Finance,
+        level?: PlayerLevel,
+        queue?: QueuedRouteItem[],
+        routes?: Route[],
+        upgrades?: Upgrade[],
+        save?: ActionSave,
+        id?: string
     ) {
-        super(name, PlayerType.Computer, startCity, finance, level, queue, routes, upgrades, id);
+        super(name, startGold, PlayerType.Computer, startCity, finance, level, queue, routes, upgrades, id);
 
         this._save = save ? save : {
             should: false,
@@ -72,14 +73,15 @@ export default class Opponent extends Player {
         this.deduceAction(info, game);
     }
 
-    // TODO
+    // only for unit testing purposes
     public setSave = (save: ActionSave): void => {
         this._save = save;
     }
 
     // TODO
-   public deconstruct = (): string => JSON.stringify({
+    public deconstruct = (): string => JSON.stringify({
         name: this.name,
+        startGold: this.startGold,
         playerType: this.playerType,
         level: this._level,
         id: this.id,
@@ -125,7 +127,7 @@ export default class Opponent extends Player {
                 aRoutes: origin.aRoutes.filter((aRoute: RoutePowerPotential): boolean => (
                     origin.pRoutes[aRoute.index].goldCost + train.cost <= this._finance.getGold()
                 ))
-                .sort((a: RoutePowerPotential, b: RoutePowerPotential): number => b.power.powerIndex - a.power.powerIndex)
+                    .sort((a: RoutePowerPotential, b: RoutePowerPotential): number => b.power.powerIndex - a.power.powerIndex)
             }
         })
     )
@@ -141,28 +143,29 @@ export default class Opponent extends Player {
                 powerIndex: aRoute.power.powerIndex
             }))
         ))
-        .reduce((a: IRoute[], b: IRoute[]): IRoute[] => a.concat(b), [])
-        .sort((a: IRoute, b: IRoute): number => b.powerIndex - a.powerIndex)
-        .splice(0, n)
-        .map((chosenRoute: IRoute): BuyableRoute => {
-            const origin: OriginRoutePotential = routes[chosenRoute.originIndex];
-            const aRoute: RoutePowerPotential = origin.aRoutes[chosenRoute.aRouteIndex];
-            const pRoute: PotentialRoute = origin.pRoutes[aRoute.index]; 
-            return {
-                ...pRoute,
-                train: train.train,
-                trainCost: train.cost,
-                routePlanCargo: aRoute.suggestedRoutePlan
-            }
-        })
+            .reduce((a: IRoute[], b: IRoute[]): IRoute[] => a.concat(b), [])
+            .sort((a: IRoute, b: IRoute): number => b.powerIndex - a.powerIndex)
+            .splice(0, n)
+            .map((chosenRoute: IRoute): BuyableRoute => {
+                const origin: OriginRoutePotential = routes[chosenRoute.originIndex];
+                const aRoute: RoutePowerPotential = origin.aRoutes[chosenRoute.aRouteIndex];
+                const pRoute: PotentialRoute = origin.pRoutes[aRoute.index];
+                return {
+                    ...pRoute,
+                    train: train.train,
+                    trainCost: train.cost,
+                    routePlanCargo: aRoute.suggestedRoutePlan
+                }
+            })
     )
 
     /**
-     * Buy all available upgrades but respect the maxSpend constraint.
+     * Buy all available upgrades.
      */
     private buyAvailableUpgrades = (info: HandleTurnInfo, game: Nardis): void => {
+        if (this._save.should) { return; }
         info.data.upgrades.filter((upgrade: Upgrade): boolean => (
-            this._level >= upgrade.levelRequired && 
+            this._level >= upgrade.levelRequired &&
             this._upgrades.filter((boughtUpgrade: Upgrade): boolean => boughtUpgrade.equals(upgrade)).length <= 0)
         ).forEach((upgrade: Upgrade): void => {
             if (this._finance.getGold() - upgrade.cost >= 0) {
@@ -184,17 +187,18 @@ export default class Opponent extends Player {
                 pRoutes,
                 aRoutes: pRoutes.map((route: PotentialRoute, index: number): RoutePowerPotential => {
                     const suggestedRoutePlan: RoutePlanCargo = this.getSuggestedRoutePlan(
-                        route, 
+                        route,
                         suggestedTrain.train.cargoSpace
                     );
                     return {
                         index,
                         suggestedRoutePlan,
                         tradeableResources: suggestedRoutePlan.cityOne.length + suggestedRoutePlan.cityTwo.length,
-                        power: {...this.getPower(route.cityOne.distanceTo(route.cityTwo), suggestedTrain.train, suggestedRoutePlan)}
+                        power: { ...this.getPower(route.cityOne.distanceTo(route.cityTwo), suggestedTrain.train, suggestedRoutePlan) }
                     }
                 })
-        }})
+            }
+        })
     );
 
     /**
@@ -209,7 +213,7 @@ export default class Opponent extends Player {
             plan.map((cargo: RouteCargo): number => (
                 cargo.targetAmount * cargo.resource.getValue()
             )).reduce((a: number, b: number): number => a + b, 0)
-        )).reduce((a: number, b: number): number => a + b, 0) - upkeep;
+        )).reduce((a: number, b: number): number => a + b, (upkeep * -1));
         return {
             expectedProfitValue,
             fullRevolutionInTurns,
@@ -222,22 +226,24 @@ export default class Opponent extends Player {
      */
     private getSuggestedRoutePlan = (route: PotentialRoute, cargoConstraint: number): RoutePlanCargo => {
         const c1Supply: CityResource[] = route.cityOne.getSupply(); const c2Supply: CityResource[] = route.cityTwo.getSupply();
+        // first two entries are always low-yield, anything else are medium-to-high yield
         const c1p: CityResource = c1Supply[0]; const c1m: CityResource = c1Supply[1];
         const c2p: CityResource = c2Supply[0]; const c2m: CityResource = c2Supply[1];
+        const pgt: boolean = c1p.resource.getValue() > c1m.resource.getValue();
         return {
-            cityOne: 
+            cityOne:
                 this.getSuggestedCargo(
                     c1Supply.filter((cr: CityResource): boolean => !cr.resource.equals(c1p.resource) && !cr.resource.equals(c1m.resource)),
                     route.cityTwo,
                     cargoConstraint,
-                    [c1p, c1m]
-                ), 
+                    pgt ? [c1p, c1m] : [c1m, c1p]
+                ),
             cityTwo:
                 this.getSuggestedCargo(
                     c2Supply.filter((cr: CityResource): boolean => !cr.resource.equals(c2p.resource) && !cr.resource.equals(c2m.resource)),
                     route.cityOne,
                     cargoConstraint,
-                    [c2p, c2m]
+                    pgt ? [c2p, c2m] : [c2m, c2p]
                 )
         };
     }
@@ -252,51 +258,62 @@ export default class Opponent extends Player {
      * Prioritize supply but if all are either not demand in destination or weights more than current cargoConstraint,
      * then fill up the rest of the cargo space with filler Resources.
      */
-    private getSuggestedCargo = (supply: CityResource[], destination: City, cargoConstraint: number, filler: [CityResource, CityResource]): RouteCargo[] => {
+    private getSuggestedCargo = (supply: CityResource[], destination: City, cargoConstraint: number, fillers: [CityResource, CityResource]): RouteCargo[] => {
         const result: RouteCargo[] = [];
         supply.sort((a: CityResource, b: CityResource): number => b.resource.getValue() - a.resource.getValue())
-        .forEach((cr: CityResource): void => { 
-            if (destination.isDemand(cr.resource) && cr.available > 0) {
-                const weight: number = cr.resource.getWeight();
-                const weightRatio: number = Math.floor(cargoConstraint / weight);
-                if (weightRatio > 0) {
-                    const amount: number = cargoConstraint - weightRatio >= 0 ? weightRatio : (
-                        cargoConstraint - weight >= 0 ? 1 : 0
-                    );
-                    if (amount > 0) {
-                        cargoConstraint -= amount * weight;
-                        result.push({
-                            resource: cr.resource,
-                            targetAmount: amount,
-                            actualAmount: 0
-                        });
+            .forEach((cr: CityResource): void => {
+                if (destination.isDemand(cr.resource) && cr.available > 0) {
+                    const weight: number = cr.resource.getWeight();
+                    const weightRatio: number = Math.floor(cargoConstraint / weight);
+                    if (weightRatio > 0) {
+                        const amount: number = cargoConstraint - weightRatio >= 0 ? weightRatio : (
+                            cargoConstraint - weight >= 0 ? 1 : 0
+                        );
+                        if (amount > 0) {
+                            cargoConstraint -= amount * weight;
+                            result.push({
+                                resource: cr.resource,
+                                targetAmount: amount,
+                                actualAmount: 0
+                            });
+                        }
                     }
                 }
-            }
-        });
+            });
         if (cargoConstraint > 0) {
-            const ini: number = Math.ceil(cargoConstraint / 2); const diff: number = cargoConstraint - ini;
-            result.push(...[
-                {
-                    resource: filler[0].resource,
-                    targetAmount: ini,
-                    actualAmount: 0
-                },
-                {
-                    resource: filler[1].resource,
-                    targetAmount: diff > 0 ? diff : 0,
-                    actualAmount: 0
-                }
-            ]);
+            result.push(...this.getFillerCargo(cargoConstraint, fillers));
         }
+        return result;
+    }
+
+    // TODO
+    private getFillerCargo = (cargoConstraint: number, fillers: [CityResource, CityResource]): RouteCargo[] => {
+        const result: RouteCargo[] = [];
+        const initialAmount: number = fillers[0].available >= cargoConstraint ? cargoConstraint : fillers[0].available;
+        const diff: number = cargoConstraint - initialAmount;
+
+        result.push({
+            resource: fillers[0].resource,
+            targetAmount: initialAmount,
+            actualAmount: 0
+        });
+
+        if (diff > 0) {
+            result.push({
+                resource: fillers[1].resource,
+                targetAmount: diff,
+                actualAmount: 0
+            });
+        }
+
         return result;
     }
 
     // TODO
     private getN = (originRoutes: OriginRoutePotential[]): number => {
         const amount: number = originRoutes
-        .map((origin: OriginRoutePotential): number => origin.aRoutes.length)
-        .reduce((a: number, b: number): number => a + b, 0);
+            .map((origin: OriginRoutePotential): number => origin.aRoutes.length)
+            .reduce((a: number, b: number): number => a + b, 0);
         return this._finance.getAverageRevenue() >= 0 && this._finance.getGold() > 0 ? (
             this._queue.length === 0 ? amount : Math.floor(amount / 2)
         ) : 0
@@ -363,16 +380,16 @@ export default class Opponent extends Player {
         let currentSpace: number = 0; let valueRatio: number = Infinity; let i: number = 0;
         relevantTrains.forEach((train: AdjustedTrain, index: number): void => {
             const vr: number = (train.cost + train.train.upkeep) / (train.train.speed + train.train.cargoSpace);
-            
+
             this.log(`possible train: nme=${train.train.name};vr=${vr.toFixed(3)};cst=${train.cost};vel=${train.train.speed};spa=${train.train.cargoSpace}`);
-            
+
             if ((vr < valueRatio && train.train.cargoSpace >= currentSpace) || (Math.abs(vr - valueRatio) < Number.EPSILON && train.train.cargoSpace > currentSpace)) {
                 currentSpace = train.train.cargoSpace; valueRatio = vr; i = index;
             }
         });
-        
+
         this.log(`suggested train: ${relevantTrains[i].train.name}`);
-        
+
         return relevantTrains[i];
     }
 
@@ -392,9 +409,9 @@ export default class Opponent extends Player {
                 origins.push(c2);
             }
         }
-        
+
         this.log(`found ${origins.length} unique origins`);
-        
+
         return origins;
     }
 
@@ -422,6 +439,7 @@ export default class Opponent extends Player {
         const parsedJSON: any = JSON.parse(stringifiedJSON);
         return new Opponent(
             parsedJSON.name,
+            parsedJSON.startGold,
             cities.filter(e => e.id === parsedJSON.startCityId)[0],
             Finance.createFromStringifiedJSON(parsedJSON.finance),
             parsedJSON.level,

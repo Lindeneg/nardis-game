@@ -1,6 +1,6 @@
 import BaseComponent from '../component/base-component';
 import { ResourceModel } from '../../types/model';
-import { HandleTurnInfo, ResourceValueHistory, ITurnable } from '../../types/types';
+import { HandleTurnInfo, ValueHistory, ITurnable } from '../../types/types';
 /**
  * @constructor
  * @param {string}                 name               - String with name.
@@ -11,7 +11,7 @@ import { HandleTurnInfo, ResourceValueHistory, ITurnable } from '../../types/typ
  * @param {number}                 valueVolatility    - Number with value volatility.
  *
  * @param {number}                 valueChangeDecider - (optional) Number with value decider.
- * @param {ResourceValueHistory[]} valueHistory       - (optional) Object with history.
+ * @param {ValueHistory[]} valueHistory       - (optional) Object with history.
  * @param {string}                 id                 - (optional) String number describing id.
  */
 export default class Resource extends BaseComponent implements ITurnable {
@@ -22,14 +22,14 @@ export default class Resource extends BaseComponent implements ITurnable {
     private _valueVolatility;
     private _valueChangeDecider;
     private _valueHistory;
-    constructor(name: string, weight: number, value: number, minValue: number, maxValue: number, valueVolatility: number, valueChangeDecider?: number, valueHistory?: ResourceValueHistory[], id?: string);
+    constructor(name: string, weight: number, value: number, minValue: number, maxValue: number, valueVolatility: number, valueChangeDecider?: number, valueHistory?: ValueHistory[], id?: string);
     getValue: () => number;
     getMinValue: () => number;
     getMaxValue: () => number;
     getValueVolatility: () => number;
     getChangeDecider: () => number;
     getWeight: () => number;
-    getValueHistory: () => ResourceValueHistory[];
+    getValueHistory: () => ValueHistory[];
     /**
      * Handle Resource events by checking the decision variable. If the decision is greater than the decision target,
      * then set a new value and reset the decider, else increment the decision variable.

@@ -14,13 +14,13 @@ var upgrade_1 = require("./core/player/upgrade");
 var player_1 = require("./core/player/player");
 var train_1 = require("./core/train");
 var resource_1 = require("./core/resource");
-var finance_1 = require("./core/player/finance");
 var types_1 = require("../types/types");
 var constants_1 = require("../util/constants");
 var data_1 = require("../data/data");
 var util_1 = require("../util/util");
 var opponent_1 = require("./core/player/opponent/opponent");
 var preparedData_1 = require("../data/preparedData");
+var stock_1 = require("./core/player/stock");
 /**
  * @constructor
  * @param {GameData} data          - Object with GameData.
@@ -30,7 +30,7 @@ var preparedData_1 = require("../data/preparedData");
  * @param {number}   currentTurn   - (optional) Number describing the current turn.
  */
 var Nardis = /** @class */ (function () {
-    function Nardis(gameData, players, currentPlayer, turn) {
+    function Nardis(gameData, players, stocks, currentPlayer, turn) {
         var _this = this;
         this.getCurrentPlayer = function () { return _this._currentPlayer; };
         this.getCurrentTurn = function () { return _this._turn; };
@@ -38,17 +38,28 @@ var Nardis = /** @class */ (function () {
          * Runs at the end of each Player turn.
          */
         this.endTurn = function () {
+            //console.log(this.stocks);
             _this._currentPlayer.handleTurn({
                 turn: _this._turn,
                 data: _this.data,
                 playerData: {
                     routes: _this._currentPlayer.getRoutes(),
-                    upgrades: _this._currentPlayer.getUpgrades()
+                    upgrades: _this._currentPlayer.getUpgrades(),
+                    queue: _this._currentPlayer.getQueue()
                 }
             });
             _this.handleComputerTurn();
             __spreadArrays(_this.data.cities, _this.data.resources).forEach(function (turnComponent) {
-                turnComponent.handleTurn({ turn: _this._turn, data: _this.data, playerData: { routes: [], upgrades: [] } });
+                turnComponent.handleTurn({ turn: _this._turn, data: _this.data, playerData: { routes: [], upgrades: [], queue: [] } });
+            });
+            _this.players.forEach(function (player) {
+                _this.stocks[player.id].updateValue(player.getFinance(), player.getRoutes().length + player.getQueue().length, _this._turn);
+                player.getFinance().updateNetWorth({
+                    routes: player.getRoutes(),
+                    upgrades: player.getUpgrades(),
+                    queue: player.getQueue(),
+                    gameStocks: _this.stocks
+                });
             });
             _this._turn++;
             _this.saveGame();
@@ -200,7 +211,8 @@ var Nardis = /** @class */ (function () {
                         data: _this.data,
                         playerData: {
                             routes: player.getRoutes(),
-                            upgrades: player.getUpgrades()
+                            upgrades: player.getUpgrades(),
+                            queue: player.getQueue()
                         } }, _this);
                 }
             });
@@ -274,16 +286,29 @@ var Nardis = /** @class */ (function () {
                 window.localStorage.setItem(constants_1.localKeys[types_1.LocalKey.Cities], btoa(JSON.stringify(_this.data.cities.map(function (e) { return e.deconstruct(); }))));
                 window.localStorage.setItem(constants_1.localKeys[types_1.LocalKey.Players], btoa(JSON.stringify(_this.players.map(function (e) { return e.deconstruct(); }))));
                 window.localStorage.setItem(constants_1.localKeys[types_1.LocalKey.CurrentPlayer], btoa(JSON.stringify(_this._currentPlayer.deconstruct())));
+                window.localStorage.setItem(constants_1.localKeys[types_1.LocalKey.Stocks], btoa(JSON.stringify(Object.keys(_this.stocks).map(function (key) { return ({
+                    key: key,
+                    stock: _this.stocks[key].deconstruct()
+                }); }))));
                 window.localStorage.setItem(constants_1.localKeys[types_1.LocalKey.Turn], btoa(_this._turn.toString()));
             }
             catch (err) {
                 console.log(err);
             }
         };
-        this.players = players;
         this.data = gameData;
+        this.players = players;
+        this.stocks = stocks;
         this._currentPlayer = currentPlayer ? currentPlayer : this.players[0];
         this._turn = turn ? turn : 1;
+        this.players.forEach(function (player) {
+            player.getFinance().updateNetWorth({
+                routes: player.getRoutes(),
+                upgrades: player.getUpgrades(),
+                queue: player.getQueue(),
+                gameStocks: _this.stocks
+            });
+        });
     }
     /**
      * Get Nardis instance from saved localStorage data.
@@ -300,6 +325,10 @@ var Nardis = /** @class */ (function () {
         var upgradesRaw = JSON.parse(atob(window.localStorage.getItem(constants_1.localKeys[types_1.LocalKey.Upgrades])));
         var playersRaw = JSON.parse(atob(window.localStorage.getItem(constants_1.localKeys[types_1.LocalKey.Players])));
         var currentPlayerRaw = JSON.parse(atob(window.localStorage.getItem(constants_1.localKeys[types_1.LocalKey.CurrentPlayer])));
+        var stocks = {};
+        JSON.parse(atob(window.localStorage.getItem(constants_1.localKeys[types_1.LocalKey.Stocks]))).forEach(function (e) {
+            stocks[e.key] = stock_1.default.createFromStringifiedJSON(e.stock);
+        });
         var trains = trainsRaw.map(function (trainString) { return train_1.default.createFromStringifiedJSON(trainString); });
         var upgrades = upgradesRaw.map(function (upgradeString) { return upgrade_1.default.createFromStringifiedJSON(upgradeString); });
         var resources = resourcesRaw.map(function (resourceString) { return resource_1.default.createFromStringifiedJSON(resourceString); });
@@ -320,7 +349,7 @@ var Nardis = /** @class */ (function () {
             upgrades: upgrades,
             resources: resources,
             cities: cities
-        }, players, currentPlayer, turn);
+        }, players, stocks, currentPlayer, turn);
     };
     /**
      * Create a Nardis instance from one to three parameters.
@@ -340,25 +369,30 @@ var Nardis = /** @class */ (function () {
         var startCities = cities.filter(function (city) { return city.isStartCity; });
         var nStartCities = startCities.length;
         var nOpponents = opponents + 1;
+        var _a = Nardis.createPlayersAndStock(name, gold, opponents, startCities), players = _a[0], stocks = _a[1];
         if (nStartCities >= nOpponents) {
             return new Nardis({
                 resources: resources,
                 cities: cities,
                 trains: data.trains.map(function (train) { return train_1.default.createFromModel(train); }),
                 upgrades: data.upgrades.map(function (upgrade) { return upgrade_1.default.createFromModel(upgrade); })
-            }, Nardis.createPlayers(name, gold, opponents, startCities));
+            }, players, stocks);
         }
         else {
             throw new Error("not enough start cities '" + nStartCities + "' to satisfy number of players '" + nOpponents + "'");
         }
     };
-    Nardis.createPlayers = function (name, gold, opponents, cities) {
+    Nardis.createPlayersAndStock = function (name, gold, opponents, cities) {
         var players = [];
+        var stocks = {};
         for (var i = 0; i < opponents; i++) {
-            var a_name = preparedData_1.genericOpponentsName.pop();
-            players.push(new opponent_1.default(a_name, cities.pop(), new finance_1.default(a_name, gold)));
+            var opponent = new opponent_1.default(preparedData_1.genericOpponentsName.pop(), gold, cities.pop());
+            stocks[opponent.id] = new stock_1.default(opponent.name, opponent.id);
+            players.push(opponent);
         }
-        return __spreadArrays([new player_1.default(name, types_1.PlayerType.Human, cities.pop(), new finance_1.default(name, gold))], players);
+        var player = new player_1.default(name, gold, types_1.PlayerType.Human, cities.pop());
+        stocks[player.id] = new stock_1.default(player.name, player.id);
+        return [__spreadArrays([player], players), stocks];
     };
     return Nardis;
 }());

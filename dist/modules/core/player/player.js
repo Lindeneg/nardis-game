@@ -22,6 +22,7 @@ var constants_1 = require("../../../util/constants");
 /**
  * @constructor
  * @param {string}            name       - String with name.
+ * @param {number}            startGold  - Number with start gold.
  * @param {PlayerType}        playerType - PlayerType either human or computer.
  * @param {City}              startCity  - City describing the start location.
  *
@@ -34,7 +35,7 @@ var constants_1 = require("../../../util/constants");
  */
 var Player = /** @class */ (function (_super) {
     __extends(Player, _super);
-    function Player(name, playerType, startCity, finance, level, queue, routes, upgrades, id) {
+    function Player(name, startGold, playerType, startCity, finance, level, queue, routes, upgrades, id) {
         var _this = _super.call(this, name, id) || this;
         _this.getStartCity = function () { return _this._startCity; };
         _this.getFinance = function () { return _this._finance; };
@@ -55,6 +56,9 @@ var Player = /** @class */ (function (_super) {
             _this.handleRoutes(info);
             _this.handleFinance(info);
         };
+        /**
+         * Checks if level should be increased and acts accordingly.
+         */
         _this.checkLevel = function () {
             if (_this.shouldLevelBeIncreased()) {
                 _this.increaseLevel();
@@ -155,7 +159,7 @@ var Player = /** @class */ (function (_super) {
                     _this._queue[i].turnCost--;
                 }
             }
-            _this._queue = _this._queue.filter(function (e) { return !(completed.indexOf(e.route.id) > -1); });
+            _this._queue = _this._queue.filter(function (item) { return !(completed.indexOf(item.route.id) > -1); });
         };
         /**
          * Handle all Routes each turn.
@@ -205,9 +209,10 @@ var Player = /** @class */ (function (_super) {
         _this.getRangeFromLevel = function () {
             return constants_1.rangePerLevel[_this._level] || _this._range;
         };
+        _this.startGold = startGold;
         _this.playerType = playerType;
         _this._startCity = startCity;
-        _this._finance = finance ? finance : new finance_1.default(_this.name, constants_1.START_GOLD);
+        _this._finance = finance ? finance : new finance_1.default(_this.name, _this.id, _this.startGold);
         _this._level = level ? level : types_1.PlayerLevel.Novice;
         _this._queue = queue ? queue : [];
         _this._routes = routes ? routes : [];
@@ -220,13 +225,14 @@ var Player = /** @class */ (function (_super) {
      *
      * @param {string}     stringifiedJSON - String with information to be used.
      * @param {City[]}     cities          - City instances used in the current game.
+     * @param {Train[]}    trains          - Train instances used in the current game.
      * @param {Upgrades[]} upgrades        - Upgrade instances used in the current game.
      *
      * @return {Player}                      Player instance created from stringifiedJSON.
      */
     Player.createFromStringifiedJSON = function (stringifiedJSON, cities, trains, resources, upgrades) {
         var parsedJSON = JSON.parse(stringifiedJSON);
-        return new Player(parsedJSON.name, parsedJSON.playerType, cities.filter(function (e) { return e.id === parsedJSON.startCityId; })[0], finance_1.default.createFromStringifiedJSON(parsedJSON.finance), parsedJSON.level, parsedJSON.queue.map(function (e) { return ({
+        return new Player(parsedJSON.name, parsedJSON.startGold, parsedJSON.playerType, cities.filter(function (e) { return e.id === parsedJSON.startCityId; })[0], finance_1.default.createFromStringifiedJSON(parsedJSON.finance), parsedJSON.level, parsedJSON.queue.map(function (e) { return ({
             route: route_1.default.createFromStringifiedJSON(e.route, cities, trains, resources),
             turnCost: e.turnCost
         }); }), parsedJSON.routes.map(function (e) { return route_1.default.createFromStringifiedJSON(e, cities, trains, resources); }), parsedJSON.upgrades.map(function (e) { return upgrades.filter(function (j) { return j.id === e.id; })[0]; }), parsedJSON.id);

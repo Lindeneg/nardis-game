@@ -11,7 +11,7 @@ var __assign = (this && this.__assign) || function () {
     return __assign.apply(this, arguments);
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.getRangeTurnCost = exports.getUpgradeModels = exports.getTrainModels = exports.getHighYieldResources = exports.getMediumYieldResourceModels = exports.getLowYieldResourceModels = exports.generateArrayOfRandomNames = exports.createId = exports.degreesToRadians = exports.getPlayerLevelFromNumber = exports.randomNumber = void 0;
+exports.getRangeTurnCost = exports.getUpgradeModels = exports.getTrainModels = exports.getHighYieldResources = exports.getMediumYieldResourceModels = exports.getLowYieldResourceModels = exports.generateArrayOfRandomNames = exports.createId = exports.degreesToRadians = exports.getPlayerLevelFromNumber = exports.randomNumber = exports.isDefined = void 0;
 var constants_1 = require("../util/constants");
 var types_1 = require("../types/types");
 var preparedData_1 = require("../data/preparedData");
@@ -56,6 +56,15 @@ var generateName = function (min, max) {
     }
     return name;
 };
+/**
+ * Check if a variable is defined
+ *
+ * @param  {any} target - Target to check if defined.
+ *
+ * @return {boolean}      True if target defined else false.
+ */
+var isDefined = function (target) { return typeof target !== 'undefined'; };
+exports.isDefined = isDefined;
 /**
  * Generate a random number between two given whole numbers.
  *

@@ -29,6 +29,7 @@ var FinanceType;
     FinanceType[FinanceType["Upgrade"] = 3] = "Upgrade";
     FinanceType[FinanceType["Train"] = 4] = "Train";
     FinanceType[FinanceType["Recoup"] = 5] = "Recoup";
+    FinanceType[FinanceType["Stock"] = 6] = "Stock";
 })(FinanceType = exports.FinanceType || (exports.FinanceType = {}));
 var FinanceGeneralType;
 (function (FinanceGeneralType) {
@@ -52,5 +53,7 @@ var LocalKey;
     LocalKey[LocalKey["Players"] = 4] = "Players";
     LocalKey[LocalKey["CurrentPlayer"] = 5] = "CurrentPlayer";
     LocalKey[LocalKey["Turn"] = 6] = "Turn";
-    LocalKey[LocalKey["HasActiveGame"] = 7] = "HasActiveGame";
+    LocalKey[LocalKey["Stocks"] = 7] = "Stocks";
+    LocalKey[LocalKey["HasActiveGame"] = 8] = "HasActiveGame";
 })(LocalKey = exports.LocalKey || (exports.LocalKey = {}));
+;

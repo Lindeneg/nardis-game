@@ -3,6 +3,7 @@ import City from '../modules/core/city';
 import Route from '../modules/core/route';
 import Train from '../modules/core/train';
 import Upgrade from '../modules/core/player/upgrade';
+import Stock from '../modules/core/player/stock';
 
 
 export enum PlayerLevel {
@@ -31,7 +32,8 @@ export enum FinanceType {
     Upkeep,
     Upgrade,
     Train,
-    Recoup
+    Recoup,
+    Stock
 }
 
 export enum FinanceGeneralType {
@@ -55,8 +57,13 @@ export enum LocalKey {
     Players,
     CurrentPlayer,
     Turn,
+    Stocks,
     HasActiveGame
 }
+
+interface Indexable<T> {
+    [key: string]: T
+};
 
 export interface ISaveable {
     deconstruct: () => string;
@@ -72,10 +79,14 @@ export interface GameEvent {
     message: string
 }
 
-export interface ResourceValueHistory {
+export interface ValueHistory {
     value: number,
     turn : number
 }
+
+export interface Stocks       extends Indexable<Stock>  {}
+export interface StockSupply  extends Indexable<number> {}
+export interface StockHolding extends Indexable<number> {}
 
 export interface GameData {
     cities   : City[],
@@ -86,7 +97,9 @@ export interface GameData {
 
 export interface PlayerData {
     routes: Route[],
-    upgrades: Upgrade[]
+    upgrades: Upgrade[],
+    queue: QueuedRouteItem[],
+    gameStocks?: Stocks
 }
 
 export interface HandleTurnInfo {
@@ -136,8 +149,7 @@ export interface FinanceTurnItem {
     value : number
 }
 
-export interface FinanceHistoryItem {
-    [key: string]  : FinanceTurnItem[],
+export interface FinanceHistoryItem extends Indexable<FinanceTurnItem[]> {
     nthTurn        : FinanceTurnItem[],
     nthTurnMinusOne: FinanceTurnItem[],
     nthTurnMinusTwo: FinanceTurnItem[]
@@ -148,9 +160,7 @@ export interface FinanceHistory {
     expense: FinanceHistoryItem
 }
 
-export interface FinanceTotal {
-    [key: string]: number
-}
+export interface FinanceTotal extends Indexable<number> {}
 
 export interface PotentialRoute {
     cityOne: City,

@@ -26,7 +26,7 @@ var constants_1 = require("../../util/constants");
  * @param {number}                 valueVolatility    - Number with value volatility.
  *
  * @param {number}                 valueChangeDecider - (optional) Number with value decider.
- * @param {ResourceValueHistory[]} valueHistory       - (optional) Object with history.
+ * @param {ValueHistory[]} valueHistory       - (optional) Object with history.
  * @param {string}                 id                 - (optional) String number describing id.
  */
 var Resource = /** @class */ (function (_super) {

@@ -32,8 +32,8 @@ var constants_1 = require("../../../../util/constants");
 ;
 var Opponent = /** @class */ (function (_super) {
     __extends(Opponent, _super);
-    function Opponent(name, startCity, finance, level, queue, routes, upgrades, save, id) {
-        var _this = _super.call(this, name, types_1.PlayerType.Computer, startCity, finance, level, queue, routes, upgrades, id) || this;
+    function Opponent(name, startGold, startCity, finance, level, queue, routes, upgrades, save, id) {
+        var _this = _super.call(this, name, startGold, types_1.PlayerType.Computer, startCity, finance, level, queue, routes, upgrades, id) || this;
         // TODO
         _this.handleTurn = function (info, game) {
             if (_this.shouldLevelBeIncreased()) {
@@ -49,13 +49,14 @@ var Opponent = /** @class */ (function (_super) {
             _this.handleFinance(info);
             _this.deduceAction(info, game);
         };
-        // TODO
+        // only for unit testing purposes
         _this.setSave = function (save) {
             _this._save = save;
         };
         // TODO
         _this.deconstruct = function () { return JSON.stringify({
             name: _this.name,
+            startGold: _this.startGold,
             playerType: _this.playerType,
             level: _this._level,
             id: _this.id,
@@ -113,9 +114,12 @@ var Opponent = /** @class */ (function (_super) {
             return __assign(__assign({}, pRoute), { train: train.train, trainCost: train.cost, routePlanCargo: aRoute.suggestedRoutePlan });
         })); };
         /**
-         * Buy all available upgrades but respect the maxSpend constraint.
+         * Buy all available upgrades.
          */
         _this.buyAvailableUpgrades = function (info, game) {
+            if (_this._save.should) {
+                return;
+            }
             info.data.upgrades.filter(function (upgrade) { return (_this._level >= upgrade.levelRequired &&
                 _this._upgrades.filter(function (boughtUpgrade) { return boughtUpgrade.equals(upgrade); }).length <= 0); }).forEach(function (upgrade) {
                 if (_this._finance.getGold() - upgrade.cost >= 0) {
@@ -152,7 +156,7 @@ var Opponent = /** @class */ (function (_super) {
             var fullRevolutionInTurns = Math.ceil(distance / train.speed) * 2;
             // plus four is to account for loading/unloading in both cities
             var upkeep = (fullRevolutionInTurns + 4) * train.upkeep;
-            var expectedProfitValue = [routePlan.cityOne, routePlan.cityTwo].map(function (plan) { return (plan.map(function (cargo) { return (cargo.targetAmount * cargo.resource.getValue()); }).reduce(function (a, b) { return a + b; }, 0)); }).reduce(function (a, b) { return a + b; }, 0) - upkeep;
+            var expectedProfitValue = [routePlan.cityOne, routePlan.cityTwo].map(function (plan) { return (plan.map(function (cargo) { return (cargo.targetAmount * cargo.resource.getValue()); }).reduce(function (a, b) { return a + b; }, 0)); }).reduce(function (a, b) { return a + b; }, (upkeep * -1));
             return {
                 expectedProfitValue: expectedProfitValue,
                 fullRevolutionInTurns: fullRevolutionInTurns,
@@ -165,13 +169,15 @@ var Opponent = /** @class */ (function (_super) {
         _this.getSuggestedRoutePlan = function (route, cargoConstraint) {
             var c1Supply = route.cityOne.getSupply();
             var c2Supply = route.cityTwo.getSupply();
+            // first two entries are always low-yield, anything else are medium-to-high yield
             var c1p = c1Supply[0];
             var c1m = c1Supply[1];
             var c2p = c2Supply[0];
             var c2m = c2Supply[1];
+            var pgt = c1p.resource.getValue() > c1m.resource.getValue();
             return {
-                cityOne: _this.getSuggestedCargo(c1Supply.filter(function (cr) { return !cr.resource.equals(c1p.resource) && !cr.resource.equals(c1m.resource); }), route.cityTwo, cargoConstraint, [c1p, c1m]),
-                cityTwo: _this.getSuggestedCargo(c2Supply.filter(function (cr) { return !cr.resource.equals(c2p.resource) && !cr.resource.equals(c2m.resource); }), route.cityOne, cargoConstraint, [c2p, c2m])
+                cityOne: _this.getSuggestedCargo(c1Supply.filter(function (cr) { return !cr.resource.equals(c1p.resource) && !cr.resource.equals(c1m.resource); }), route.cityTwo, cargoConstraint, pgt ? [c1p, c1m] : [c1m, c1p]),
+                cityTwo: _this.getSuggestedCargo(c2Supply.filter(function (cr) { return !cr.resource.equals(c2p.resource) && !cr.resource.equals(c2m.resource); }), route.cityOne, cargoConstraint, pgt ? [c2p, c2m] : [c2m, c2p])
             };
         };
         // TODO 
@@ -182,7 +188,7 @@ var Opponent = /** @class */ (function (_super) {
          * Prioritize supply but if all are either not demand in destination or weights more than current cargoConstraint,
          * then fill up the rest of the cargo space with filler Resources.
          */
-        _this.getSuggestedCargo = function (supply, destination, cargoConstraint, filler) {
+        _this.getSuggestedCargo = function (supply, destination, cargoConstraint, fillers) {
             var result = [];
             supply.sort(function (a, b) { return b.resource.getValue() - a.resource.getValue(); })
                 .forEach(function (cr) {
@@ -203,20 +209,26 @@ var Opponent = /** @class */ (function (_super) {
                 }
             });
             if (cargoConstraint > 0) {
-                var ini = Math.ceil(cargoConstraint / 2);
-                var diff = cargoConstraint - ini;
-                result.push.apply(result, [
-                    {
-                        resource: filler[0].resource,
-                        targetAmount: ini,
-                        actualAmount: 0
-                    },
-                    {
-                        resource: filler[1].resource,
-                        targetAmount: diff > 0 ? diff : 0,
-                        actualAmount: 0
-                    }
-                ]);
+                result.push.apply(result, _this.getFillerCargo(cargoConstraint, fillers));
+            }
+            return result;
+        };
+        // TODO
+        _this.getFillerCargo = function (cargoConstraint, fillers) {
+            var result = [];
+            var initialAmount = fillers[0].available >= cargoConstraint ? cargoConstraint : fillers[0].available;
+            var diff = cargoConstraint - initialAmount;
+            result.push({
+                resource: fillers[0].resource,
+                targetAmount: initialAmount,
+                actualAmount: 0
+            });
+            if (diff > 0) {
+                result.push({
+                    resource: fillers[1].resource,
+                    targetAmount: diff,
+                    actualAmount: 0
+                });
             }
             return result;
         };
@@ -350,7 +362,7 @@ var Opponent = /** @class */ (function (_super) {
      */
     Opponent.createFromStringifiedJSON = function (stringifiedJSON, cities, trains, resources, upgrades) {
         var parsedJSON = JSON.parse(stringifiedJSON);
-        return new Opponent(parsedJSON.name, cities.filter(function (e) { return e.id === parsedJSON.startCityId; })[0], finance_1.default.createFromStringifiedJSON(parsedJSON.finance), parsedJSON.level, parsedJSON.queue.map(function (e) { return ({
+        return new Opponent(parsedJSON.name, parsedJSON.startGold, cities.filter(function (e) { return e.id === parsedJSON.startCityId; })[0], finance_1.default.createFromStringifiedJSON(parsedJSON.finance), parsedJSON.level, parsedJSON.queue.map(function (e) { return ({
             route: route_1.default.createFromStringifiedJSON(e.route, cities, trains, resources),
             turnCost: e.turnCost
         }); }), parsedJSON.routes.map(function (e) { return route_1.default.createFromStringifiedJSON(e, cities, trains, resources); }), parsedJSON.upgrades.map(function (e) { return upgrades.filter(function (j) { return j.id === e.id; })[0]; }), parsedJSON.save, parsedJSON.id);

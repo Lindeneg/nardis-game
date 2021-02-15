@@ -1,5 +1,5 @@
 import { Nardis } from '../src/modules/nardis';
-import { netWorthMultiplier } from '../src/util/constants';
+import { netWorthDivisors, stockConstant } from '../src/util/constants';
 
 import { 
     PlayerType, 
@@ -29,7 +29,7 @@ test('can get correct range from opponent level', () => {
 
 test('can get correct opponent finance', () => {
     expect(finance.getGold()).toEqual(START_GOLD);
-    expect(finance.getNetWorth()).toEqual(START_GOLD);
+    expect(finance.getNetWorth()).toEqual(START_GOLD + Math.floor(stockConstant.startingShares * (Math.floor(stockConstant.startingShares * stockConstant.multipliers.stockHolder))));
     expect(finance.getAverageRevenue()).toEqual(0);
     expect(finance.getAverageExpense()).toEqual(0);
     expect(finance.getTotalProfits()).toEqual(0);
@@ -52,7 +52,15 @@ test('can get finance on first turn', () => {
     const profits = finance.getTotalProfits()
     expect(profits).toBeLessThan(0);
     expect(finance.getGold()).toEqual(START_GOLD + profits);
-    expect(finance.getNetWorth()).toEqual(START_GOLD + profits);
+    expect(finance.getNetWorth()).toEqual(opponent.getUpgrades()
+        .map(e => Math.floor(e.cost / netWorthDivisors.upgrade))
+        .reduce((a, b) => a + b, opponent.getQueue()
+            .map(e => Math.floor(e.route.getCost() / netWorthDivisors.tracks) + Math.floor(e.route.getTrain().cost / netWorthDivisors.train))
+        .reduce((a, b) => a + b, 
+            Math.floor(stockConstant.startingShares * game.stocks[opponent.id].getSellValue()) + 
+            Math.floor(finance.getGold() / netWorthDivisors.gold)
+        ))
+    );
 });
 
 test('can handle second turn', () => {
@@ -66,8 +74,13 @@ test('can get finance on second turn', () => {
     expect(finance.getGold()).toEqual(START_GOLD + profits);
     expect(finance.getGold() + Math.abs(profits)).toEqual(START_GOLD);
     expect(finance.getNetWorth()).toEqual(opponent.getUpgrades()
-        .map(e => Math.floor(e.cost / netWorthMultiplier.upgrade))
-        .reduce((a, b) => a + b, Math.floor(finance.getGold() / netWorthMultiplier.gold))
+        .map(e => Math.floor(e.cost / netWorthDivisors.upgrade))
+        .reduce((a, b) => a + b, opponent.getQueue()
+            .map(e => Math.floor(e.route.getCost() / netWorthDivisors.tracks) + Math.floor(e.route.getTrain().cost / netWorthDivisors.train))
+        .reduce((a, b) => a + b, 
+            Math.floor(stockConstant.startingShares * game.stocks[opponent.id].getSellValue()) + 
+            Math.floor(finance.getGold() / netWorthDivisors.gold)
+        ))
     );
 });
 
@@ -92,14 +105,21 @@ test('can keep money positive', () => {
 });
 
 test('can get correct net worth', () => {
+    //@ts-expect-error
+    opponent.setSave({
+        should: true,
+        turn: game.getCurrentTurn(),
+        diff: 5
+    });
     game.endTurn();
     expect(finance.getNetWorth()).toEqual(opponent.getUpgrades()
-        .map(e => Math.floor(e.cost / netWorthMultiplier.upgrade))
-        .reduce((a, b) => a + b, opponent.getRoutes().map(e => (
-            Math.floor(e.getCost() / netWorthMultiplier.tracks) +
-            Math.floor(e.getTrain().cost / netWorthMultiplier.train)
+        .map(e => Math.floor(e.cost / netWorthDivisors.upgrade))
+        .reduce((a, b) => a + b, [...opponent.getQueue().map(k => k.route), ...opponent.getRoutes()]
+            .map(e => Math.floor(e.getCost() / netWorthDivisors.tracks) + Math.floor(e.getTrain().cost / netWorthDivisors.train))
+        .reduce((a, b) => a + b, 
+            Math.floor(stockConstant.startingShares * game.stocks[opponent.id].getSellValue()) + 
+            Math.floor(finance.getGold() / netWorthDivisors.gold)
         ))
-        .reduce((a, b) => a + b, Math.floor(finance.getGold() / netWorthMultiplier.gold)))
     );
 });
 

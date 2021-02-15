@@ -2,6 +2,7 @@ import {
     PlayerLevel
 } from '../types/types';
 
+export const MAX_VALUE_HISTORY_LENGTH      : number   = 100;
 export const MAX_START_CITY_SIZE           : number   = 2;
 export const CITY_GROWTH_DECISION_TARGET   : number   = 5;
 export const RESOURCE_VALUE_DECISION_TARGET: number   = 1;
@@ -41,13 +42,27 @@ export const eventLogLevelName: string[] = [
     'error'
 ];
 
-export const netWorthMultiplier = {
+export const netWorthDivisors = {
     gold   : 1,
     stock  : 1,
     tracks : 1.5,
     train  : 2,
     upgrade: 2.5
 }
+
+export const stockConstant = {
+    maxStockAmount: 10,
+    startingShares: 4,
+    multipliers: {
+        stockBuy: 1.1,
+        routeLength: 1.8,
+        stockHolder: 12.5
+    },
+    divisors: {
+        avgRevenue: 35,
+        totalProfits: 70
+    }
+};
 
 export const rangeCost = {
     "0,100"    : 1,

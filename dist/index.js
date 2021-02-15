@@ -10,7 +10,7 @@ var __exportStar = (this && this.__exportStar) || function(m, exports) {
     for (var p in m) if (p !== "default" && !Object.prototype.hasOwnProperty.call(exports, p)) __createBinding(exports, m, p);
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.Nardis = exports.Finance = exports.Upgrade = exports.Player = exports.Resource = exports.Train = exports.Route = exports.City = exports.generateData = exports.genericOpponentsName = void 0;
+exports.Nardis = exports.Finance = exports.Stock = exports.Upgrade = exports.Player = exports.Resource = exports.Train = exports.Route = exports.City = exports.generateData = exports.genericOpponentsName = void 0;
 var data_1 = require("./data/data");
 Object.defineProperty(exports, "generateData", { enumerable: true, get: function () { return data_1.generateData; } });
 var nardis_1 = require("./modules/nardis");
@@ -29,6 +29,8 @@ var finance_1 = require("./modules/core/player/finance");
 exports.Finance = finance_1.default;
 var upgrade_1 = require("./modules/core/player/upgrade");
 exports.Upgrade = upgrade_1.default;
+var stock_1 = require("./modules/core/player/stock");
+exports.Stock = stock_1.default;
 __exportStar(require("./types/types"), exports);
 __exportStar(require("./util/util"), exports);
 __exportStar(require("./util/constants"), exports);

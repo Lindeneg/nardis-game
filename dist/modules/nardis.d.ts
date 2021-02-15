@@ -1,7 +1,7 @@
 import City from './core/city';
 import Player from './core/player/player';
 import Train from './core/train';
-import { GameData, PotentialRoute, BuyableRoute, RoutePlanCargo, AdjustedTrain } from '../types/types';
+import { GameData, PotentialRoute, BuyableRoute, RoutePlanCargo, AdjustedTrain, Stocks } from '../types/types';
 /**
  * @constructor
  * @param {GameData} data          - Object with GameData.
@@ -13,9 +13,10 @@ import { GameData, PotentialRoute, BuyableRoute, RoutePlanCargo, AdjustedTrain }
 export declare class Nardis {
     readonly data: GameData;
     readonly players: Player[];
+    readonly stocks: Stocks;
     private _currentPlayer;
     private _turn;
-    constructor(gameData: GameData, players: Player[], currentPlayer?: Player, turn?: number);
+    constructor(gameData: GameData, players: Player[], stocks: Stocks, currentPlayer?: Player, turn?: number);
     getCurrentPlayer: () => Player;
     getCurrentTurn: () => number;
     /**
@@ -138,5 +139,5 @@ export declare class Nardis {
      * @return {Nardis}              Created Nardis instance.
      */
     static createFromPlayer: (name: string, gold?: number, opponents?: number) => Nardis;
-    private static createPlayers;
+    private static createPlayersAndStock;
 }
