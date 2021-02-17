@@ -1,5 +1,5 @@
 import { 
-    createId 
+    createId, isDefined 
 } from '../../util/util';
 import { 
     ISaveable 
@@ -20,12 +20,12 @@ export default abstract class BaseComponent implements ISaveable {
     readonly name: string;
 
     constructor(name: string, id?: string) {
-        this.id   = id ? id : createId();
+        this.id   = isDefined(id) ? id : createId();
         this.name = name;
     }
 
     /** 
-     * @return {boolean} True if instances has same id else false.
+     * @returns {boolean} True if instances has same id else false.
     */
 
     public equals = (other: BaseComponent): boolean => {

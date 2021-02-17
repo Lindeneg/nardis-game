@@ -6,6 +6,7 @@ import Route from '../../route';
 import City from '../../city';
 import Train from '../../train';
 import Resource from '../../resource';
+import { isDefined } from '../../../../util/util';
 import {
     HandleTurnInfo,
     QueuedRouteItem,
@@ -20,45 +21,62 @@ import {
     RouteCargo,
     RoutePower,
     IRoute,
-    BuyableRoute
+    BuyableRoute,
+    StockHolding,
+    Stocks,
+    ActionSave
 } from '../../../../types/types';
 import { levelUpRequirements } from '../../../../util/constants';
 
 
-interface ActionSave {
-    should: boolean,
-    turn: number,
-    diff: number
-};
-
+/**
+ * @constructor
+ * @param {string}            name       - String with name.
+ * @param {number}            startGold  - Number with start gold.
+ * @param {City}              startCity  - City describing the start location.
+ * 
+ * @param {Finance}           finance    - (optional) Finance instance.
+ * @param {PlayerLevel}       level      - (optional) PlayerLevel.
+ * @param {QueuedRouteItem[]} queue      - (optional) Array of queued Routes.
+ * @param {Route[]}           routes     - (optional) Array of Routes.
+ * @param {Upgrade[]}         upgrades   - (optional) Array of Upgrades.
+ * @param {ActionSave}        save       - (optional) Object with save information.
+ * @param {string}            id         - (optional) String number describing id.
+ */
 
 export default class Opponent extends Player {
 
     private _save: ActionSave
 
     constructor(
-        name: string,
+        name     : string,
         startGold: number,
         startCity: City,
-        finance?: Finance,
-        level?: PlayerLevel,
-        queue?: QueuedRouteItem[],
-        routes?: Route[],
+        finance ?: Finance,
+        level   ?: PlayerLevel,
+        queue   ?: QueuedRouteItem[],
+        routes  ?: Route[],
         upgrades?: Upgrade[],
-        save?: ActionSave,
-        id?: string
+        save    ?: ActionSave,
+        id      ?: string
     ) {
         super(name, startGold, PlayerType.Computer, startCity, finance, level, queue, routes, upgrades, id);
 
-        this._save = save ? save : {
+        this._save = isDefined(save) ? save : {
             should: false,
             turn: 1,
             diff: 0
         };
     }
 
-    // TODO
-    public handleTurn = (info: HandleTurnInfo, game: Nardis) => {
+    /**
+     * Handle Opponent events and actions.
+     * 
+     * @param {HandleTurnInfo} info - Object with relevant turn information.
+     * @param {Nardis}         game - Nardis game instance.
+     */
+
+    public handleTurn = (info: HandleTurnInfo, game: Nardis): void => {
         if (this.shouldLevelBeIncreased()) {
             this.increaseLevel();
             this._save = {
@@ -78,7 +96,10 @@ export default class Opponent extends Player {
         this._save = save;
     }
 
-    // TODO
+    /**
+     * @returns {string} String with JSON stringified property keys and values.
+     */
+
     public deconstruct = (): string => JSON.stringify({
         name: this.name,
         startGold: this.startGold,
@@ -99,12 +120,27 @@ export default class Opponent extends Player {
     });
 
     /**
-     * Main function for deducing the best action for the non-human player in question.
+     * There are basically five actions:
+     * - Buy Route
+     * - Buy Upgrade
+     * - Buy Stock
+     * - Delete Route
+     * - Sell Stock
+     * 
+     * Upgrades should be prioritized, then Stock options and then purchase of Routes. 
+     * Lastly, delete and recoup the cost of consistently unprofitable Routes.
+     * 
+     * It is also possible to alter an unprofitable Route to potentially make it profitable, 
+     * if, say, new Trains or Resources becomes available. However, that, for now, is not utilized by Opponent.
+     * 
+     * @param {HandleTurnInfo} info - Object with relevant turn information.
+     * @param {Nardis}         game - Nardis game instance.
      */
+
     private deduceAction = (info: HandleTurnInfo, game: Nardis): void => {
-        this.log(`turn=${info.turn};comp=${this.name};avgr=${this._finance.getAverageRevenue()}g;curg=${this._finance.getGold()};rout=${this._routes.length};queu=${this._queue.length};leve=${this._level};`);
+        this.log(`turn=${info.turn} | name=${this.name}`);
         this.buyAvailableUpgrades(info, game);
-        const stockOptions = this.inspectStockOptions();
+        this.inspectStockOptions(game.stocks, this._finance.getStocks());
         if (this.shouldPurchaseRoutes(info.turn)) {
             const train: AdjustedTrain = this.getSuggestedTrain(game.getArrayOfAdjustedTrains());
             const originRoutes: OriginRoutePotential[] = this.getInterestingRoutes(game, train);
@@ -115,10 +151,16 @@ export default class Opponent extends Player {
         this.log('\n\n');
     }
 
-    /**
-     * Iterate over each unique origin. Then iterate over routes from that origin.
-     * Sort those routes after highest potential profitability.
-     */
+     /**
+      * Iterate over each unique origin. Then iterate over routes from that origin.
+      * Filter for affordable Routes and sort for highest potential profitability.
+      *  
+      * @param   {Nardis}                 game  - Nardis game instance.
+      * @param   {AdjustedTrain}          train - AdjustedTrain object.
+      * 
+      * @returns {OriginRoutePotential[]} Array of origins and their respective routes.
+      */
+
     private getInterestingRoutes = (game: Nardis, train: AdjustedTrain): OriginRoutePotential[] => (
         this.getRoutePowerPotential(game, train).map((origin: OriginRoutePotential): OriginRoutePotential => {
             this.log(`routes from ${origin.origin.name}`, [origin.aRoutes, origin.pRoutes]);
@@ -132,9 +174,16 @@ export default class Opponent extends Player {
         })
     )
 
-    /**
-     * Reduce an array of OriginRoutePotential to a sorted array of BuyableRoutes with length n.
-     */
+     /**
+      * Reduce an array of OriginRoutePotential to a sorted array of BuyableRoutes with length n.
+      * 
+      * @param   {OriginRoutePotential[]} routes - Array of origins and their respective routes.
+      * @param   {number}                 n      - Number with length of returned array.
+      * @param   {AdjustedTrain}          train  - AdjustedTrain object.
+      * 
+      * @returns {BuyableRoute[]}         Array of BuyableRoute objects ready to be purchased.
+      */
+
     private pickNInterestingRoutes = (routes: OriginRoutePotential[], n: number, train: AdjustedTrain): BuyableRoute[] => (
         routes.map((route: OriginRoutePotential, originIndex: number): IRoute[] => (
             route.aRoutes.map((aRoute: RoutePowerPotential, aRouteIndex: number): IRoute => ({
@@ -161,7 +210,11 @@ export default class Opponent extends Player {
 
     /**
      * Buy all available upgrades.
+     * 
+     * @param {HandleTurnInfo} info - Object with relevant turn information.
+     * @param {Nardis}         game - Nardis game instance.
      */
+
     private buyAvailableUpgrades = (info: HandleTurnInfo, game: Nardis): void => {
         if (this._save.should) { return; }
         info.data.upgrades.filter((upgrade: Upgrade): boolean => (
@@ -175,10 +228,16 @@ export default class Opponent extends Player {
         });
     }
 
-    /**
-     * Each origin will have its own unique routes. There can be multiple origins each with multiple routes.
-     * Assign a "power index" to each route associated with each origin. Higher the index, better the route.
-     */
+     /**
+      * Each origin will have its own unique routes. There can be multiple origins each with multiple routes.
+      * Assign a "power index" to each route associated with each origin. Higher the index, better the route.
+      * 
+      * @param   {Nardis}                 game           - Nardis game instance.
+      * @param   {AdjustedTrain}          suggestedTrain - AdjustedTrain object.
+      * 
+      * @returns {OriginRoutePotential[]} Array of OriginRoutePotentials from each unique origin.
+      */
+    
     private getRoutePowerPotential = (game: Nardis, suggestedTrain: AdjustedTrain): OriginRoutePotential[] => (
         this.getUniqueOrigins().map((origin: City): OriginRoutePotential => {
             const pRoutes: PotentialRoute[] = game.getArrayOfPossibleRoutes(origin);
@@ -201,10 +260,19 @@ export default class Opponent extends Player {
         })
     );
 
-    /**
-     * What would the expected profit be from a full revolution? That is from origin, to destination and back again.
-     * How many turns will it take? The power index is the expected profit over the turns a full revolution requires.
-     */
+     /**
+      * Get RoutePower of a potential route by asking a few questions.
+      * 
+      * What would the expected profit be from a full revolution? That is from origin, to destination and back again.
+      * How many turns will it take? The power index is the expected profit over the turns a full revolution requires.
+      * 
+      * @param   {number}         distance  - Number with distance in kilometers. 
+      * @param   {Train}          train     - Train instance to be used.
+      * @param   {RoutePlanCargo} routePlan - RoutePlanCargo object with suggested cargo.
+      * 
+      * @returns {RoutePower}     RoutePower object for the given parameters.
+      */
+
     private getPower = (distance: number, train: Train, routePlan: RoutePlanCargo): RoutePower => {
         const fullRevolutionInTurns: number = Math.ceil(distance / train.speed) * 2;
         // plus four is to account for loading/unloading in both cities
@@ -222,8 +290,14 @@ export default class Opponent extends Player {
     }
 
     /**
-     * Try and deduce the best RoutePlanCargo for a given route between two cities.
+     * Get suggested RoutePlanCargo for a given route between two cities.
+     * 
+     * @param   {PotentialRoute} route           - PotentialRoute object.
+     * @param   {number}         cargoConstraint - Number of available cargo spaces.
+     * 
+     * @returns {RoutePlanCargo} RoutePlanCargo suggested for the route.
      */
+
     private getSuggestedRoutePlan = (route: PotentialRoute, cargoConstraint: number): RoutePlanCargo => {
         const c1Supply: CityResource[] = route.cityOne.getSupply(); const c2Supply: CityResource[] = route.cityTwo.getSupply();
         // first two entries are always low-yield, anything else are medium-to-high yield
@@ -248,17 +322,41 @@ export default class Opponent extends Player {
         };
     }
 
-    // TODO 
-    private inspectStockOptions = () => {
+    
+    /**
+     * // TODO
+     */ 
 
+    private inspectStockOptions = (gameStocks: Stocks, ownedStocks: StockHolding): void => {
+        const profit: number = this._finance.getAverageRevenue() - this._finance.getAverageExpense();
+        if (this._finance.getGold() <= 0 && profit <= 0)  {
+            // sell stock, first foreign stock if any, else own stock
+        } else if (this._finance.getGold() > Math.floor(this.startGold / 2) && profit > 0) {
+            // buy stock
+        }
     }
 
     /**
+     * Get array of suggested RouteCargo for a given route.
+     * 
      * Supply will be medium-to-high-yield Resources. Filler will be the two low-yield Resources.
      * Prioritize supply but if all are either not demand in destination or weights more than current cargoConstraint,
      * then fill up the rest of the cargo space with filler Resources.
+     * 
+     * @param   {CityResource[]}               supply          - Array of CityResources to be used.
+     * @param   {City}                         destination     - City instance to check demand from.
+     * @param   {number}                       cargoConstraint - Number of available cargo spaces.
+     * @param   {[CityResource, CityResource]} fillers         - Tuple of two low-yield CityResources.
+     * 
+     * @returns {RouteCargo[]}                 Array of suggested RouteCargo.
      */
-    private getSuggestedCargo = (supply: CityResource[], destination: City, cargoConstraint: number, fillers: [CityResource, CityResource]): RouteCargo[] => {
+
+    private getSuggestedCargo = (
+        supply         : CityResource[], 
+        destination    : City, 
+        cargoConstraint: number, 
+        fillers        : [CityResource, CityResource]
+    ): RouteCargo[] => {
         const result: RouteCargo[] = [];
         supply.sort((a: CityResource, b: CityResource): number => b.resource.getValue() - a.resource.getValue())
             .forEach((cr: CityResource): void => {
@@ -286,7 +384,15 @@ export default class Opponent extends Player {
         return result;
     }
 
-    // TODO
+    /**
+     * Get an array of filler CityResources within the given constraint.
+     * 
+     * @param   {number}                       cargoConstraint - Number of available cargo spaces.
+     * @param   {[CityResource, CityResource]} fillers         - Tuple of two low-yield CityResources.
+     * 
+     * @returns {RouteCargo[]}                 Array of filler CityResources.
+     */
+
     private getFillerCargo = (cargoConstraint: number, fillers: [CityResource, CityResource]): RouteCargo[] => {
         const result: RouteCargo[] = [];
         const initialAmount: number = fillers[0].available >= cargoConstraint ? cargoConstraint : fillers[0].available;
@@ -309,7 +415,14 @@ export default class Opponent extends Player {
         return result;
     }
 
-    // TODO
+    /**
+     * Get number with limit of purchasing Routes. Not a great logic thus far. Needs to be re-looked at.
+     * 
+     * @param   {OriginRoutePotential[]} originRoutes - Array of OriginRoutePotentials.
+     * 
+     * @returns {number}                 Number with suggested limit of Route purchase.
+     */
+
     private getN = (originRoutes: OriginRoutePotential[]): number => {
         const amount: number = originRoutes
             .map((origin: OriginRoutePotential): number => origin.aRoutes.length)
@@ -319,14 +432,21 @@ export default class Opponent extends Player {
         ) : 0
     }
 
-    // TODO
+    /**
+     * The default state is basically to buy Routes unless cash is needed for level up or stock purchase.
+     * 
+     * @param   {number}  turn - Number with current turn. 
+     * 
+     * @returns {boolean} True if should purchase Route else false.
+     */
+
     private shouldPurchaseRoutes = (turn: number): boolean => {
         let shouldPurchase: boolean;
         if (this._save.should && turn < this._save.turn + this._save.diff) {
             shouldPurchase = false;
         } else {
             const levelUpReq = levelUpRequirements[this._level + 1];
-            if (typeof levelUpReq !== 'undefined') {
+            if (isDefined(levelUpReq)) {
                 if (this._routes.length < levelUpReq.routes) {
                     shouldPurchase = true;
                 } else {
@@ -349,7 +469,13 @@ export default class Opponent extends Player {
         return shouldPurchase;
     }
 
-    // TODO
+    /**
+     * Purchase the given Routes until respecting some generic constraints for gold and queue length.
+     * 
+     * @param {Nardis}         game   - Nardis game instance.
+     * @param {BuyableRoute[]} routes - BuyableRoutes to purchase.
+     */
+
     private purchaseRoutes = (game: Nardis, routes: BuyableRoute[]): void => {
         this.log(`attempting to purchase ${routes.length} routes`, routes);
         const min: number = Math.floor(this._finance.getGold() * 0.1);
@@ -363,7 +489,10 @@ export default class Opponent extends Player {
         }
     }
 
-    // TODO
+    /**
+     * // TODO
+     */ 
+
     private deleteConsistentlyUnprofitableRoutes = (): void => {
         this.log('active routes', this._routes);
         this._routes.forEach((e, i) => {
@@ -372,9 +501,15 @@ export default class Opponent extends Player {
         });
     }
 
-    /**
-     * Find the valueRatio of each Train, which is cost (negative) over the sum of the speed and space (positive).
-     */
+     /**
+      * Get optimal Train by finding the valueRatio of each Train, 
+      * which is the sum of cost and upkeep over the sum of the speed and space.
+      * 
+      * @param   {AdjustedTrain[]} trains - Array of AdjustedTrains to be used.
+      * 
+      * @returns {AdjustedTrain}   AdjustedTrain object.
+      */
+    
     private getSuggestedTrain = (trains: AdjustedTrain[]): AdjustedTrain => {
         const relevantTrains: AdjustedTrain[] = trains.filter((e: AdjustedTrain): boolean => this._level >= e.train.levelRequired);
         let currentSpace: number = 0; let valueRatio: number = Infinity; let i: number = 0;
@@ -393,10 +528,13 @@ export default class Opponent extends Player {
         return relevantTrains[i];
     }
 
-    /**
-     * Get array of all cities currently connected to the Route network of the player. These cities will
-     * serve as potential origins for new routes.
-     */
+     /**
+      * Get array of all cities currently connected to the Route network of the player. These cities will
+      * serve as potential origins for new routes.
+      * 
+      * @returns {City[]} Array of unique City origins.
+      */
+
     private getUniqueOrigins = (): City[] => {
         const origins: City[] = [];
         !this._startCity.isFull() ? origins.push(this._startCity) : null;
@@ -415,9 +553,14 @@ export default class Opponent extends Player {
         return origins;
     }
 
-    /**
-     * Temp for debug purposes
-     */
+     /**
+      * For debugging purposes.
+      * 
+      * @param {string} msg - String with message to log.
+      *  
+      * @param {any}    obj - (optional) object to log.
+      */
+    
     private log = (msg: string, obj?: Object): void => {
         if (!!parseInt(window['nardisNonHumanDebug'])) {
             console.log(msg);
@@ -426,13 +569,15 @@ export default class Opponent extends Player {
     }
 
     /**
-     * Get Player instance from stringified JSON.
+     * Get Opponent instance from stringified JSON.
      * 
-     * @param {string}     stringifiedJSON - String with information to be used.
-     * @param {City[]}     cities          - City instances used in the current game.
-     * @param {Upgrades[]} upgrades        - Upgrade instances used in the current game.
+     * @param  {string}     stringifiedJSON - String with information to be used.
+     * @param  {City[]}     cities          - City instances used in the current game.
+     * @param  {Train[]}    trains          - Train instances used in the current game.
+     * @param  {Resource[]} resources       - Resource instances used in the current game.
+     * @param  {Upgrades[]} upgrades        - Upgrade instances used in the current game.
      * 
-     * @return {Player}                      Player instance created from stringifiedJSON.
+     * @return {Opponent}   Opponent instance created from stringifiedJSON.
      */
 
     public static createFromStringifiedJSON = (stringifiedJSON: string, cities: City[], trains: Train[], resources: Resource[], upgrades: Upgrade[]): Player => {

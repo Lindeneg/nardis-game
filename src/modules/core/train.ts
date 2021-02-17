@@ -45,7 +45,7 @@ export default class Train extends BaseComponent {
     }
 
     /** 
-     * @return {string} String with JSON stringified property keys and values.
+     * @returns {string} String with JSON stringified property keys and values.
     */
    
     public deconstruct = (): string => JSON.stringify(this)
@@ -53,9 +53,9 @@ export default class Train extends BaseComponent {
     /**
      * Get Train instance from a ResourceModel.
      * 
-     * @param {TrainModel}  model - TrainModel to be used.
+     * @param   {TrainModel}  model - TrainModel to be used.
      * 
-     * @return {Train}              Train instance created from the model.
+     * @returns {Train}       Train instance created from the model.
      */
 
     public static createFromModel = (model: TrainModel): Train => {
@@ -72,9 +72,9 @@ export default class Train extends BaseComponent {
     /**
      * Get Train instance from stringified JSON.
      * 
-     * @param {string}  stringifiedJSON - String with information to be used.
+     * @param   {string} stringifiedJSON - String with information to be used.
      * 
-     * @return {Train}                    Train instance created from the string.
+     * @returns {Train}  Train instance created from the string.
      */
 
     public static createFromStringifiedJSON = (stringifiedJSON: string): Train => {

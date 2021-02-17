@@ -5,21 +5,23 @@ import City from '../city';
 import Train from '../train';
 import Resource from '../resource';
 import Route from '../route';
+import { Nardis } from '../../..';
 import {
     QueuedRouteItem,
     HandleTurnInfo,
     ITurnable,
     PlayerType,
     PlayerLevel,
+    LevelUpRequirement,
+    Indexable,
 } from '../../../types/types';
 import {
-    getPlayerLevelFromNumber
+    getPlayerLevelFromNumber, isDefined
 } from '../../../util/util';
 import {
     rangePerLevel,
     levelUpRequirements
 } from '../../../util/constants';
-import { Nardis } from '../../..';
 
 
 /**
@@ -36,7 +38,6 @@ import { Nardis } from '../../..';
  * @param {Upgrade[]}         upgrades   - (optional) Array of Upgrades.
  * @param {string}            id         - (optional) String number describing id.
  */
-
 
 export default class Player extends BaseComponent implements ITurnable {
 
@@ -69,11 +70,11 @@ export default class Player extends BaseComponent implements ITurnable {
         this.playerType = playerType;
         
         this._startCity = startCity;
-        this._finance   = finance  ? finance  : new Finance(this.name, this.id, this.startGold);
-        this._level     = level    ? level    : PlayerLevel.Novice;
-        this._queue     = queue    ? queue    : [];
-        this._routes    = routes   ? routes   : [];
-        this._upgrades  = upgrades ? upgrades : [];
+        this._finance   = isDefined(finance)  ? finance  : new Finance(this.name, this.id, this.startGold);
+        this._level     = isDefined(level)    ? level    : PlayerLevel.Novice;
+        this._queue     = isDefined(queue)    ? queue    : [];
+        this._routes    = isDefined(routes)   ? routes   : [];
+        this._upgrades  = isDefined(upgrades) ? upgrades : [];
         this._range     = this.getRangeFromLevel();
 
     }
@@ -91,6 +92,8 @@ export default class Player extends BaseComponent implements ITurnable {
      * Then handle Route queue, built Routes and Finance.
      * 
      * @param {HandleTurnInfo} info - Object with relevant turn information.
+     * 
+     * @param {Nardis}         game - (optional) Nardis game instance.
      */
 
     public handleTurn = (info: HandleTurnInfo, game?: Nardis): void => {
@@ -101,7 +104,7 @@ export default class Player extends BaseComponent implements ITurnable {
     }
 
     /**
-     * Checks if level should be increased and acts accordingly. 
+     * Check if level should be increased and act accordingly. 
      */
 
     public checkLevel = (): void => {
@@ -129,9 +132,9 @@ export default class Player extends BaseComponent implements ITurnable {
     /**
      * Remove Route from queue.
      * 
-     * @param {string}    id - String with id of Route to remove.
+     * @param   {string}  id - String with id of Route to remove.
      * 
-     * @returns {boolean}      True if the Route was removed from queue else false.
+     * @returns {boolean} True if the Route was removed from queue else false.
      */
 
     public removeRouteFromQueue = (id: string): boolean => {
@@ -150,9 +153,9 @@ export default class Player extends BaseComponent implements ITurnable {
     /**
      * Remove Route from routes.
      * 
-     * @param {string}    id - String with id of Route to remove.
+     * @param   {string}  id - String with id of Route to remove.
      * 
-     * @returns {boolean}      True if the Route was removed from queue else false.
+     * @returns {boolean} True if the Route was removed from queue else false.
      */
 
     public removeRouteFromRoutes = (id: string): boolean => {
@@ -179,23 +182,23 @@ export default class Player extends BaseComponent implements ITurnable {
     }
 
     /** 
-     * @return {string} String with JSON stringified property keys and values.
+     * @returns {string} String with JSON stringified property keys and values.
     */
    
     public deconstruct = (): string => JSON.stringify({
-        name: this.name,
-        playerType: this.playerType,
-        level: this._level,
-        id: this.id,
+        name       : this.name,
+        playerType : this.playerType,
+        level      : this._level,
+        id         : this.id,
         startCityId: this._startCity.id,
-        finance: this._finance.deconstruct(),
-        queue: this._queue.map(e => ({
-            route: e.route.deconstruct(),
-            turnCost: e.turnCost
+        finance    : this._finance.deconstruct(),
+        queue      : this._queue.map((queued: QueuedRouteItem): Indexable<string | number> => ({
+            route: queued.route.deconstruct(),
+            turnCost: queued.turnCost
         })),
-        routes: this._routes.map(e => e.deconstruct()),
-        upgrades: this._upgrades.map(e => ({
-            id: e.id
+        routes     : this._routes.map((route: Route): string => route.deconstruct()),
+        upgrades   : this._upgrades.map((upgrade: Upgrade): Indexable<string> => ({
+            id: upgrade.id
         }))
     });
 
@@ -246,7 +249,7 @@ export default class Player extends BaseComponent implements ITurnable {
 
     protected shouldLevelBeIncreased = (): boolean => {
         if (this._level < PlayerLevel.Master) {
-            const requirements = levelUpRequirements[this._level + 1];
+            const requirements: LevelUpRequirement = levelUpRequirements[this._level + 1];
             return (
                 this._routes.length >= requirements.routes &&
                 this._finance.getAverageRevenue() >= requirements.revenuePerTurn &&
@@ -281,12 +284,13 @@ export default class Player extends BaseComponent implements ITurnable {
     /**
      * Get Player instance from stringified JSON.
      * 
-     * @param {string}     stringifiedJSON - String with information to be used.
-     * @param {City[]}     cities          - City instances used in the current game.
-     * @param {Train[]}    trains          - Train instances used in the current game.
-     * @param {Upgrades[]} upgrades        - Upgrade instances used in the current game.
+     * @param   {string}     stringifiedJSON - String with information to be used.
+     * @param   {City[]}     cities          - City instances used in the current game.
+     * @param   {Train[]}    trains          - Train instances used in the current game.
+     * @param   {Resource[]} resources       - Resource instances used in the current game.
+     * @param   {Upgrades[]} upgrades        - Upgrade instances used in the current game.
      * 
-     * @return {Player}                      Player instance created from stringifiedJSON.
+     * @returns {Player}     Player instance created from stringifiedJSON.
      */
 
     public static createFromStringifiedJSON = (stringifiedJSON: string, cities: City[], trains: Train[], resources: Resource[], upgrades: Upgrade[]): Player => {

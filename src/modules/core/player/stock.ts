@@ -1,42 +1,61 @@
-import { Finance } from "../../..";
+import BaseComponent from "../../component/base-component";
+import Finance from "../../core/player/finance";
 import { StockSupply, ValueHistory } from "../../../types/types";
 import { MAX_VALUE_HISTORY_LENGTH, stockConstant } from "../../../util/constants";
 import { isDefined } from "../../../util/util";
-import BaseComponent from "../../component/base-component";
 
+
+/**
+ * @constructor
+ * @param {string}         name           - Name of the Stock instance.
+ * @param {string}         owningPlayerId - String with Id of owning Player.
+ * 
+ * @param {number}         value          - (optional) Number with Stock sell value.
+ * @param {ValueHistory[]} valueHistory   - (optional) Object with Stock ValueHistory.
+ * @param {StockSupply}    supply         - (optional) Object with StockSupply.
+ * @param {string}         id             - (optional) String number describing id.
+ */
 
 export default class Stock extends BaseComponent {
 
     private _owningPlayerId: string;
-    private _value: number;
-    private _valueHistory: ValueHistory[];
-    private _supply: StockSupply;
+    private _value         : number;
+    private _valueHistory  : ValueHistory[];
+    private _supply        : StockSupply;
 
     constructor(
-        name: string,
-        owningPlayerId: string,
-        value?: number,
-        valueHistory?: ValueHistory[],
-        supply?: StockSupply,
-        id?: string
+        name               : string,
+        owningPlayerId     : string,
+        value             ?: number,
+        valueHistory      ?: ValueHistory[],
+        supply            ?: StockSupply,
+        id                ?: string
     ) {
         super(name, id);
 
         this._owningPlayerId = owningPlayerId;
 
-        this._value = isDefined(value) ? value : Math.floor(stockConstant.startingShares * stockConstant.multipliers.stockHolder);
-        this._valueHistory = isDefined(valueHistory) ? valueHistory : [{
+        this._value          = isDefined(value) ? value : Math.floor(stockConstant.startingShares * stockConstant.multipliers.stockHolder);
+        this._valueHistory   = isDefined(valueHistory) ? valueHistory : [{
             value: this._value,
             turn: 1
         }];
 
-        this._supply = isDefined(supply) ? supply : {
+        this._supply         = isDefined(supply) ? supply : {
             [this._owningPlayerId]: stockConstant.startingShares
         };
     }
 
     public getBuyValue  = (): number => Math.floor(this._value * stockConstant.multipliers.stockBuy);
     public getSellValue = (): number => this._value;
+
+    /**
+     * Buy Stock to the specified playerId.
+     * 
+     * @param   {string}  playerId - String with playerId to buy Stock to. 
+     * 
+     * @returns {boolean} True if Stock was bought else false.
+     */
 
     public buyStock = (playerId: string): boolean => {
         if (this.currentAmountOfStockHolders() + 1 <= stockConstant.maxStockAmount) {
@@ -50,6 +69,14 @@ export default class Stock extends BaseComponent {
         return false;
     }
 
+    /**
+     * Sell Stock from the specified playerId.
+     * 
+     * @param   {string}  playerId - String with playerId to sell Stock from. 
+     * 
+     * @returns {boolean} True if Stock was sold else false.
+     */
+
     public sellStock = (playerId: string): boolean => {
         if (isDefined(this._supply[playerId]) && this._supply[playerId] > 0) {
             this._supply[playerId] -= 1;
@@ -58,20 +85,30 @@ export default class Stock extends BaseComponent {
         return false;
     }
 
+    /**
+     * Get total amount of current Stock holders and their respective quantities.
+     * 
+     * @returns {number} Number with total amount of owned Stock.
+     */
+
     public currentAmountOfStockHolders = (): number => (
         Object.keys(this._supply).map((key: string): number => (
             this._supply[key]
         )).reduce((a: number, b: number): number => a + b, 0)
     )
 
-    public setValue = (value: number): void => {
-        this._value = value;
-    }
+    /**
+     * Update base value of Stock.
+     * 
+     * @param {Finance} finance - Finance instance of the owning Player. 
+     * @param {number}  routes  - Number with sum of Route and Queue length.
+     * @param {number}  turn    - Number with current turn.
+     */
 
     public updateValue = (
         finance: Finance,
-        routes: number,
-        turn: number
+        routes : number,
+        turn   : number
     ): void => {
         const newValue: number = (
             Math.floor(routes * stockConstant.multipliers.routeLength) +
@@ -85,16 +122,20 @@ export default class Stock extends BaseComponent {
     }
 
     /**
-     * 
+     * @returns {string} String with JSON stringified property keys and values.
      */
+
     public deconstruct = (): string => JSON.stringify(this);
 
 
     /**
+     * Update ValueHistory. If ValueHistory is equal or greater than the default max length,
+     * remove the first entry and then push the new value as the last entry.
      * 
-     * @param value 
-     * @param turn 
+     * @param {number} value - Number with new value of the Stock. 
+     * @param {number} turn  - Number with current turn.
      */
+
     private updateValueHistory = (value: number, turn: number): void => {
         if (this._valueHistory.length >= MAX_VALUE_HISTORY_LENGTH) {
             this._valueHistory.shift();
@@ -108,9 +149,9 @@ export default class Stock extends BaseComponent {
     /**
      * Get Stock instance from stringified JSON.
      * 
-     * @param {string}     stringifiedJSON - string with information to be used
+     * @param   {string} stringifiedJSON - string with information to be used
      * 
-     * @return {Stock}                     Stock instance created from the model
+     * @returns {Stock}  Stock instance created from the model
      */
 
     public static createFromStringifiedJSON = (stringifiedJSON: string | object): Stock => {
