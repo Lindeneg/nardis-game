@@ -28,8 +28,9 @@ import {
 /**
  * @constructor
  * @param {string}         name         - String with name.
+ * @param {string}         playerId     - String with owning playerId.
  * @param {number}         gold         - Number with current gold.
- * 
+ *
  * @param {FinanceHistory} history      - (optional) FinanceHistory object.
  * @param {FinanceTotal}   totalHistory - (optional) FinanceTotal object.
  * @param {number}         totalProfits - (optional) Number with total profits.
@@ -63,15 +64,16 @@ export default class Finance extends BaseComponent implements ITurnable {
 
         this._playerId     = playerId;
         this._gold         = gold;
-        this._history      = history ? history : this.getInitialHistoryState();
-        this._totalProfits = totalProfits ? totalProfits : 0;
-        this._totalHistory = totalHistory ? totalHistory : {
-            [localKeys[FinanceType.Train]]  : 0,
-            [localKeys[FinanceType.Track]]  : 0,
-            [localKeys[FinanceType.Upkeep]] : 0,
-            [localKeys[FinanceType.Upgrade]]: 0,
-            [localKeys[FinanceType.Recoup]] : 0,
-            [localKeys[FinanceType.Stock]]  : 0
+        this._history      = isDefined(history) ? history : this.getInitialHistoryState();
+        this._totalProfits = isDefined(totalProfits) ? totalProfits : 0;
+        this._totalHistory = isDefined(totalHistory) ? totalHistory : {
+            [localKeys[FinanceType.Train]]    : 0,
+            [localKeys[FinanceType.Track]]    : 0,
+            [localKeys[FinanceType.Upkeep]]   : 0,
+            [localKeys[FinanceType.Upgrade]]  : 0,
+            [localKeys[FinanceType.Recoup]]   : 0,
+            [localKeys[FinanceType.StockBuy]] : 0,
+            [localKeys[FinanceType.StockSell]]: 0
         };
         this._netWorth     = isDefined(netWorth) ? netWorth : this._gold + Math.floor(
             stockConstant.startingShares * stockConstant.multipliers.stockHolder
@@ -127,10 +129,10 @@ export default class Finance extends BaseComponent implements ITurnable {
     /**
      * Remove entry from expense object.
      * 
-     * @param {FinanceType} type   - FinanceType of the expense to be removed.
-     * @param {string}      id     - string with id of the expense to be removed.
+     * @param   {FinanceType} type   - FinanceType of the expense to be removed.
+     * @param   {string}      id     - string with id of the expense to be removed.
      * 
-     * @returns {boolean}            True if removed else false.
+     * @returns {boolean}     True if removed else false.
      */
 
     public removeFromFinanceExpense = (
@@ -169,8 +171,7 @@ export default class Finance extends BaseComponent implements ITurnable {
     /**
      * Add to gold from a deleted Route.
      * 
-     * @param {number} value - Number wih gold to recoup. 
-     *  
+     * @param {number} value - Number wih gold to recoup.
      */
 
     public recoupDeletedRoute = (value: number): void => {
@@ -197,8 +198,45 @@ export default class Finance extends BaseComponent implements ITurnable {
         this.getValueOfOwnedStock(data.gameStocks) + Math.floor(this._gold / netWorthDivisors.gold)));
     }
 
+    /**
+     * Add Stock to StockHolding and handle expense.
+     * 
+     * @param {string} playerId - String with id of the owning player of Stock to add.
+     * @param {number} value    - BuyValue of the Stock. 
+     */
+
+    public buyStock = (playerId: string, value: number): void => {
+        if (isDefined(this._stocks[playerId])) {
+            this._stocks[playerId] += 1;
+        } else {
+            this._stocks[playerId] = 1;
+        }
+        this.addToFinanceExpense(FinanceType.StockBuy, localKeys[FinanceType.StockBuy], 1, value);
+    }
+
+    /**
+     * Remove Stock from StockHolding and handle income.
+     * 
+     * @param {string} playerId - String with id of the owning player of Stock to remove.
+     * @param {number} value    - SellValue of the Stock. 
+     */
+    
+    public sellStock = (playerId: string, value: number): void => {
+        if (isDefined(this._stocks[playerId]) && this._stocks[playerId] > 0) {
+            this._stocks[playerId] -= 1;
+            this.addNthTurnObject(
+                FinanceGeneralType.Income, 
+                FinanceType.StockSell, 
+                localKeys[FinanceType.StockSell], 
+                1, 
+                value
+            );
+            this.addToTotalHistory(localKeys[FinanceType.StockSell], value);
+        }
+    }
+
     /** 
-     * @return {string} String with JSON stringified property keys and values.
+     * @returns {string} String with JSON stringified property keys and values.
      */
 
     public deconstruct = (): string => JSON.stringify(this)
@@ -215,7 +253,7 @@ export default class Finance extends BaseComponent implements ITurnable {
     /**
      * @param   {FinanceHistoryItem} historyItem - History object to average.
      * 
-     * @returns {number}                           Number with average value of the history item.
+     * @returns {number}             Number with average value of the history item.
      */
 
     private getAverageHistory = (historyItem: FinanceHistoryItem): number => {
@@ -263,10 +301,10 @@ export default class Finance extends BaseComponent implements ITurnable {
     /**
      * Get Train upkeep with Player upgrades taken into consideration.
      * 
-     * @param {Train}     train    - Train to get upkeep from.
-     * @param {Upgrade[]} upgrades - Upgrades to be accounted for.
+     * @param   {Train}     train    - Train to get upkeep from.
+     * @param   {Upgrade[]} upgrades - Upgrades to be accounted for.
      * 
-     * @returns {number}           - Number with the correct Train upkeep.
+     * @returns {number}    Number with the correct Train upkeep.
      */
 
     private getTrainUpkeep = (train: Train, upgrades: Upgrade[]): number => {
@@ -303,7 +341,7 @@ export default class Finance extends BaseComponent implements ITurnable {
     /**
      * Get total value of the owning Player's current stock holdings.
      * 
-     * @param {Stocks} - Stocks object with all game Stock objects.
+     * @param   {Stocks} stocks - Stocks object with all game Stock objects.
      * 
      * @returns {number} Number with value of Stocks.
      */
@@ -409,9 +447,9 @@ export default class Finance extends BaseComponent implements ITurnable {
     /**
      * Get Finance instance from stringified JSON.
      * 
-     * @param {string}     stringifiedJSON - String with information to be used.
+     * @param   {string}     stringifiedJSON - String with information to be used.
      * 
-     * @return {Finance}                     Finance instance created from the model.
+     * @returns {Finance}    Finance instance created from the model.
      */
 
     public static createFromStringifiedJSON = (stringifiedJSON: string | object): Finance => {

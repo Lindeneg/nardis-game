@@ -5,6 +5,9 @@ import Player from './core/player/player';
 import Train from './core/train';
 import Resource from './core/resource';
 import Finance from './core/player/finance';
+import Opponent from './core/player/opponent/opponent';
+import Stock from './core/player/stock';
+import { genericOpponentsName } from '../data/preparedData';
 import {
     GameData,
     PotentialRoute,
@@ -15,7 +18,8 @@ import {
     LocalKey,
     RoutePlanCargo,
     AdjustedTrain,
-    Stocks
+    Stocks,
+    Indexable
 } from '../types/types';
 import {
     localKeys, START_GOLD, START_OPPONENTS
@@ -24,23 +28,21 @@ import {
     generateData
 } from '../data/data';
 import {
-    getRangeTurnCost
+    getRangeTurnCost, isDefined
 } from '../util/util';
 import { 
     RawDataModel 
 } from '../types/model';
-import Opponent from './core/player/opponent/opponent';
-import { genericOpponentsName } from '../data/preparedData';
-import Stock from './core/player/stock';
 
 
 /**
  * @constructor
  * @param {GameData} data          - Object with GameData.
  * @param {Player[]} players       - Array with Players.
+ * @param {Stocks}   stocks        - Object with Stocks.
  * 
  * @param {Player}   currentPlayer - (optional) Player instance of the current turn taker.
- * @param {number}   currentTurn   - (optional) Number describing the current turn.
+ * @param {number}   turn          - (optional) Number describing the current turn.
  */
 
 export class Nardis {
@@ -68,25 +70,17 @@ export class Nardis {
         this._currentPlayer = currentPlayer ? currentPlayer : this.players[0];
         this._turn          = turn          ? turn          : 1;
 
-        this.players.forEach((player: Player): void => {
-            player.getFinance().updateNetWorth({
-                routes: player.getRoutes(),
-                upgrades: player.getUpgrades(),
-                queue: player.getQueue(),
-                gameStocks: this.stocks
-            });
-        });
+        this.updatePlayersNetWorth();
     }
 
     public getCurrentPlayer = (): Player => this._currentPlayer;
     public getCurrentTurn   = (): number => this._turn;
 
     /**
-     * Runs at the end of each Player turn.
+     * Runs at the end of each human Player turn.
      */
 
     public endTurn = (): void => {
-        //console.log(this.stocks);
         this._currentPlayer.handleTurn(
             {
                 turn: this._turn, 
@@ -99,22 +93,11 @@ export class Nardis {
             }
         );
         this.handleComputerTurn();
-        [...this.data.cities, ...this.data.resources].forEach(turnComponent => {
+        [...this.data.cities, ...this.data.resources].forEach((turnComponent: City | Resource): void => {
             turnComponent.handleTurn({turn: this._turn, data: this.data, playerData: {routes: [], upgrades: [], queue: []}});
         });
-        this.players.forEach((player: Player): void => {
-            this.stocks[player.id].updateValue(
-                player.getFinance(), 
-                player.getRoutes().length + player.getQueue().length, 
-                this._turn
-            );
-            player.getFinance().updateNetWorth({
-                routes: player.getRoutes(),
-                upgrades: player.getUpgrades(),
-                queue: player.getQueue(),
-                gameStocks: this.stocks
-            });
-        });
+        this.updateStocks();
+        this.updatePlayersNetWorth();
         this._turn++;
         this.saveGame();
     }
@@ -122,17 +105,17 @@ export class Nardis {
     /**
      * Get array of PotentialRoute objects respecting the current Players maximum range.
      * 
-     * @param {City}              origin - City instance of initial departure
+     * @param   {City}              origin - City instance of initial departure.
      * 
-     * @return {PotentialRoute[]}          Array of PotentialRoutes
+     * @returns {PotentialRoute[]}  Array of PotentialRoutes.
      */
 
     public getArrayOfPossibleRoutes = (origin: City): PotentialRoute[] => {
         const constraint: number = this._currentPlayer.getRange();
         const potentialRoutes: PotentialRoute[] = [];
-        this.data.cities.forEach(city => {
+        this.data.cities.forEach((city: City): void => {
             const distance: number = city.distanceTo(origin);
-            const { goldCost, turnCost } = this.getPotentialRouteCost(distance);
+            const { goldCost, turnCost }: Indexable<number> = this.getPotentialRouteCost(distance);
             if (distance > 0 && distance <= constraint) {
                 potentialRoutes.push({
                     cityOne: origin,
@@ -148,14 +131,14 @@ export class Nardis {
     }
 
     /**
-     * @return {{train: Train, cost: number}[]} Array of Trains with their cost adjusted to reflect potential Player Upgrades.
+     * @returns {AdjustedTrain[]} Array of Trains with their cost adjusted to reflect potential Player Upgrades.
      */
 
     public getArrayOfAdjustedTrains = (): AdjustedTrain[] => {
-        const upgrades: Upgrade[] = this._currentPlayer.getUpgrades().filter(upgrade => upgrade.type === UpgradeType.TrainValueCheaper);
-        return this.data.trains.map(train => {
+        const upgrades: Upgrade[] = this._currentPlayer.getUpgrades().filter((upgrade: Upgrade): boolean => upgrade.type === UpgradeType.TrainValueCheaper);
+        return this.data.trains.map((train: Train): AdjustedTrain => {
             let cost: number = train.cost;
-            upgrades.forEach(upgrade => {
+            upgrades.forEach((upgrade: Upgrade): void => {
                 cost -= Math.floor(cost * upgrade.value);
             });
             return {
@@ -166,8 +149,6 @@ export class Nardis {
     }
 
     /**
-     * @return {object} Object describing the current win state.
-     * 
      * // TODO update winning condition when net worth and stock is implemented
      */
 
@@ -203,9 +184,9 @@ export class Nardis {
     /**
      * Add Upgrade to Player.
      * 
-     * @param {string}   id - String with id of Upgrade to add.
+     * @param   {string}   id - String with id of Upgrade to add.
      * 
-     * @return {boolean} True if Upgrade was added else false.
+     * @returns {boolean}  True if Upgrade was added else false.
      */
 
     public addUpgradeToPlayer = (id: string): boolean => {
@@ -226,12 +207,12 @@ export class Nardis {
     /**
      * Change Train and/or RoutePlanCargo of active Route.
      * 
-     * @param {string}         id        - String with id of Route to alter.
-     * @param {Train}          train     - Train instance to be used.
-     * @param {RoutePlanCargo} routePlan - RoutePlanCargo to be used.
-     * @param {number}         cost      - Number with cost of the Route change.
+     * @param   {string}         id        - String with id of Route to alter.
+     * @param   {Train}          train     - Train instance to be used.
+     * @param   {RoutePlanCargo} routePlan - RoutePlanCargo to be used.
+     * @param   {number}         cost      - Number with cost of the Route change.
      * 
-     * @return {boolean} True if Route was altered else false.
+     * @returns {boolean}        True if Route was altered else false.
      */
 
     public changeActivePlayerRoute = (routeId: string, train: Train, routePlan: RoutePlanCargo, cost: number): boolean => {
@@ -249,10 +230,10 @@ export class Nardis {
     /**
      * Remove an entry from Player queue.
      * 
-     * @param {string}   routeId - String with id of Route to remove.
-     * @param {string}   trainId - String with id of Train in Route.
+     * @param   {string}   routeId - String with id of Route to remove.
+     * @param   {string}   trainId - String with id of Train in Route.
      * 
-     * @return {boolean} True if Route was removed from queue else false.
+     * @returns {boolean}  True if Route was removed from queue else false.
      */
 
     public removeRouteFromPlayerQueue = (routeId: string, trainId: string): boolean => {
@@ -262,10 +243,10 @@ export class Nardis {
     /**
      * Remove an entry from Player routes.
      * 
-     * @param {string}   routeId - String with id of Route to remove.
-     * @param {number}   value - Number wih gold to recoup
+     * @param   {string}   routeId  - String with id of Route to remove.
+     * @param   {number}   value    - Number wih gold to recoup.
      * 
-     * @return {boolean} True if Route was removed from routes else false.
+     * @returns {boolean}  True if Route was removed from routes else false.
      */
 
     public removeRouteFromPlayerRoutes = (routeId: string, value: number): boolean => {
@@ -277,6 +258,26 @@ export class Nardis {
     }
 
     /**
+     * Buy Stock to the Player of the current turn.
+     * 
+     * @param   {string}  playerId - String with id of the owning player of Stock to buy.
+     * 
+     * @returns {boolean} True if Stock was bought else false. 
+     */
+
+    public buyStock = (playerId: string): boolean => this.performStockAction(playerId, true);
+
+    /**
+     * Sell Stock to the Player of the current turn.
+     * 
+     * @param   {string}  playerId - String with id of the owning player of Stock to sell.
+     * 
+     * @returns {boolean} True if Stock was sold else false. 
+     */
+
+    public sellStock = (playerId: string): boolean => this.performStockAction(playerId, false);
+
+    /**
      * Clear the saved game state from localStorage.
      */
 
@@ -284,6 +285,87 @@ export class Nardis {
         localKeys.forEach(key => {
             window.localStorage.removeItem(key);
         });
+    }
+
+    /**
+     * Buy or Sell Stock to the Player of the current turn. 
+     * 
+     * @param   {string}  playerId - String with id of the owning player of Stock to buy/sell.
+     * @param   {boolean} buy      - True if action should be buy, false if action should be sell.
+     * 
+     * @returns {boolean} True if action was performed else false. 
+     */
+
+    private performStockAction = (
+        playerId: string, 
+        buy     : boolean
+    ): boolean => {
+        const stockOwner: Player = this.players.filter((player: Player): boolean => player.id === playerId)[0];
+        if (isDefined(this.stocks[playerId]) && isDefined(stockOwner)) {
+            const value: number = (buy ?
+                this.stocks[playerId].getBuyValue() : 
+                this.stocks[playerId].getSellValue()
+            );
+            const didSomething: boolean = (buy ? 
+                this.stocks[playerId].buyStock(this._currentPlayer.id) : 
+                this.stocks[playerId].sellStock(this._currentPlayer.id)
+            );
+            if (didSomething) {
+                const finance: Finance = this._currentPlayer.getFinance();
+                (buy ? 
+                    finance.buyStock(playerId, value) : 
+                    finance.sellStock(playerId, value)
+                );
+                this.updateStock(stockOwner);
+                this.updatePlayerNetWorth(this._currentPlayer);
+                this.updatePlayerNetWorth(stockOwner);
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /**
+     * Update the net worth of every Player in the game.
+     */
+
+    private updatePlayersNetWorth = (): void => this.players.forEach((player: Player): void => {
+        this.updatePlayerNetWorth(player);
+    });
+
+    /**
+     * Update net worth of a single Player
+     * 
+     * @param {Player} player - Player instance whose net worth to update. 
+     */
+
+    private updatePlayerNetWorth = (player: Player): void => player.getFinance().updateNetWorth({
+        routes    : player.getRoutes(),
+        queue     : player.getQueue(),
+        upgrades  : player.getUpgrades(),
+        gameStocks: this.stocks
+    });
+
+    /**
+     * Update the value of every Stock in game.
+     */
+
+    private updateStocks = (): void => this.players.forEach((player: Player): void => {
+        this.updateStock(player);
+    });
+
+    /**
+     * Update value of Stock associated with a given Player.
+     * 
+     * @param {Player} player - Player instance whose Stock value should be updated.
+     */
+
+    private updateStock = (player: Player): void => {
+        this.stocks[player.id].updateValue(
+            player.getFinance(), 
+            player.getRoutes().length + player.getQueue().length, 
+            this._turn
+        );
     }
 
     /**
@@ -301,7 +383,8 @@ export class Nardis {
                     playerData: {
                         routes: player.getRoutes(), 
                         upgrades: player.getUpgrades(),
-                        queue: player.getQueue()
+                        queue: player.getQueue(),
+                        gameStocks: this.stocks
                     }},
                     this
                 );
@@ -326,10 +409,10 @@ export class Nardis {
     /**
      * Remove Player expenses when reverting the purchase of Route and Train.
      * 
-     * @param {string}   routeId - String with id of Route to remove.
-     * @param {string}   trainId - String with id of Train in Route.
+     * @param   {string}   routeId - String with id of Route to remove.
+     * @param   {string}   trainId - String with id of Train in Route.
      * 
-     * @return {boolean} True if removed from Finance else false.
+     * @returns {boolean}  True if removed from Finance else false.
      */
 
     private handleRemoveRouteFromPlayerFinance = (routeId: string, trainId: string): boolean => {
@@ -343,9 +426,9 @@ export class Nardis {
     /**
      * Get an object describing the gold and turn cost for a given Route with Upgrades taken into account.
      * 
-     * @param {number}   distance - String with id of Route to remove.
+     * @param   {number}  distance - String with id of Route to remove.
      * 
-     * @return {Object}             Object with gold and turn cost for a given distance
+     * @returns {Object}  Object with gold and turn cost for a given distance
      */
  
     private getPotentialRouteCost = (distance: number): {goldCost: number, turnCost: number} => {
@@ -417,7 +500,7 @@ export class Nardis {
     /**
      * Get Nardis instance from saved localStorage data.
      * 
-     * @return {Nardis} Nardis instance recreated from localStorage.
+     * @returns {Nardis} Nardis instance recreated from localStorage.
      */
 
     public static createFromLocalStorage= (): Nardis => {
@@ -493,11 +576,11 @@ export class Nardis {
     /**
      * Create a Nardis instance from one to three parameters. 
      * 
-     * @param {string}   name      - String with name of player.
-     * @param {number}   gold      - (optional) Number specifying start gold.
-     * @param {number}   opponents - (optional) Number specifying number of opponents.
+     * @param   {string}   name      - String with name of player.
+     * @param   {number}   gold      - (optional) Number specifying start gold.
+     * @param   {number}   opponents - (optional) Number specifying number of opponents.
      * 
-     * @return {Nardis}              Created Nardis instance.
+     * @returns {Nardis}   Created Nardis instance.
      */
 
     public static createFromPlayer = (name: string, gold: number = START_GOLD, opponents: number = START_OPPONENTS): Nardis => {
@@ -519,6 +602,17 @@ export class Nardis {
             throw new Error(`not enough start cities '${nStartCities}' to satisfy number of players '${nOpponents}'`)
         }
     }
+
+    /**
+     * Generate Players and Stocks.
+     * 
+     * @param   {string}  name      - String with name of human Player.
+     * @param   {number}  gold      - Number with starting gold.
+     * @param   {number}  opponents - Number of Opponents to generate.
+     * @param   {City[]}  cities    - Array of City instances.
+     * 
+     * @returns {[Player[], Stocks]} Tuple with array of Players and a Stocks object. 
+     */
 
     private static createPlayersAndStock = (name: string, gold: number, opponents: number, cities: City[]): [Player[], Stocks] => {
         const players: Player[] = [];
