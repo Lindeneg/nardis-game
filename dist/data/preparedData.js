@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.genericOpponentsName = exports.lowYieldData = exports.mediumYieldData = exports.highYieldData = exports.trainData = exports.upgradeData = void 0;
+exports.opponentInformation = exports.genericOpponentsName = exports.lowYieldData = exports.mediumYieldData = exports.highYieldData = exports.trainData = exports.upgradeData = void 0;
 var types_1 = require("../types/types");
 exports.upgradeData = [
     {
@@ -250,4 +250,36 @@ exports.genericOpponentsName = [
     'R. Hendrix',
     'P. Peterson',
     'H. Underfoot'
+];
+exports.opponentInformation = [
+    {
+        type: types_1.PlayerType.Human,
+        color: 'blue',
+        avatar: 0
+    },
+    {
+        type: types_1.PlayerType.Computer,
+        color: 'red',
+        avatar: 1
+    },
+    {
+        type: types_1.PlayerType.Computer,
+        color: 'yellow',
+        avatar: 2
+    },
+    {
+        type: types_1.PlayerType.Computer,
+        color: 'green',
+        avatar: 3
+    },
+    {
+        type: types_1.PlayerType.Computer,
+        color: 'orange',
+        avatar: 4
+    },
+    {
+        type: types_1.PlayerType.Computer,
+        color: 'pink',
+        avatar: 5
+    }
 ];

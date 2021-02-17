@@ -30,12 +30,12 @@ var util_1 = require("../../util/util");
  * @param {CityCoordinate} coords              - Object with location coordinates.
  * @param {CityResource[]} supply              - Object with info for City supplies.
  * @param {CityResource[]} demand              - Object with info for City demands.
- * @param {number}         growthRate          - Float describing growth rate.
- * @param {number}         supplyRefillRate    - Int describing refill rate.
+ * @param {number}         growthRate          - Number describing growth rate.
+ * @param {number}         supplyRefillRate    - Number describing refill rate.
  *
- * @param {number}         growthChangeDecider - (optional) Float describing growth change decider.
- * @param {number}         supplyRefillDecider - (optional) Float describing supply refill decider.
- * @param {number}         currentRouteCount   - (optional) Int describing current number of routes.
+ * @param {number}         growthChangeDecider - (optional) Number describing growth change decider.
+ * @param {number}         supplyRefillDecider - (optional) Number describing supply refill decider.
+ * @param {number}         currentRouteCount   - (optional) Number describing current number of routes.
  * @param {string}         id                  - (optional) String number describing id.
  */
 var City = /** @class */ (function (_super) {
@@ -81,7 +81,7 @@ var City = /** @class */ (function (_super) {
         /**
          * Increment currentRouteCount if City is not at peak capacity.
          *
-         * @return {boolean} True if count was incremented else false.
+         * @returns {boolean} True if count was incremented else false.
          */
         _this.incrementRouteCount = function () {
             if (!(_this.isFull())) {
@@ -93,7 +93,7 @@ var City = /** @class */ (function (_super) {
         /**
          * Decrement currentRouteCount if the count is above or equal one.
          *
-         * @return {boolean} True if count was decremented else false.
+         * @returns {boolean} True if count was decremented else false.
          */
         _this.decrementRouteCount = function () {
             if (_this._currentRouteCount >= 1) {
@@ -105,9 +105,9 @@ var City = /** @class */ (function (_super) {
         /**
          * Get distance between two City instances in kilometers using haversine formula.
          *
-         * @param {City}    city - City instance to calculate distance to.
+         * @param   {City}    city - City instance to calculate distance to.
          *
-         * @return {number}        Number with distance in kilometers.
+         * @returns {number}  Number with distance in kilometers.
          */
         _this.distanceTo = function (city) {
             if (!(_this.equals(city))) {
@@ -123,10 +123,10 @@ var City = /** @class */ (function (_super) {
         /**
          * Subtract available amount from a CityResource.
          *
-         * @param {Resource} supply   - Resource in supply to subtract from.
-         * @param {number}   subtract - Number to subtract.
+         * @param   {Resource} supply   - Resource in supply to subtract from.
+         * @param   {number}   subtract - Number to subtract.
          *
-         * @return {number}             True if subtracted else false.
+         * @returns {number}   True if subtracted else false.
          */
         _this.subtractSupply = function (supply, subtract) {
             for (var i = 0; i < _this._supply.length; i++) {
@@ -141,16 +141,16 @@ var City = /** @class */ (function (_super) {
         /**
          * Get CityResource from Resource instance.
          *
-         * @param {Resource} resource - Resource to match.
+         * @param   {Resource}     resource - Resource to match.
          *
-         * @return {CityResource}       CityResource if found else null.
+         * @returns {CityResource} CityResource if found else null.
          */
         _this.getCityResourceFromResource = function (resource) {
             var result = _this._supply.filter(function (e) { return e.resource.equals(resource); });
             return result.length > 0 ? result[0] : null;
         };
         /**
-         * @return {string} String with JSON stringified property keys and values.
+         * @returns {string} String with JSON stringified property keys and values.
         */
         _this.deconstruct = function () { return JSON.stringify({
             name: _this.name,
@@ -178,19 +178,17 @@ var City = /** @class */ (function (_super) {
             }); })
         }); };
         /**
-         * @param {Resource} resource - Resource to match.
+         * @param   {Resource} resource - Resource to match.
          *
-         * @return {boolean}            True if Resource is found in supply or demand else false.
+         * @returns {boolean}  True if Resource is found in supply or demand else false.
          */
-        _this.isSupplyOrDemand = function (resource) {
-            return (_this.isSupply(resource) || _this.isDemand(resource));
-        };
+        _this.isSupplyOrDemand = function (resource) { return _this.isSupply(resource) || _this.isDemand(resource); };
         /**
          * Grow the size of City with 50% roll chance, if City size is not max.
          *
-         * @param {Resource[]} resources - Resource instances used in the current game.
+         * @param   {Resource[]} resources - Resource instances used in the current game.
          *
-         * @return {boolean}               True if City did grow else false.
+         * @returns {boolean}    True if City did grow else false.
          */
         _this.grow = function (resources) {
             if (_this._size >= constants_1.MAX_CITY_SIZE || util_1.randomNumber() > 5) {
@@ -233,9 +231,9 @@ var City = /** @class */ (function (_super) {
          *
          * Throws an Error if no unique Resource could be found.
          *
-         * @param {Resource[]} resources - Resource instances used in the current game.
+         * @param   {Resource[]}   resources - Resource instances used in the current game.
          *
-         * @return {CityResource}        - CityResource not found in City supply or demand.
+         * @returns {CityResource} CityResource not found in City supply or demand.
          */
         _this.rollNewResource = function (resources) {
             var relevantResources = resources.filter(function (e) {
@@ -252,7 +250,7 @@ var City = /** @class */ (function (_super) {
             };
         };
         /**
-         * @return {number} maxConcurrentRoutes from the current City size.
+         * @returns {number} maxConcurrentRoutes from the current City size.
          */
         _this.getMaxConcurrentRoutes = function () {
             var result = constants_1.CitySizeMaxConcurrentRoutes.filter(function (e) {
@@ -267,19 +265,19 @@ var City = /** @class */ (function (_super) {
         _this._demand = demand;
         _this._growthRate = growthRate;
         _this._supplyRefillRate = supplyRefillRate;
-        _this._growthChangeDecider = growthChangeDecider ? growthChangeDecider : 0;
-        _this._supplyRefillDecider = supplyRefillDecider ? supplyRefillDecider : 0;
-        _this._currentRouteCount = currentRouteCount ? currentRouteCount : 0;
+        _this._growthChangeDecider = util_1.isDefined(growthChangeDecider) ? growthChangeDecider : 0;
+        _this._supplyRefillDecider = util_1.isDefined(supplyRefillDecider) ? supplyRefillDecider : 0;
+        _this._currentRouteCount = util_1.isDefined(currentRouteCount) ? currentRouteCount : 0;
         _this._maxConcurrentRoutes = _this.getMaxConcurrentRoutes();
         return _this;
     }
     /**
      * Get City instance from a CityModel.
      *
-     * @param {CityModel}  model     - CityModel to be used.
-     * @param {Resource[]} resources - Resource instances used in the current game.
+     * @param   {CityModel}  model     - CityModel to be used.
+     * @param   {Resource[]} resources - Resource instances used in the current game.
      *
-     * @return {City}                  City instance created from the model.
+     * @returns {City}       City instance created from the model.
      */
     City.createFromModel = function (model, resources) {
         return new City(model.name, model.size, { phi: model.phi, lambda: model.lambda }, City.getCityResources(model.supply, resources), City.getCityResources(model.demand, resources), model.growthRate, model.supplyRefillRate);
@@ -287,10 +285,10 @@ var City = /** @class */ (function (_super) {
     /**
      * Get City instance from stringified JSON.
      *
-     * @param {string}     stringifiedJSON - string with information to be used.
-     * @param {Resource[]} resources       - Resource instances used in the current game.
+     * @param   {string}     stringifiedJSON - string with information to be used.
+     * @param   {Resource[]} resources       - Resource instances used in the current game.
      *
-     * @return {City}                        City instance created from the string.
+     * @returns {City}       City instance created from the string.
      */
     City.createFromStringifiedJSON = function (stringifiedJSON, resources) {
         // it is not pretty but it does the job
@@ -317,19 +315,17 @@ var City = /** @class */ (function (_super) {
     /**
      * Get array of CityResources from CityResourceModels.
      *
-     * @param {CityResourceModel[]} cityResourceModels - CityModel to be used.
-     * @param {Resource[]}          resources          - Resource instances used in the current game.
+     * @param   {CityResourceModel[]} cityResourceModels - CityModel to be used.
+     * @param   {Resource[]}          resources          - Resource instances used in the current game.
      *
-     * @return {CityResource[]}                        - Array of CityResources.
+     * @returns {CityResource[]}      Array of CityResources.
      */
     City.getCityResources = function (cityResourceModels, resources) {
-        return cityResourceModels.map(function (e) {
-            return {
-                resource: resources.filter(function (r) { return r.name === e.name; })[0],
-                amount: e.amount,
-                available: e.available
-            };
-        });
+        return cityResourceModels.map(function (e) { return ({
+            resource: resources.filter(function (r) { return r.name === e.name; })[0],
+            amount: e.amount,
+            available: e.available
+        }); });
     };
     return City;
 }(base_component_1.default));

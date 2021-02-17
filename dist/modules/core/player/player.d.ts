@@ -5,8 +5,8 @@ import City from '../city';
 import Train from '../train';
 import Resource from '../resource';
 import Route from '../route';
-import { QueuedRouteItem, HandleTurnInfo, ITurnable, PlayerType, PlayerLevel } from '../../../types/types';
 import { Nardis } from '../../..';
+import { QueuedRouteItem, HandleTurnInfo, ITurnable, PlayerType, PlayerLevel } from '../../../types/types';
 /**
  * @constructor
  * @param {string}            name       - String with name.
@@ -44,10 +44,12 @@ export default class Player extends BaseComponent implements ITurnable {
      * Then handle Route queue, built Routes and Finance.
      *
      * @param {HandleTurnInfo} info - Object with relevant turn information.
+     *
+     * @param {Nardis}         game - (optional) Nardis game instance.
      */
     handleTurn: (info: HandleTurnInfo, game?: Nardis) => void;
     /**
-     * Checks if level should be increased and acts accordingly.
+     * Check if level should be increased and act accordingly.
      */
     checkLevel: () => void;
     /**
@@ -60,17 +62,17 @@ export default class Player extends BaseComponent implements ITurnable {
     /**
      * Remove Route from queue.
      *
-     * @param {string}    id - String with id of Route to remove.
+     * @param   {string}  id - String with id of Route to remove.
      *
-     * @returns {boolean}      True if the Route was removed from queue else false.
+     * @returns {boolean} True if the Route was removed from queue else false.
      */
     removeRouteFromQueue: (id: string) => boolean;
     /**
      * Remove Route from routes.
      *
-     * @param {string}    id - String with id of Route to remove.
+     * @param   {string}  id - String with id of Route to remove.
      *
-     * @returns {boolean}      True if the Route was removed from queue else false.
+     * @returns {boolean} True if the Route was removed from queue else false.
      */
     removeRouteFromRoutes: (id: string) => boolean;
     /**
@@ -80,7 +82,7 @@ export default class Player extends BaseComponent implements ITurnable {
      */
     addUpgrade: (upgrade: Upgrade) => void;
     /**
-     * @return {string} String with JSON stringified property keys and values.
+     * @returns {string} String with JSON stringified property keys and values.
     */
     deconstruct: () => string;
     /**
@@ -116,12 +118,13 @@ export default class Player extends BaseComponent implements ITurnable {
     /**
      * Get Player instance from stringified JSON.
      *
-     * @param {string}     stringifiedJSON - String with information to be used.
-     * @param {City[]}     cities          - City instances used in the current game.
-     * @param {Train[]}    trains          - Train instances used in the current game.
-     * @param {Upgrades[]} upgrades        - Upgrade instances used in the current game.
+     * @param   {string}     stringifiedJSON - String with information to be used.
+     * @param   {City[]}     cities          - City instances used in the current game.
+     * @param   {Train[]}    trains          - Train instances used in the current game.
+     * @param   {Resource[]} resources       - Resource instances used in the current game.
+     * @param   {Upgrades[]} upgrades        - Upgrade instances used in the current game.
      *
-     * @return {Player}                      Player instance created from stringifiedJSON.
+     * @returns {Player}     Player instance created from stringifiedJSON.
      */
     static createFromStringifiedJSON: (stringifiedJSON: string, cities: City[], trains: Train[], resources: Resource[], upgrades: Upgrade[]) => Player;
 }

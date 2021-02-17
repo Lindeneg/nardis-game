@@ -9,6 +9,7 @@ var __spreadArrays = (this && this.__spreadArrays) || function () {
 Object.defineProperty(exports, "__esModule", { value: true });
 var types_1 = require("../../types/types");
 var constants_1 = require("../../util/constants");
+// TODO
 var NardisEvent = /** @class */ (function () {
     function NardisEvent() {
     }

@@ -28,7 +28,8 @@ export declare enum FinanceType {
     Upgrade = 3,
     Train = 4,
     Recoup = 5,
-    Stock = 6
+    StockBuy = 6,
+    StockSell = 7
 }
 export declare enum FinanceGeneralType {
     Income = 0,
@@ -52,14 +53,24 @@ export declare enum LocalKey {
     Stocks = 7,
     HasActiveGame = 8
 }
-interface Indexable<T> {
+export interface Indexable<T> {
     [key: string]: T;
+}
+export interface ActionSave {
+    should: boolean;
+    turn: number;
+    diff: number;
 }
 export interface ISaveable {
     deconstruct: () => string;
 }
 export interface ITurnable {
     handleTurn: (info: HandleTurnInfo) => void;
+}
+export interface OpponentInformation {
+    type: PlayerType;
+    color: string;
+    avatar: number;
 }
 export interface GameEvent {
     level: EventLogLevel;
@@ -70,11 +81,29 @@ export interface ValueHistory {
     value: number;
     turn: number;
 }
+export interface LevelUpRequirement {
+    routes: number;
+    revenuePerTurn: number;
+    gold: number;
+}
 export interface Stocks extends Indexable<Stock> {
 }
 export interface StockSupply extends Indexable<number> {
 }
 export interface StockHolding extends Indexable<number> {
+}
+export interface StockConstant {
+    maxStockAmount: number;
+    startingShares: number;
+    multipliers: {
+        stockBuy: number;
+        routeLength: number;
+        stockHolder: number;
+    };
+    divisors: {
+        avgRevenue: number;
+        totalProfits: number;
+    };
 }
 export interface GameData {
     cities: City[];
@@ -176,4 +205,3 @@ export interface IRoute {
     aRouteIndex: number;
     powerIndex: number;
 }
-export {};

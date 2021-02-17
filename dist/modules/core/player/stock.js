@@ -13,9 +13,19 @@ var __extends = (this && this.__extends) || (function () {
     };
 })();
 Object.defineProperty(exports, "__esModule", { value: true });
+var base_component_1 = require("../../component/base-component");
 var constants_1 = require("../../../util/constants");
 var util_1 = require("../../../util/util");
-var base_component_1 = require("../../component/base-component");
+/**
+ * @constructor
+ * @param {string}         name           - Name of the Stock instance.
+ * @param {string}         owningPlayerId - String with Id of owning Player.
+ *
+ * @param {number}         value          - (optional) Number with Stock sell value.
+ * @param {ValueHistory[]} valueHistory   - (optional) Object with Stock ValueHistory.
+ * @param {StockSupply}    supply         - (optional) Object with StockSupply.
+ * @param {string}         id             - (optional) String number describing id.
+ */
 var Stock = /** @class */ (function (_super) {
     __extends(Stock, _super);
     function Stock(name, owningPlayerId, value, valueHistory, supply, id) {
@@ -23,6 +33,13 @@ var Stock = /** @class */ (function (_super) {
         var _this = _super.call(this, name, id) || this;
         _this.getBuyValue = function () { return Math.floor(_this._value * constants_1.stockConstant.multipliers.stockBuy); };
         _this.getSellValue = function () { return _this._value; };
+        /**
+         * Buy Stock to the specified playerId.
+         *
+         * @param   {string}  playerId - String with playerId to buy Stock to.
+         *
+         * @returns {boolean} True if Stock was bought else false.
+         */
         _this.buyStock = function (playerId) {
             if (_this.currentAmountOfStockHolders() + 1 <= constants_1.stockConstant.maxStockAmount) {
                 if (!util_1.isDefined(_this._supply[playerId])) {
@@ -35,6 +52,13 @@ var Stock = /** @class */ (function (_super) {
             }
             return false;
         };
+        /**
+         * Sell Stock from the specified playerId.
+         *
+         * @param   {string}  playerId - String with playerId to sell Stock from.
+         *
+         * @returns {boolean} True if Stock was sold else false.
+         */
         _this.sellStock = function (playerId) {
             if (util_1.isDefined(_this._supply[playerId]) && _this._supply[playerId] > 0) {
                 _this._supply[playerId] -= 1;
@@ -42,10 +66,19 @@ var Stock = /** @class */ (function (_super) {
             }
             return false;
         };
+        /**
+         * Get total amount of current Stock holders and their respective quantities.
+         *
+         * @returns {number} Number with total amount of owned Stock.
+         */
         _this.currentAmountOfStockHolders = function () { return (Object.keys(_this._supply).map(function (key) { return (_this._supply[key]); }).reduce(function (a, b) { return a + b; }, 0)); };
-        _this.setValue = function (value) {
-            _this._value = value;
-        };
+        /**
+         * Update base value of Stock.
+         *
+         * @param {Finance} finance - Finance instance of the owning Player.
+         * @param {number}  routes  - Number with sum of Route and Queue length.
+         * @param {number}  turn    - Number with current turn.
+         */
         _this.updateValue = function (finance, routes, turn) {
             var newValue = (Math.floor(routes * constants_1.stockConstant.multipliers.routeLength) +
                 Math.floor(finance.getAverageRevenue() / constants_1.stockConstant.divisors.avgRevenue) +
@@ -56,13 +89,15 @@ var Stock = /** @class */ (function (_super) {
             }
         };
         /**
-         *
+         * @returns {string} String with JSON stringified property keys and values.
          */
         _this.deconstruct = function () { return JSON.stringify(_this); };
         /**
+         * Update ValueHistory. If ValueHistory is equal or greater than the default max length,
+         * remove the first entry and then push the new value as the last entry.
          *
-         * @param value
-         * @param turn
+         * @param {number} value - Number with new value of the Stock.
+         * @param {number} turn  - Number with current turn.
          */
         _this.updateValueHistory = function (value, turn) {
             if (_this._valueHistory.length >= constants_1.MAX_VALUE_HISTORY_LENGTH) {
@@ -87,9 +122,9 @@ var Stock = /** @class */ (function (_super) {
     /**
      * Get Stock instance from stringified JSON.
      *
-     * @param {string}     stringifiedJSON - string with information to be used
+     * @param   {string} stringifiedJSON - string with information to be used
      *
-     * @return {Stock}                     Stock instance created from the model
+     * @returns {Stock}  Stock instance created from the model
      */
     Stock.createFromStringifiedJSON = function (stringifiedJSON) {
         var parsedJSON = typeof stringifiedJSON === 'string' ? JSON.parse(stringifiedJSON) : stringifiedJSON;

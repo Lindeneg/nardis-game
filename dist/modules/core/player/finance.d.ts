@@ -3,6 +3,7 @@ import { FinanceHistory, FinanceTotal, HandleTurnInfo, ITurnable, FinanceType, P
 /**
  * @constructor
  * @param {string}         name         - String with name.
+ * @param {string}         playerId     - String with owning playerId.
  * @param {number}         gold         - Number with current gold.
  *
  * @param {FinanceHistory} history      - (optional) FinanceHistory object.
@@ -45,10 +46,10 @@ export default class Finance extends BaseComponent implements ITurnable {
     /**
      * Remove entry from expense object.
      *
-     * @param {FinanceType} type   - FinanceType of the expense to be removed.
-     * @param {string}      id     - string with id of the expense to be removed.
+     * @param   {FinanceType} type   - FinanceType of the expense to be removed.
+     * @param   {string}      id     - string with id of the expense to be removed.
      *
-     * @returns {boolean}            True if removed else false.
+     * @returns {boolean}     True if removed else false.
      */
     removeFromFinanceExpense: (type: FinanceType, id: string) => boolean;
     /**
@@ -63,7 +64,6 @@ export default class Finance extends BaseComponent implements ITurnable {
      * Add to gold from a deleted Route.
      *
      * @param {number} value - Number wih gold to recoup.
-     *
      */
     recoupDeletedRoute: (value: number) => void;
     /**
@@ -73,7 +73,21 @@ export default class Finance extends BaseComponent implements ITurnable {
      */
     updateNetWorth: (data: PlayerData) => void;
     /**
-     * @return {string} String with JSON stringified property keys and values.
+     * Add Stock to StockHolding and handle expense.
+     *
+     * @param {string} playerId - String with id of the owning player of Stock to add.
+     * @param {number} value    - BuyValue of the Stock.
+     */
+    buyStock: (playerId: string, value: number) => void;
+    /**
+     * Remove Stock from StockHolding and handle income.
+     *
+     * @param {string} playerId - String with id of the owning player of Stock to remove.
+     * @param {number} value    - SellValue of the Stock.
+     */
+    sellStock: (playerId: string, value: number) => void;
+    /**
+     * @returns {string} String with JSON stringified property keys and values.
      */
     deconstruct: () => string;
     /**
@@ -83,7 +97,7 @@ export default class Finance extends BaseComponent implements ITurnable {
     /**
      * @param   {FinanceHistoryItem} historyItem - History object to average.
      *
-     * @returns {number}                           Number with average value of the history item.
+     * @returns {number}             Number with average value of the history item.
      */
     private getAverageHistory;
     /**
@@ -96,10 +110,10 @@ export default class Finance extends BaseComponent implements ITurnable {
     /**
      * Get Train upkeep with Player upgrades taken into consideration.
      *
-     * @param {Train}     train    - Train to get upkeep from.
-     * @param {Upgrade[]} upgrades - Upgrades to be accounted for.
+     * @param   {Train}     train    - Train to get upkeep from.
+     * @param   {Upgrade[]} upgrades - Upgrades to be accounted for.
      *
-     * @returns {number}           - Number with the correct Train upkeep.
+     * @returns {number}    Number with the correct Train upkeep.
      */
     private getTrainUpkeep;
     /**
@@ -117,7 +131,7 @@ export default class Finance extends BaseComponent implements ITurnable {
     /**
      * Get total value of the owning Player's current stock holdings.
      *
-     * @param {Stocks} - Stocks object with all game Stock objects.
+     * @param   {Stocks} stocks - Stocks object with all game Stock objects.
      *
      * @returns {number} Number with value of Stocks.
      */
@@ -159,9 +173,9 @@ export default class Finance extends BaseComponent implements ITurnable {
     /**
      * Get Finance instance from stringified JSON.
      *
-     * @param {string}     stringifiedJSON - String with information to be used.
+     * @param   {string}     stringifiedJSON - String with information to be used.
      *
-     * @return {Finance}                     Finance instance created from the model.
+     * @returns {Finance}    Finance instance created from the model.
      */
     static createFromStringifiedJSON: (stringifiedJSON: string | object) => Finance;
 }

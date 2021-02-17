@@ -11,7 +11,7 @@ export default abstract class BaseComponent implements ISaveable {
     readonly name: string;
     constructor(name: string, id?: string);
     /**
-     * @return {boolean} True if instances has same id else false.
+     * @returns {boolean} True if instances has same id else false.
     */
     equals: (other: BaseComponent) => boolean;
     /**

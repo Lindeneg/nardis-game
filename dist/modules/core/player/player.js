@@ -49,6 +49,8 @@ var Player = /** @class */ (function (_super) {
          * Then handle Route queue, built Routes and Finance.
          *
          * @param {HandleTurnInfo} info - Object with relevant turn information.
+         *
+         * @param {Nardis}         game - (optional) Nardis game instance.
          */
         _this.handleTurn = function (info, game) {
             _this.checkLevel();
@@ -57,7 +59,7 @@ var Player = /** @class */ (function (_super) {
             _this.handleFinance(info);
         };
         /**
-         * Checks if level should be increased and acts accordingly.
+         * Check if level should be increased and act accordingly.
          */
         _this.checkLevel = function () {
             if (_this.shouldLevelBeIncreased()) {
@@ -81,9 +83,9 @@ var Player = /** @class */ (function (_super) {
         /**
          * Remove Route from queue.
          *
-         * @param {string}    id - String with id of Route to remove.
+         * @param   {string}  id - String with id of Route to remove.
          *
-         * @returns {boolean}      True if the Route was removed from queue else false.
+         * @returns {boolean} True if the Route was removed from queue else false.
          */
         _this.removeRouteFromQueue = function (id) {
             for (var i = 0; i < _this._queue.length; i++) {
@@ -100,9 +102,9 @@ var Player = /** @class */ (function (_super) {
         /**
          * Remove Route from routes.
          *
-         * @param {string}    id - String with id of Route to remove.
+         * @param   {string}  id - String with id of Route to remove.
          *
-         * @returns {boolean}      True if the Route was removed from queue else false.
+         * @returns {boolean} True if the Route was removed from queue else false.
          */
         _this.removeRouteFromRoutes = function (id) {
             for (var i = 0; i < _this._routes.length; i++) {
@@ -125,7 +127,7 @@ var Player = /** @class */ (function (_super) {
             _this._upgrades.push(upgrade);
         };
         /**
-         * @return {string} String with JSON stringified property keys and values.
+         * @returns {string} String with JSON stringified property keys and values.
         */
         _this.deconstruct = function () { return JSON.stringify({
             name: _this.name,
@@ -134,13 +136,13 @@ var Player = /** @class */ (function (_super) {
             id: _this.id,
             startCityId: _this._startCity.id,
             finance: _this._finance.deconstruct(),
-            queue: _this._queue.map(function (e) { return ({
-                route: e.route.deconstruct(),
-                turnCost: e.turnCost
+            queue: _this._queue.map(function (queued) { return ({
+                route: queued.route.deconstruct(),
+                turnCost: queued.turnCost
             }); }),
-            routes: _this._routes.map(function (e) { return e.deconstruct(); }),
-            upgrades: _this._upgrades.map(function (e) { return ({
-                id: e.id
+            routes: _this._routes.map(function (route) { return route.deconstruct(); }),
+            upgrades: _this._upgrades.map(function (upgrade) { return ({
+                id: upgrade.id
             }); })
         }); };
         /**
@@ -212,23 +214,24 @@ var Player = /** @class */ (function (_super) {
         _this.startGold = startGold;
         _this.playerType = playerType;
         _this._startCity = startCity;
-        _this._finance = finance ? finance : new finance_1.default(_this.name, _this.id, _this.startGold);
-        _this._level = level ? level : types_1.PlayerLevel.Novice;
-        _this._queue = queue ? queue : [];
-        _this._routes = routes ? routes : [];
-        _this._upgrades = upgrades ? upgrades : [];
+        _this._finance = util_1.isDefined(finance) ? finance : new finance_1.default(_this.name, _this.id, _this.startGold);
+        _this._level = util_1.isDefined(level) ? level : types_1.PlayerLevel.Novice;
+        _this._queue = util_1.isDefined(queue) ? queue : [];
+        _this._routes = util_1.isDefined(routes) ? routes : [];
+        _this._upgrades = util_1.isDefined(upgrades) ? upgrades : [];
         _this._range = _this.getRangeFromLevel();
         return _this;
     }
     /**
      * Get Player instance from stringified JSON.
      *
-     * @param {string}     stringifiedJSON - String with information to be used.
-     * @param {City[]}     cities          - City instances used in the current game.
-     * @param {Train[]}    trains          - Train instances used in the current game.
-     * @param {Upgrades[]} upgrades        - Upgrade instances used in the current game.
+     * @param   {string}     stringifiedJSON - String with information to be used.
+     * @param   {City[]}     cities          - City instances used in the current game.
+     * @param   {Train[]}    trains          - Train instances used in the current game.
+     * @param   {Resource[]} resources       - Resource instances used in the current game.
+     * @param   {Upgrades[]} upgrades        - Upgrade instances used in the current game.
      *
-     * @return {Player}                      Player instance created from stringifiedJSON.
+     * @returns {Player}     Player instance created from stringifiedJSON.
      */
     Player.createFromStringifiedJSON = function (stringifiedJSON, cities, trains, resources, upgrades) {
         var parsedJSON = JSON.parse(stringifiedJSON);

@@ -13,6 +13,7 @@ import { UpgradeModel } from '../../../types/model';
  * @param {number} levelRequired - Number with min level required.
  *
  * @param {string} id            - (optional) String number describing id.
+ *
  */
 export default class Upgrade extends BaseComponent {
     readonly type: UpgradeType;
@@ -21,23 +22,23 @@ export default class Upgrade extends BaseComponent {
     readonly cost: number;
     constructor(name: string, cost: number, value: number, type: UpgradeType, levelRequired: PlayerLevel, id?: string);
     /**
-     * @return {string} String with JSON stringified property keys and values.
+     * @returns {string} String with JSON stringified property keys and values.
     */
     deconstruct: () => string;
     /**
      * Get Upgrade instance from a UpgradeModel.
      *
-     * @param {UpgradeModel}  model - UpgradeModel to be used.
+     * @param   {UpgradeModel}  model - UpgradeModel to be used.
      *
-     * @return {Upgrade}              Upgrade instance created from the model.
+     * @returns {Upgrade}       Upgrade instance created from the model.
      */
     static createFromModel: (model: UpgradeModel) => Upgrade;
     /**
      * Get Upgrade instance from stringified JSON.
      *
-     * @param {string}  stringifiedJSON - String with information to be used.
+     * @param   {string}  stringifiedJSON - String with information to be used.
      *
-     * @return {Upgrade}                  Upgrade instance created from the string.
+     * @returns {Upgrade} Upgrade instance created from the string.
      */
     static createFromStringifiedJSON: (stringifiedJSON: string) => Upgrade;
 }

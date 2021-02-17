@@ -14,22 +14,23 @@ var __extends = (this && this.__extends) || (function () {
 })();
 Object.defineProperty(exports, "__esModule", { value: true });
 var base_component_1 = require("../component/base-component");
+var util_1 = require("../../util/util");
 var types_1 = require("../../types/types");
 /**
  * @constructor
- * @param {string}     name                - string with name.
+ * @param {string}     name                - String with name.
  * @param {City}       cityOne             - City specifying initial departure.
  * @param {City}       cityTwo             - City specifying initial arrival.
  * @param {Train}      train               - Train instance to be used.
  * @param {RoutePlan}  routePlan           - RoutePlan describing cargo.
- * @param {number}     distance            - number with distance in kilometers.
- * @param {number}     cost                - number with cost in gold.
- * @param {number}     purchasedOnTurn     - number with turn count.
+ * @param {number}     distance            - Number with distance in kilometers.
+ * @param {number}     cost                - Number with cost in gold.
+ * @param {number}     purchasedOnTurn     - Number with turn count.
  *
- * @param {number}     profit              - (optional) number with profit in gold.
- * @param {number}     kilometersTravelled - (optional) kilometers travelled in total for route.
+ * @param {number}     profit              - (optional) Number with profit in gold.
+ * @param {number}     kilometersTravelled - (optional) Number with total kilometers travelled.
  * @param {RouteState} routeState          - (optional) RouteState of the route.
- * @param {string}     id                  - (optional) string number describing id.
+ * @param {string}     id                  - (optional) String number describing id.
  */
 var Route = /** @class */ (function (_super) {
     __extends(Route, _super);
@@ -102,7 +103,7 @@ var Route = /** @class */ (function (_super) {
             _this.resetRouteState(true);
         };
         /**
-         * @return {string} String with JSON stringified property keys and values.
+         * @returns {string} String with JSON stringified property keys and values.
         */
         _this.deconstruct = function () { return JSON.stringify({
             name: _this.name,
@@ -149,7 +150,7 @@ var Route = /** @class */ (function (_super) {
         /**
          * Get Train speed with Player upgrades taken into consideration.
          *
-         * @return {number} - Number with the correct Train speed.
+         * @returns {number} - Number with the correct Train speed.
          */
         _this.getTrainSpeed = function (upgrades) {
             var relevantUpgrades = upgrades.filter(function (e) { return e.type === types_1.UpgradeType.TrainSpeedQuicker; });
@@ -165,7 +166,7 @@ var Route = /** @class */ (function (_super) {
          * Get appropriate array RouteCargo when between arrival and departure. Ensures that the
          * amount of each cargo respects the available amount from the City where the cargo is fetched from.
          *
-         * @return {RouteCargo[]} - Array of RouteCargo objects.
+         * @returns {RouteCargo[]} - Array of RouteCargo objects.
          */
         _this.getChangedCargo = function () {
             var isDestinationCityOne = _this._routeState.destination.equals(_this._cityOne);
@@ -175,7 +176,7 @@ var Route = /** @class */ (function (_super) {
                 var citySupply = inCity.getCityResourceFromResource(routeCargo.resource);
                 var diff = citySupply ? citySupply.available - routeCargo.targetAmount : null;
                 var available = citySupply.available;
-                if (typeof diff === 'number' && !Number.isNaN(diff)) {
+                if (util_1.isNumber(diff)) {
                     if (diff <= 0 && inCity.subtractSupply(routeCargo.resource, available)) {
                         // target amount is greater than available, so set actual amount to available 
                         routeCargo.actualAmount = available;
@@ -195,6 +196,11 @@ var Route = /** @class */ (function (_super) {
             });
             return cargo;
         };
+        /**
+         * Reset the RouteState to its default values.
+         *
+         * @param {boolean} edit - True if the reset is due to an edit of an active Route, else false.
+         */
         _this.resetRouteState = function (edit) {
             _this._routeState = {
                 hasArrived: edit ? true : false,
@@ -211,9 +217,9 @@ var Route = /** @class */ (function (_super) {
         _this._distance = distance;
         _this._cost = cost;
         _this._purchasedOnTurn = purchasedOnTurn;
-        _this._profit = profit ? profit : 0;
-        _this._kilometersTravelled = kilometersTravelled ? kilometersTravelled : 0;
-        if (routeState) {
+        _this._profit = util_1.isDefined(profit) ? profit : 0;
+        _this._kilometersTravelled = util_1.isDefined(kilometersTravelled) ? kilometersTravelled : 0;
+        if (util_1.isDefined(routeState)) {
             _this._routeState = routeState;
         }
         else {
@@ -224,12 +230,12 @@ var Route = /** @class */ (function (_super) {
     /**
      * Get Route instance from stringified JSON.
      *
-     * @param {string}     stringifiedJSON - String with information to be used.
-     * @param {City[]}     cities          - Array of City instances used in game.
-     * @param {Train[]}    trains          - Array of Train instances used in game.
-     * @param {Resource[]} resources       - Array of Resource instances used in game.
+     * @param   {string}     stringifiedJSON - String with information to be used.
+     * @param   {City[]}     cities          - Array of City instances used in game.
+     * @param   {Train[]}    trains          - Array of Train instances used in game.
+     * @param   {Resource[]} resources       - Array of Resource instances used in game.
      *
-     * @return {Route}                       Route instance created from the string.
+     * @returns {Route}      Route instance created from the string.
      */
     Route.createFromStringifiedJSON = function (stringifiedJSON, cities, trains, resources) {
         var parsedJSON = typeof stringifiedJSON === 'string' ? JSON.parse(stringifiedJSON) : stringifiedJSON;

@@ -27,14 +27,33 @@ Object.defineProperty(exports, "__esModule", { value: true });
 var player_1 = require("../player");
 var finance_1 = require("../finance");
 var route_1 = require("../../route");
+var util_1 = require("../../../../util/util");
 var types_1 = require("../../../../types/types");
 var constants_1 = require("../../../../util/constants");
-;
+/**
+ * @constructor
+ * @param {string}            name       - String with name.
+ * @param {number}            startGold  - Number with start gold.
+ * @param {City}              startCity  - City describing the start location.
+ *
+ * @param {Finance}           finance    - (optional) Finance instance.
+ * @param {PlayerLevel}       level      - (optional) PlayerLevel.
+ * @param {QueuedRouteItem[]} queue      - (optional) Array of queued Routes.
+ * @param {Route[]}           routes     - (optional) Array of Routes.
+ * @param {Upgrade[]}         upgrades   - (optional) Array of Upgrades.
+ * @param {ActionSave}        save       - (optional) Object with save information.
+ * @param {string}            id         - (optional) String number describing id.
+ */
 var Opponent = /** @class */ (function (_super) {
     __extends(Opponent, _super);
     function Opponent(name, startGold, startCity, finance, level, queue, routes, upgrades, save, id) {
         var _this = _super.call(this, name, startGold, types_1.PlayerType.Computer, startCity, finance, level, queue, routes, upgrades, id) || this;
-        // TODO
+        /**
+         * Handle Opponent events and actions.
+         *
+         * @param {HandleTurnInfo} info - Object with relevant turn information.
+         * @param {Nardis}         game - Nardis game instance.
+         */
         _this.handleTurn = function (info, game) {
             if (_this.shouldLevelBeIncreased()) {
                 _this.increaseLevel();
@@ -53,7 +72,9 @@ var Opponent = /** @class */ (function (_super) {
         _this.setSave = function (save) {
             _this._save = save;
         };
-        // TODO
+        /**
+         * @returns {string} String with JSON stringified property keys and values.
+         */
         _this.deconstruct = function () { return JSON.stringify({
             name: _this.name,
             startGold: _this.startGold,
@@ -73,12 +94,26 @@ var Opponent = /** @class */ (function (_super) {
             }); })
         }); };
         /**
-         * Main function for deducing the best action for the non-human player in question.
+         * There are basically five actions:
+         * - Buy Route
+         * - Buy Upgrade
+         * - Buy Stock
+         * - Delete Route
+         * - Sell Stock
+         *
+         * Upgrades should be prioritized, then Stock options and then purchase of Routes.
+         * Lastly, delete and recoup the cost of consistently unprofitable Routes.
+         *
+         * It is also possible to alter an unprofitable Route to potentially make it profitable,
+         * if, say, new Trains or Resources becomes available. However, that, for now, is not utilized by Opponent.
+         *
+         * @param {HandleTurnInfo} info - Object with relevant turn information.
+         * @param {Nardis}         game - Nardis game instance.
          */
         _this.deduceAction = function (info, game) {
-            _this.log("turn=" + info.turn + ";comp=" + _this.name + ";avgr=" + _this._finance.getAverageRevenue() + "g;curg=" + _this._finance.getGold() + ";rout=" + _this._routes.length + ";queu=" + _this._queue.length + ";leve=" + _this._level + ";");
+            _this.log("turn=" + info.turn + " | name=" + _this.name);
             _this.buyAvailableUpgrades(info, game);
-            var stockOptions = _this.inspectStockOptions();
+            _this.inspectStockOptions(game.stocks, _this._finance.getStocks());
             if (_this.shouldPurchaseRoutes(info.turn)) {
                 var train = _this.getSuggestedTrain(game.getArrayOfAdjustedTrains());
                 var originRoutes = _this.getInterestingRoutes(game, train);
@@ -89,7 +124,12 @@ var Opponent = /** @class */ (function (_super) {
         };
         /**
          * Iterate over each unique origin. Then iterate over routes from that origin.
-         * Sort those routes after highest potential profitability.
+         * Filter for affordable Routes and sort for highest potential profitability.
+         *
+         * @param   {Nardis}                 game  - Nardis game instance.
+         * @param   {AdjustedTrain}          train - AdjustedTrain object.
+         *
+         * @returns {OriginRoutePotential[]} Array of origins and their respective routes.
          */
         _this.getInterestingRoutes = function (game, train) { return (_this.getRoutePowerPotential(game, train).map(function (origin) {
             _this.log("routes from " + origin.origin.name, [origin.aRoutes, origin.pRoutes]);
@@ -98,6 +138,12 @@ var Opponent = /** @class */ (function (_super) {
         })); };
         /**
          * Reduce an array of OriginRoutePotential to a sorted array of BuyableRoutes with length n.
+         *
+         * @param   {OriginRoutePotential[]} routes - Array of origins and their respective routes.
+         * @param   {number}                 n      - Number with length of returned array.
+         * @param   {AdjustedTrain}          train  - AdjustedTrain object.
+         *
+         * @returns {BuyableRoute[]}         Array of BuyableRoute objects ready to be purchased.
          */
         _this.pickNInterestingRoutes = function (routes, n, train) { return (routes.map(function (route, originIndex) { return (route.aRoutes.map(function (aRoute, aRouteIndex) { return ({
             originIndex: originIndex,
@@ -115,6 +161,9 @@ var Opponent = /** @class */ (function (_super) {
         })); };
         /**
          * Buy all available upgrades.
+         *
+         * @param {HandleTurnInfo} info - Object with relevant turn information.
+         * @param {Nardis}         game - Nardis game instance.
          */
         _this.buyAvailableUpgrades = function (info, game) {
             if (_this._save.should) {
@@ -131,6 +180,11 @@ var Opponent = /** @class */ (function (_super) {
         /**
          * Each origin will have its own unique routes. There can be multiple origins each with multiple routes.
          * Assign a "power index" to each route associated with each origin. Higher the index, better the route.
+         *
+         * @param   {Nardis}                 game           - Nardis game instance.
+         * @param   {AdjustedTrain}          suggestedTrain - AdjustedTrain object.
+         *
+         * @returns {OriginRoutePotential[]} Array of OriginRoutePotentials from each unique origin.
          */
         _this.getRoutePowerPotential = function (game, suggestedTrain) { return (_this.getUniqueOrigins().map(function (origin) {
             var pRoutes = game.getArrayOfPossibleRoutes(origin);
@@ -149,8 +203,16 @@ var Opponent = /** @class */ (function (_super) {
             };
         })); };
         /**
+         * Get RoutePower of a potential route by asking a few questions.
+         *
          * What would the expected profit be from a full revolution? That is from origin, to destination and back again.
          * How many turns will it take? The power index is the expected profit over the turns a full revolution requires.
+         *
+         * @param   {number}         distance  - Number with distance in kilometers.
+         * @param   {Train}          train     - Train instance to be used.
+         * @param   {RoutePlanCargo} routePlan - RoutePlanCargo object with suggested cargo.
+         *
+         * @returns {RoutePower}     RoutePower object for the given parameters.
          */
         _this.getPower = function (distance, train, routePlan) {
             var fullRevolutionInTurns = Math.ceil(distance / train.speed) * 2;
@@ -164,7 +226,12 @@ var Opponent = /** @class */ (function (_super) {
             };
         };
         /**
-         * Try and deduce the best RoutePlanCargo for a given route between two cities.
+         * Get suggested RoutePlanCargo for a given route between two cities.
+         *
+         * @param   {PotentialRoute} route           - PotentialRoute object.
+         * @param   {number}         cargoConstraint - Number of available cargo spaces.
+         *
+         * @returns {RoutePlanCargo} RoutePlanCargo suggested for the route.
          */
         _this.getSuggestedRoutePlan = function (route, cargoConstraint) {
             var c1Supply = route.cityOne.getSupply();
@@ -180,13 +247,31 @@ var Opponent = /** @class */ (function (_super) {
                 cityTwo: _this.getSuggestedCargo(c2Supply.filter(function (cr) { return !cr.resource.equals(c2p.resource) && !cr.resource.equals(c2m.resource); }), route.cityOne, cargoConstraint, pgt ? [c2p, c2m] : [c2m, c2p])
             };
         };
-        // TODO 
-        _this.inspectStockOptions = function () {
+        /**
+         * // TODO
+         */
+        _this.inspectStockOptions = function (gameStocks, ownedStocks) {
+            var profit = _this._finance.getAverageRevenue() - _this._finance.getAverageExpense();
+            if (_this._finance.getGold() <= 0 && profit <= 0) {
+                // sell stock, first foreign stock if any, else own stock
+            }
+            else if (_this._finance.getGold() > Math.floor(_this.startGold / 2) && profit > 0) {
+                // buy stock
+            }
         };
         /**
+         * Get array of suggested RouteCargo for a given route.
+         *
          * Supply will be medium-to-high-yield Resources. Filler will be the two low-yield Resources.
          * Prioritize supply but if all are either not demand in destination or weights more than current cargoConstraint,
          * then fill up the rest of the cargo space with filler Resources.
+         *
+         * @param   {CityResource[]}               supply          - Array of CityResources to be used.
+         * @param   {City}                         destination     - City instance to check demand from.
+         * @param   {number}                       cargoConstraint - Number of available cargo spaces.
+         * @param   {[CityResource, CityResource]} fillers         - Tuple of two low-yield CityResources.
+         *
+         * @returns {RouteCargo[]}                 Array of suggested RouteCargo.
          */
         _this.getSuggestedCargo = function (supply, destination, cargoConstraint, fillers) {
             var result = [];
@@ -213,7 +298,14 @@ var Opponent = /** @class */ (function (_super) {
             }
             return result;
         };
-        // TODO
+        /**
+         * Get an array of filler CityResources within the given constraint.
+         *
+         * @param   {number}                       cargoConstraint - Number of available cargo spaces.
+         * @param   {[CityResource, CityResource]} fillers         - Tuple of two low-yield CityResources.
+         *
+         * @returns {RouteCargo[]}                 Array of filler CityResources.
+         */
         _this.getFillerCargo = function (cargoConstraint, fillers) {
             var result = [];
             var initialAmount = fillers[0].available >= cargoConstraint ? cargoConstraint : fillers[0].available;
@@ -232,14 +324,26 @@ var Opponent = /** @class */ (function (_super) {
             }
             return result;
         };
-        // TODO
+        /**
+         * Get number with limit of purchasing Routes. Not a great logic thus far. Needs to be re-looked at.
+         *
+         * @param   {OriginRoutePotential[]} originRoutes - Array of OriginRoutePotentials.
+         *
+         * @returns {number}                 Number with suggested limit of Route purchase.
+         */
         _this.getN = function (originRoutes) {
             var amount = originRoutes
                 .map(function (origin) { return origin.aRoutes.length; })
                 .reduce(function (a, b) { return a + b; }, 0);
             return _this._finance.getAverageRevenue() >= 0 && _this._finance.getGold() > 0 ? (_this._queue.length === 0 ? amount : Math.floor(amount / 2)) : 0;
         };
-        // TODO
+        /**
+         * The default state is basically to buy Routes unless cash is needed for level up or stock purchase.
+         *
+         * @param   {number}  turn - Number with current turn.
+         *
+         * @returns {boolean} True if should purchase Route else false.
+         */
         _this.shouldPurchaseRoutes = function (turn) {
             var shouldPurchase;
             if (_this._save.should && turn < _this._save.turn + _this._save.diff) {
@@ -247,7 +351,7 @@ var Opponent = /** @class */ (function (_super) {
             }
             else {
                 var levelUpReq = constants_1.levelUpRequirements[_this._level + 1];
-                if (typeof levelUpReq !== 'undefined') {
+                if (util_1.isDefined(levelUpReq)) {
                     if (_this._routes.length < levelUpReq.routes) {
                         shouldPurchase = true;
                     }
@@ -272,7 +376,12 @@ var Opponent = /** @class */ (function (_super) {
             _this.log("should purchase: " + shouldPurchase);
             return shouldPurchase;
         };
-        // TODO
+        /**
+         * Purchase the given Routes until respecting some generic constraints for gold and queue length.
+         *
+         * @param {Nardis}         game   - Nardis game instance.
+         * @param {BuyableRoute[]} routes - BuyableRoutes to purchase.
+         */
         _this.purchaseRoutes = function (game, routes) {
             _this.log("attempting to purchase " + routes.length + " routes", routes);
             var min = Math.floor(_this._finance.getGold() * 0.1);
@@ -285,7 +394,9 @@ var Opponent = /** @class */ (function (_super) {
                 game.addRouteToPlayerQueue(routes[i]);
             }
         };
-        // TODO
+        /**
+         * // TODO
+         */
         _this.deleteConsistentlyUnprofitableRoutes = function () {
             _this.log('active routes', _this._routes);
             _this._routes.forEach(function (e, i) {
@@ -294,7 +405,12 @@ var Opponent = /** @class */ (function (_super) {
             });
         };
         /**
-         * Find the valueRatio of each Train, which is cost (negative) over the sum of the speed and space (positive).
+         * Get optimal Train by finding the valueRatio of each Train,
+         * which is the sum of cost and upkeep over the sum of the speed and space.
+         *
+         * @param   {AdjustedTrain[]} trains - Array of AdjustedTrains to be used.
+         *
+         * @returns {AdjustedTrain}   AdjustedTrain object.
          */
         _this.getSuggestedTrain = function (trains) {
             var relevantTrains = trains.filter(function (e) { return _this._level >= e.train.levelRequired; });
@@ -316,6 +432,8 @@ var Opponent = /** @class */ (function (_super) {
         /**
          * Get array of all cities currently connected to the Route network of the player. These cities will
          * serve as potential origins for new routes.
+         *
+         * @returns {City[]} Array of unique City origins.
          */
         _this.getUniqueOrigins = function () {
             var origins = [];
@@ -336,7 +454,11 @@ var Opponent = /** @class */ (function (_super) {
             return origins;
         };
         /**
-         * Temp for debug purposes
+         * For debugging purposes.
+         *
+         * @param {string} msg - String with message to log.
+         *
+         * @param {any}    obj - (optional) object to log.
          */
         _this.log = function (msg, obj) {
             if (!!parseInt(window['nardisNonHumanDebug'])) {
@@ -344,7 +466,7 @@ var Opponent = /** @class */ (function (_super) {
                 obj ? console.log(obj) : null;
             }
         };
-        _this._save = save ? save : {
+        _this._save = util_1.isDefined(save) ? save : {
             should: false,
             turn: 1,
             diff: 0
@@ -352,13 +474,15 @@ var Opponent = /** @class */ (function (_super) {
         return _this;
     }
     /**
-     * Get Player instance from stringified JSON.
+     * Get Opponent instance from stringified JSON.
      *
-     * @param {string}     stringifiedJSON - String with information to be used.
-     * @param {City[]}     cities          - City instances used in the current game.
-     * @param {Upgrades[]} upgrades        - Upgrade instances used in the current game.
+     * @param  {string}     stringifiedJSON - String with information to be used.
+     * @param  {City[]}     cities          - City instances used in the current game.
+     * @param  {Train[]}    trains          - Train instances used in the current game.
+     * @param  {Resource[]} resources       - Resource instances used in the current game.
+     * @param  {Upgrades[]} upgrades        - Upgrade instances used in the current game.
      *
-     * @return {Player}                      Player instance created from stringifiedJSON.
+     * @return {Opponent}   Opponent instance created from stringifiedJSON.
      */
     Opponent.createFromStringifiedJSON = function (stringifiedJSON, cities, trains, resources, upgrades) {
         var parsedJSON = JSON.parse(stringifiedJSON);

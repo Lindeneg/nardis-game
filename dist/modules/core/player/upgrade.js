@@ -26,13 +26,14 @@ var base_component_1 = require("../../component/base-component");
  * @param {number} levelRequired - Number with min level required.
  *
  * @param {string} id            - (optional) String number describing id.
+ *
  */
 var Upgrade = /** @class */ (function (_super) {
     __extends(Upgrade, _super);
     function Upgrade(name, cost, value, type, levelRequired, id) {
         var _this = _super.call(this, name, id) || this;
         /**
-         * @return {string} String with JSON stringified property keys and values.
+         * @returns {string} String with JSON stringified property keys and values.
         */
         _this.deconstruct = function () { return JSON.stringify(_this); };
         _this.type = type;
@@ -44,9 +45,9 @@ var Upgrade = /** @class */ (function (_super) {
     /**
      * Get Upgrade instance from a UpgradeModel.
      *
-     * @param {UpgradeModel}  model - UpgradeModel to be used.
+     * @param   {UpgradeModel}  model - UpgradeModel to be used.
      *
-     * @return {Upgrade}              Upgrade instance created from the model.
+     * @returns {Upgrade}       Upgrade instance created from the model.
      */
     Upgrade.createFromModel = function (model) {
         return new Upgrade(model.name, model.cost, model.value, model.type, model.levelRequired);
@@ -54,9 +55,9 @@ var Upgrade = /** @class */ (function (_super) {
     /**
      * Get Upgrade instance from stringified JSON.
      *
-     * @param {string}  stringifiedJSON - String with information to be used.
+     * @param   {string}  stringifiedJSON - String with information to be used.
      *
-     * @return {Upgrade}                  Upgrade instance created from the string.
+     * @returns {Upgrade} Upgrade instance created from the string.
      */
     Upgrade.createFromStringifiedJSON = function (stringifiedJSON) {
         var parsedJSON = JSON.parse(stringifiedJSON);

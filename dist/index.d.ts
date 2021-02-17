@@ -11,5 +11,5 @@ import Stock from './modules/core/player/stock';
 export * from './types/types';
 export * from './util/util';
 export * from './util/constants';
-export { genericOpponentsName } from './data/preparedData';
+export { genericOpponentsName, opponentInformation } from './data/preparedData';
 export { generateData, City, Route, Train, Resource, Player, Upgrade, Stock, Finance, Nardis };

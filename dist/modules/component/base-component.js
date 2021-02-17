@@ -12,12 +12,12 @@ var BaseComponent = /** @class */ (function () {
     function BaseComponent(name, id) {
         var _this = this;
         /**
-         * @return {boolean} True if instances has same id else false.
+         * @returns {boolean} True if instances has same id else false.
         */
         this.equals = function (other) {
             return _this.id === other.id;
         };
-        this.id = id ? id : util_1.createId();
+        this.id = util_1.isDefined(id) ? id : util_1.createId();
         this.name = name;
     }
     return BaseComponent;

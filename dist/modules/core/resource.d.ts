@@ -11,7 +11,7 @@ import { HandleTurnInfo, ValueHistory, ITurnable } from '../../types/types';
  * @param {number}                 valueVolatility    - Number with value volatility.
  *
  * @param {number}                 valueChangeDecider - (optional) Number with value decider.
- * @param {ValueHistory[]} valueHistory       - (optional) Object with history.
+ * @param {ValueHistory[]}         valueHistory       - (optional) Object with history.
  * @param {string}                 id                 - (optional) String number describing id.
  */
 export default class Resource extends BaseComponent implements ITurnable {
@@ -38,22 +38,22 @@ export default class Resource extends BaseComponent implements ITurnable {
      */
     handleTurn: (info: HandleTurnInfo) => void;
     /**
-     * @return {string} String with JSON stringified property keys and values.
+     * @returns {string} String with JSON stringified property keys and values.
     */
     deconstruct: () => string;
     /**
      * Set a new value for the resource.
      *
-     * @param {number}    value - Number with new value to be used.
-     * @param {number}    turn  - Number with turn count.
+     * @param   {number}  value - Number with new value to be used.
+     * @param   {number}  turn  - Number with turn count.
      *
-     * @return {boolean}          True if value was set else false.
+     * @returns {boolean} True if value was set else false.
      */
     private setNewValue;
     /**
      * Generates a new random value based upon the current value and the Resource value volatility.
      *
-     * @return {number} Number with new value.
+     * @returns {number} Number with new value.
      */
     private getNewValue;
     /**
@@ -63,17 +63,17 @@ export default class Resource extends BaseComponent implements ITurnable {
     /**
      * Get Resource instance from a ResourceModel.
      *
-     * @param {ResourceModel}  model - ResourceModel to be used.
+     * @param   {ResourceModel}  model - ResourceModel to be used.
      *
-     * @return {Resource}              Resource instance created from the model.
+     * @returns {Resource}       Resource instance created from the model.
      */
     static createFromModel: (model: ResourceModel) => Resource;
     /**
      * Get Resource instance from stringified JSON.
      *
-     * @param {string}    stringifiedJSON - String with information to be used.
+     * @param   {string}    stringifiedJSON - String with information to be used.
      *
-     * @return {Resource}                   Resource instance created from the string.
+     * @returns {Resource}  Resource instance created from the string.
      */
     static createFromStringifiedJSON: (stringifiedJSON: string) => Resource;
 }

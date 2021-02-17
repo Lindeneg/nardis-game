@@ -14,20 +14,21 @@ var upgrade_1 = require("./core/player/upgrade");
 var player_1 = require("./core/player/player");
 var train_1 = require("./core/train");
 var resource_1 = require("./core/resource");
+var opponent_1 = require("./core/player/opponent/opponent");
+var stock_1 = require("./core/player/stock");
+var preparedData_1 = require("../data/preparedData");
 var types_1 = require("../types/types");
 var constants_1 = require("../util/constants");
 var data_1 = require("../data/data");
 var util_1 = require("../util/util");
-var opponent_1 = require("./core/player/opponent/opponent");
-var preparedData_1 = require("../data/preparedData");
-var stock_1 = require("./core/player/stock");
 /**
  * @constructor
  * @param {GameData} data          - Object with GameData.
  * @param {Player[]} players       - Array with Players.
+ * @param {Stocks}   stocks        - Object with Stocks.
  *
  * @param {Player}   currentPlayer - (optional) Player instance of the current turn taker.
- * @param {number}   currentTurn   - (optional) Number describing the current turn.
+ * @param {number}   turn          - (optional) Number describing the current turn.
  */
 var Nardis = /** @class */ (function () {
     function Nardis(gameData, players, stocks, currentPlayer, turn) {
@@ -35,10 +36,9 @@ var Nardis = /** @class */ (function () {
         this.getCurrentPlayer = function () { return _this._currentPlayer; };
         this.getCurrentTurn = function () { return _this._turn; };
         /**
-         * Runs at the end of each Player turn.
+         * Runs at the end of each human Player turn.
          */
         this.endTurn = function () {
-            //console.log(this.stocks);
             _this._currentPlayer.handleTurn({
                 turn: _this._turn,
                 data: _this.data,
@@ -52,24 +52,17 @@ var Nardis = /** @class */ (function () {
             __spreadArrays(_this.data.cities, _this.data.resources).forEach(function (turnComponent) {
                 turnComponent.handleTurn({ turn: _this._turn, data: _this.data, playerData: { routes: [], upgrades: [], queue: [] } });
             });
-            _this.players.forEach(function (player) {
-                _this.stocks[player.id].updateValue(player.getFinance(), player.getRoutes().length + player.getQueue().length, _this._turn);
-                player.getFinance().updateNetWorth({
-                    routes: player.getRoutes(),
-                    upgrades: player.getUpgrades(),
-                    queue: player.getQueue(),
-                    gameStocks: _this.stocks
-                });
-            });
+            _this.updateStocks();
+            _this.updatePlayersNetWorth();
             _this._turn++;
             _this.saveGame();
         };
         /**
          * Get array of PotentialRoute objects respecting the current Players maximum range.
          *
-         * @param {City}              origin - City instance of initial departure
+         * @param   {City}              origin - City instance of initial departure.
          *
-         * @return {PotentialRoute[]}          Array of PotentialRoutes
+         * @returns {PotentialRoute[]}  Array of PotentialRoutes.
          */
         this.getArrayOfPossibleRoutes = function (origin) {
             var constraint = _this._currentPlayer.getRange();
@@ -91,7 +84,7 @@ var Nardis = /** @class */ (function () {
             return potentialRoutes;
         };
         /**
-         * @return {{train: Train, cost: number}[]} Array of Trains with their cost adjusted to reflect potential Player Upgrades.
+         * @returns {AdjustedTrain[]} Array of Trains with their cost adjusted to reflect potential Player Upgrades.
          */
         this.getArrayOfAdjustedTrains = function () {
             var upgrades = _this._currentPlayer.getUpgrades().filter(function (upgrade) { return upgrade.type === types_1.UpgradeType.TrainValueCheaper; });
@@ -107,8 +100,6 @@ var Nardis = /** @class */ (function () {
             });
         };
         /**
-         * @return {object} Object describing the current win state.
-         *
          * // TODO update winning condition when net worth and stock is implemented
          */
         this.hasAnyPlayerWon = function () {
@@ -131,9 +122,9 @@ var Nardis = /** @class */ (function () {
         /**
          * Add Upgrade to Player.
          *
-         * @param {string}   id - String with id of Upgrade to add.
+         * @param   {string}   id - String with id of Upgrade to add.
          *
-         * @return {boolean} True if Upgrade was added else false.
+         * @returns {boolean}  True if Upgrade was added else false.
          */
         this.addUpgradeToPlayer = function (id) {
             var matchedUpgrade = _this.data.upgrades.filter(function (upgrade) { return upgrade.id === id; });
@@ -147,12 +138,12 @@ var Nardis = /** @class */ (function () {
         /**
          * Change Train and/or RoutePlanCargo of active Route.
          *
-         * @param {string}         id        - String with id of Route to alter.
-         * @param {Train}          train     - Train instance to be used.
-         * @param {RoutePlanCargo} routePlan - RoutePlanCargo to be used.
-         * @param {number}         cost      - Number with cost of the Route change.
+         * @param   {string}         id        - String with id of Route to alter.
+         * @param   {Train}          train     - Train instance to be used.
+         * @param   {RoutePlanCargo} routePlan - RoutePlanCargo to be used.
+         * @param   {number}         cost      - Number with cost of the Route change.
          *
-         * @return {boolean} True if Route was altered else false.
+         * @returns {boolean}        True if Route was altered else false.
          */
         this.changeActivePlayerRoute = function (routeId, train, routePlan, cost) {
             var routes = _this._currentPlayer.getRoutes().filter(function (e) { return e.id === routeId; });
@@ -168,10 +159,10 @@ var Nardis = /** @class */ (function () {
         /**
          * Remove an entry from Player queue.
          *
-         * @param {string}   routeId - String with id of Route to remove.
-         * @param {string}   trainId - String with id of Train in Route.
+         * @param   {string}   routeId - String with id of Route to remove.
+         * @param   {string}   trainId - String with id of Train in Route.
          *
-         * @return {boolean} True if Route was removed from queue else false.
+         * @returns {boolean}  True if Route was removed from queue else false.
          */
         this.removeRouteFromPlayerQueue = function (routeId, trainId) {
             return _this.handleRemoveRouteFromPlayerFinance(routeId, trainId) && _this._currentPlayer.removeRouteFromQueue(routeId);
@@ -179,10 +170,10 @@ var Nardis = /** @class */ (function () {
         /**
          * Remove an entry from Player routes.
          *
-         * @param {string}   routeId - String with id of Route to remove.
-         * @param {number}   value - Number wih gold to recoup
+         * @param   {string}   routeId  - String with id of Route to remove.
+         * @param   {number}   value    - Number wih gold to recoup.
          *
-         * @return {boolean} True if Route was removed from routes else false.
+         * @returns {boolean}  True if Route was removed from routes else false.
          */
         this.removeRouteFromPlayerRoutes = function (routeId, value) {
             if (_this._currentPlayer.removeRouteFromRoutes(routeId)) {
@@ -192,12 +183,89 @@ var Nardis = /** @class */ (function () {
             return false;
         };
         /**
+         * Buy Stock to the Player of the current turn.
+         *
+         * @param   {string}  playerId - String with id of the owning player of Stock to buy.
+         *
+         * @returns {boolean} True if Stock was bought else false.
+         */
+        this.buyStock = function (playerId) { return _this.performStockAction(playerId, true); };
+        /**
+         * Sell Stock to the Player of the current turn.
+         *
+         * @param   {string}  playerId - String with id of the owning player of Stock to sell.
+         *
+         * @returns {boolean} True if Stock was sold else false.
+         */
+        this.sellStock = function (playerId) { return _this.performStockAction(playerId, false); };
+        /**
          * Clear the saved game state from localStorage.
          */
         this.clearStorage = function () {
             constants_1.localKeys.forEach(function (key) {
                 window.localStorage.removeItem(key);
             });
+        };
+        /**
+         * Buy or Sell Stock to the Player of the current turn.
+         *
+         * @param   {string}  playerId - String with id of the owning player of Stock to buy/sell.
+         * @param   {boolean} buy      - True if action should be buy, false if action should be sell.
+         *
+         * @returns {boolean} True if action was performed else false.
+         */
+        this.performStockAction = function (playerId, buy) {
+            var stockOwner = _this.players.filter(function (player) { return player.id === playerId; })[0];
+            if (util_1.isDefined(_this.stocks[playerId]) && util_1.isDefined(stockOwner)) {
+                var value = (buy ?
+                    _this.stocks[playerId].getBuyValue() :
+                    _this.stocks[playerId].getSellValue());
+                var didSomething = (buy ?
+                    _this.stocks[playerId].buyStock(_this._currentPlayer.id) :
+                    _this.stocks[playerId].sellStock(_this._currentPlayer.id));
+                if (didSomething) {
+                    var finance = _this._currentPlayer.getFinance();
+                    (buy ?
+                        finance.buyStock(playerId, value) :
+                        finance.sellStock(playerId, value));
+                    _this.updateStock(stockOwner);
+                    _this.updatePlayerNetWorth(_this._currentPlayer);
+                    _this.updatePlayerNetWorth(stockOwner);
+                    return true;
+                }
+            }
+            return false;
+        };
+        /**
+         * Update the net worth of every Player in the game.
+         */
+        this.updatePlayersNetWorth = function () { return _this.players.forEach(function (player) {
+            _this.updatePlayerNetWorth(player);
+        }); };
+        /**
+         * Update net worth of a single Player
+         *
+         * @param {Player} player - Player instance whose net worth to update.
+         */
+        this.updatePlayerNetWorth = function (player) { return player.getFinance().updateNetWorth({
+            routes: player.getRoutes(),
+            queue: player.getQueue(),
+            upgrades: player.getUpgrades(),
+            gameStocks: _this.stocks
+        }); };
+        /**
+         * Update the value of every Stock in game.
+         */
+        this.updateStocks = function () { return _this.players.forEach(function (player) {
+            _this.updateStock(player);
+        }); };
+        /**
+         * Update value of Stock associated with a given Player.
+         *
+         * @param {Player} player - Player instance whose Stock value should be updated.
+         */
+        this.updateStock = function (player) {
+            _this.stocks[player.id].updateValue(player.getFinance(), player.getRoutes().length + player.getQueue().length, _this._turn);
         };
         /**
          * Iterate over each Computer player and handle their turns accordingly.
@@ -212,7 +280,8 @@ var Nardis = /** @class */ (function () {
                         playerData: {
                             routes: player.getRoutes(),
                             upgrades: player.getUpgrades(),
-                            queue: player.getQueue()
+                            queue: player.getQueue(),
+                            gameStocks: _this.stocks
                         } }, _this);
                 }
             });
@@ -232,10 +301,10 @@ var Nardis = /** @class */ (function () {
         /**
          * Remove Player expenses when reverting the purchase of Route and Train.
          *
-         * @param {string}   routeId - String with id of Route to remove.
-         * @param {string}   trainId - String with id of Train in Route.
+         * @param   {string}   routeId - String with id of Route to remove.
+         * @param   {string}   trainId - String with id of Train in Route.
          *
-         * @return {boolean} True if removed from Finance else false.
+         * @returns {boolean}  True if removed from Finance else false.
          */
         this.handleRemoveRouteFromPlayerFinance = function (routeId, trainId) {
             var finance = _this._currentPlayer.getFinance();
@@ -245,9 +314,9 @@ var Nardis = /** @class */ (function () {
         /**
          * Get an object describing the gold and turn cost for a given Route with Upgrades taken into account.
          *
-         * @param {number}   distance - String with id of Route to remove.
+         * @param   {number}  distance - String with id of Route to remove.
          *
-         * @return {Object}             Object with gold and turn cost for a given distance
+         * @returns {Object}  Object with gold and turn cost for a given distance
          */
         this.getPotentialRouteCost = function (distance) {
             var upgrades = _this._currentPlayer.getUpgrades();
@@ -301,19 +370,12 @@ var Nardis = /** @class */ (function () {
         this.stocks = stocks;
         this._currentPlayer = currentPlayer ? currentPlayer : this.players[0];
         this._turn = turn ? turn : 1;
-        this.players.forEach(function (player) {
-            player.getFinance().updateNetWorth({
-                routes: player.getRoutes(),
-                upgrades: player.getUpgrades(),
-                queue: player.getQueue(),
-                gameStocks: _this.stocks
-            });
-        });
+        this.updatePlayersNetWorth();
     }
     /**
      * Get Nardis instance from saved localStorage data.
      *
-     * @return {Nardis} Nardis instance recreated from localStorage.
+     * @returns {Nardis} Nardis instance recreated from localStorage.
      */
     Nardis.createFromLocalStorage = function () {
         if (!window.localStorage.getItem(constants_1.localKeys[types_1.LocalKey.HasActiveGame])) {
@@ -354,11 +416,11 @@ var Nardis = /** @class */ (function () {
     /**
      * Create a Nardis instance from one to three parameters.
      *
-     * @param {string}   name      - String with name of player.
-     * @param {number}   gold      - (optional) Number specifying start gold.
-     * @param {number}   opponents - (optional) Number specifying number of opponents.
+     * @param   {string}   name      - String with name of player.
+     * @param   {number}   gold      - (optional) Number specifying start gold.
+     * @param   {number}   opponents - (optional) Number specifying number of opponents.
      *
-     * @return {Nardis}              Created Nardis instance.
+     * @returns {Nardis}   Created Nardis instance.
      */
     Nardis.createFromPlayer = function (name, gold, opponents) {
         if (gold === void 0) { gold = constants_1.START_GOLD; }
@@ -382,6 +444,16 @@ var Nardis = /** @class */ (function () {
             throw new Error("not enough start cities '" + nStartCities + "' to satisfy number of players '" + nOpponents + "'");
         }
     };
+    /**
+     * Generate Players and Stocks.
+     *
+     * @param   {string}  name      - String with name of human Player.
+     * @param   {number}  gold      - Number with starting gold.
+     * @param   {number}  opponents - Number of Opponents to generate.
+     * @param   {City[]}  cities    - Array of City instances.
+     *
+     * @returns {[Player[], Stocks]} Tuple with array of Players and a Stocks object.
+     */
     Nardis.createPlayersAndStock = function (name, gold, opponents, cities) {
         var players = [];
         var stocks = {};

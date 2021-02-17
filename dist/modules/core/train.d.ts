@@ -21,23 +21,23 @@ export default class Train extends BaseComponent {
     readonly levelRequired: number;
     constructor(name: string, cost: number, upkeep: number, speed: number, cargoSpace: number, levelRequired: number, id?: string);
     /**
-     * @return {string} String with JSON stringified property keys and values.
+     * @returns {string} String with JSON stringified property keys and values.
     */
     deconstruct: () => string;
     /**
      * Get Train instance from a ResourceModel.
      *
-     * @param {TrainModel}  model - TrainModel to be used.
+     * @param   {TrainModel}  model - TrainModel to be used.
      *
-     * @return {Train}              Train instance created from the model.
+     * @returns {Train}       Train instance created from the model.
      */
     static createFromModel: (model: TrainModel) => Train;
     /**
      * Get Train instance from stringified JSON.
      *
-     * @param {string}  stringifiedJSON - String with information to be used.
+     * @param   {string} stringifiedJSON - String with information to be used.
      *
-     * @return {Train}                    Train instance created from the string.
+     * @returns {Train}  Train instance created from the string.
      */
     static createFromStringifiedJSON: (stringifiedJSON: string) => Train;
 }
