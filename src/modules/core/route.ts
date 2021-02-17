@@ -3,6 +3,7 @@ import City from './city';
 import Resource from './resource';
 import Train from './train';
 import Upgrade from './player/upgrade';
+import { isDefined, isNumber } from '../../util/util';
 import { 
     RouteCargo,
     RoutePlanCargo, 
@@ -16,19 +17,19 @@ import {
 
 /**
  * @constructor
- * @param {string}     name                - string with name.
+ * @param {string}     name                - String with name.
  * @param {City}       cityOne             - City specifying initial departure.
  * @param {City}       cityTwo             - City specifying initial arrival.
  * @param {Train}      train               - Train instance to be used.
  * @param {RoutePlan}  routePlan           - RoutePlan describing cargo.
- * @param {number}     distance            - number with distance in kilometers.
- * @param {number}     cost                - number with cost in gold.
- * @param {number}     purchasedOnTurn     - number with turn count.
+ * @param {number}     distance            - Number with distance in kilometers.
+ * @param {number}     cost                - Number with cost in gold.
+ * @param {number}     purchasedOnTurn     - Number with turn count.
  * 
- * @param {number}     profit              - (optional) number with profit in gold.
- * @param {number}     kilometersTravelled - (optional) kilometers travelled in total for route.
+ * @param {number}     profit              - (optional) Number with profit in gold.
+ * @param {number}     kilometersTravelled - (optional) Number with total kilometers travelled.
  * @param {RouteState} routeState          - (optional) RouteState of the route.
- * @param {string}     id                  - (optional) string number describing id.
+ * @param {string}     id                  - (optional) String number describing id.
  */
 
 export default class Route extends BaseComponent implements ITurnable {
@@ -67,10 +68,10 @@ export default class Route extends BaseComponent implements ITurnable {
         this._distance            = distance;
         this._cost                = cost;
         this._purchasedOnTurn     = purchasedOnTurn;
-        this._profit              = profit ? profit : 0;
-        this._kilometersTravelled = kilometersTravelled ? kilometersTravelled : 0;
+        this._profit              = isDefined(profit) ? profit : 0;
+        this._kilometersTravelled = isDefined(kilometersTravelled) ? kilometersTravelled : 0;
 
-        if (routeState) {
+        if (isDefined(routeState)) {
             this._routeState = routeState;
         } else {
             this.resetRouteState(false);
@@ -99,7 +100,7 @@ export default class Route extends BaseComponent implements ITurnable {
      * @param  {HandleTurnInfo}  info - Object with relevant turn information.
      */
 
-    public handleTurn = (info: HandleTurnInfo) => {
+    public handleTurn = (info: HandleTurnInfo): void => {
         if (this._routeState.hasArrived) {
             this._routeState.destination = this._routeState.destination.equals(this._cityOne) ? this._cityTwo : this._cityOne;
             this._routeState.distance    = this._distance;
@@ -149,7 +150,7 @@ export default class Route extends BaseComponent implements ITurnable {
     }
 
     /** 
-     * @return {string} String with JSON stringified property keys and values.
+     * @returns {string} String with JSON stringified property keys and values.
     */
    
     public deconstruct = (): string => JSON.stringify({
@@ -198,14 +199,14 @@ export default class Route extends BaseComponent implements ITurnable {
     /**
      * Get Train speed with Player upgrades taken into consideration.
      * 
-     * @return {number} - Number with the correct Train speed.
+     * @returns {number} - Number with the correct Train speed.
      */
 
     private getTrainSpeed = (upgrades: Upgrade[]): number => {
-        const relevantUpgrades: Upgrade[] = upgrades.filter(e => e.type === UpgradeType.TrainSpeedQuicker);
+        const relevantUpgrades: Upgrade[] = upgrades.filter((e: Upgrade): boolean => e.type === UpgradeType.TrainSpeedQuicker);
         let speed: number = this._train.speed;
         if (relevantUpgrades.length > 0) {
-            relevantUpgrades.forEach(e => {
+            relevantUpgrades.forEach((e: Upgrade): void => {
                 speed += Math.floor(speed * e.value);
             });
         }
@@ -216,18 +217,18 @@ export default class Route extends BaseComponent implements ITurnable {
      * Get appropriate array RouteCargo when between arrival and departure. Ensures that the 
      * amount of each cargo respects the available amount from the City where the cargo is fetched from.
      * 
-     * @return {RouteCargo[]} - Array of RouteCargo objects.
+     * @returns {RouteCargo[]} - Array of RouteCargo objects.
      */
 
     private getChangedCargo = (): RouteCargo[] => {
-        const isDestinationCityOne: boolean     = this._routeState.destination.equals(this._cityOne);
-        const inCity: City = isDestinationCityOne ? this._cityTwo : this._cityOne;
-        const cargo: RouteCargo[]    = isDestinationCityOne ? this._routePlanCargo.cityTwo : this._routePlanCargo.cityOne;
-        cargo.forEach(routeCargo => {
-            const citySupply: CityResource = inCity.getCityResourceFromResource(routeCargo.resource);
-            const diff: number = citySupply ? citySupply.available - routeCargo.targetAmount : null;
-            const available: number = citySupply.available;
-            if (typeof diff === 'number' && !Number.isNaN(diff)) {
+        const isDestinationCityOne: boolean      = this._routeState.destination.equals(this._cityOne);
+        const inCity              : City         = isDestinationCityOne ? this._cityTwo : this._cityOne;
+        const cargo               : RouteCargo[] = isDestinationCityOne ? this._routePlanCargo.cityTwo : this._routePlanCargo.cityOne;
+        cargo.forEach((routeCargo: RouteCargo): void => {
+            const citySupply      : CityResource = inCity.getCityResourceFromResource(routeCargo.resource);
+            const diff            : number       = citySupply ? citySupply.available - routeCargo.targetAmount : null;
+            const available       : number       = citySupply.available;
+            if (isNumber(diff)) {
                 if (diff <= 0 && inCity.subtractSupply(routeCargo.resource, available)) {
                     // target amount is greater than available, so set actual amount to available 
                     routeCargo.actualAmount = available;
@@ -245,6 +246,12 @@ export default class Route extends BaseComponent implements ITurnable {
         return cargo;
     }
 
+    /**
+     * Reset the RouteState to its default values.
+     * 
+     * @param {boolean} edit - True if the reset is due to an edit of an active Route, else false. 
+     */
+
     private resetRouteState = (edit: boolean) => {
         this._routeState = {
             hasArrived: edit ? true : false,
@@ -258,12 +265,12 @@ export default class Route extends BaseComponent implements ITurnable {
     /**
      * Get Route instance from stringified JSON.
      * 
-     * @param {string}     stringifiedJSON - String with information to be used.
-     * @param {City[]}     cities          - Array of City instances used in game.
-     * @param {Train[]}    trains          - Array of Train instances used in game.
-     * @param {Resource[]} resources       - Array of Resource instances used in game.
+     * @param   {string}     stringifiedJSON - String with information to be used.
+     * @param   {City[]}     cities          - Array of City instances used in game.
+     * @param   {Train[]}    trains          - Array of Train instances used in game.
+     * @param   {Resource[]} resources       - Array of Resource instances used in game.
      * 
-     * @return {Route}                       Route instance created from the string.
+     * @returns {Route}      Route instance created from the string.
      */
 
     public static createFromStringifiedJSON = (stringifiedJSON: string | object, cities: City[], trains: Train[], resources: Resource[]): Route => {
