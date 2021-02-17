@@ -1,5 +1,8 @@
 import {
-    PlayerLevel
+    PlayerLevel,
+    Indexable,
+    StockConstant,
+    LevelUpRequirement
 } from '../types/types';
 
 export const MAX_VALUE_HISTORY_LENGTH      : number   = 100;
@@ -42,7 +45,7 @@ export const eventLogLevelName: string[] = [
     'error'
 ];
 
-export const netWorthDivisors = {
+export const netWorthDivisors: Indexable<number> = {
     gold   : 1,
     stock  : 1,
     tracks : 1.5,
@@ -50,7 +53,7 @@ export const netWorthDivisors = {
     upgrade: 2.5
 }
 
-export const stockConstant = {
+export const stockConstant: StockConstant = {
     maxStockAmount: 10,
     startingShares: 4,
     multipliers: {
@@ -64,7 +67,7 @@ export const stockConstant = {
     }
 };
 
-export const rangeCost = {
+export const rangeCost: Indexable<number> = {
     "0,100"    : 1,
     "100,175"  : 2,
     "175,210"  : 3,
@@ -72,7 +75,7 @@ export const rangeCost = {
     "260,10000": 5
 }
 
-export const levelUpRequirements: {routes: number, revenuePerTurn: number, gold: number}[] = [
+export const levelUpRequirements: LevelUpRequirement[] = [
     {
         routes: 0,
         revenuePerTurn: 0,
@@ -111,7 +114,7 @@ export const resourcePerSize: [number, number][] = [[4, 6], [6, 8], [8, 12], [12
 // distribution of possible city sizes
 export const citySizes: number[] = [6, 5, 5, 5, 4, 4, 4, 3, 3, 3, 3, 2, 2, 2, 2, 2, 2, 1, 1, 1, 1];
 
-export const CitySizeMaxConcurrentRoutes: { size: number, maxRoutes: number}[] = [
+export const CitySizeMaxConcurrentRoutes: {size: number, maxRoutes: number}[] = [
     {
         size: 0,
         maxRoutes: 0
