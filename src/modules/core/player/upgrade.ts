@@ -7,6 +7,7 @@ import {
     UpgradeModel
 } from '../../../types/model';
 
+
 /**
  * Base Upgrade class. Does nothing thus far besides having readonly values.
  * 
@@ -19,6 +20,7 @@ import {
  * @param {number} levelRequired - Number with min level required.
  * 
  * @param {string} id            - (optional) String number describing id.
+ * 
  */
 
 export default class Upgrade extends BaseComponent {
@@ -45,7 +47,7 @@ export default class Upgrade extends BaseComponent {
     }
 
     /** 
-     * @return {string} String with JSON stringified property keys and values.
+     * @returns {string} String with JSON stringified property keys and values.
     */
    
     public deconstruct = (): string => JSON.stringify(this)
@@ -53,9 +55,9 @@ export default class Upgrade extends BaseComponent {
     /**
      * Get Upgrade instance from a UpgradeModel.
      * 
-     * @param {UpgradeModel}  model - UpgradeModel to be used.
+     * @param   {UpgradeModel}  model - UpgradeModel to be used.
      * 
-     * @return {Upgrade}              Upgrade instance created from the model.
+     * @returns {Upgrade}       Upgrade instance created from the model.
      */
 
     public static createFromModel = (model: UpgradeModel): Upgrade => {
@@ -71,9 +73,9 @@ export default class Upgrade extends BaseComponent {
     /**
      * Get Upgrade instance from stringified JSON.
      * 
-     * @param {string}  stringifiedJSON - String with information to be used.
+     * @param   {string}  stringifiedJSON - String with information to be used.
      * 
-     * @return {Upgrade}                  Upgrade instance created from the string.
+     * @returns {Upgrade} Upgrade instance created from the string.
      */
 
     public static createFromStringifiedJSON = (stringifiedJSON: string): Upgrade => {
