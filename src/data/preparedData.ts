@@ -4,7 +4,9 @@ import {
     DataResourceModel
 } from '../types/model';
 import {
+    OpponentInformation,
     PlayerLevel,
+    PlayerType,
     UpgradeType
 } from '../types/types';
 
@@ -263,4 +265,37 @@ export const genericOpponentsName: string[] = [
     'R. Hendrix',
     'P. Peterson',
     'H. Underfoot'
+];
+
+export const opponentInformation: OpponentInformation[] = [
+    {
+        type: PlayerType.Human,
+        color: 'blue',
+        avatar: 0
+    },
+    {
+        type: PlayerType.Computer,
+        color: 'red',
+        avatar: 1
+    },
+    {
+        type: PlayerType.Computer,
+        color: 'yellow',
+        avatar: 2
+    },
+    {
+        type: PlayerType.Computer,
+        color: 'green',
+        avatar: 3
+    },
+    {
+        type: PlayerType.Computer,
+        color: 'orange',
+        avatar: 4
+    },
+    {
+        type: PlayerType.Computer,
+        color: 'pink',
+        avatar: 5
+    }
 ];
