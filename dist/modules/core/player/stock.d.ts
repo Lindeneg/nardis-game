@@ -19,6 +19,7 @@ export default class Stock extends BaseComponent {
     constructor(name: string, owningPlayerId: string, value?: number, valueHistory?: ValueHistory[], supply?: StockSupply, id?: string);
     getBuyValue: () => number;
     getSellValue: () => number;
+    getSupply: () => StockSupply;
     /**
      * Buy Stock to the specified playerId.
      *
@@ -49,6 +50,15 @@ export default class Stock extends BaseComponent {
      * @param {number}  turn    - Number with current turn.
      */
     updateValue: (finance: Finance, routes: number, turn: number) => void;
+    /**
+     * Check if a Player holds any Stock.
+     *
+     * @param   {string}  playerId - String with player id to check.
+     *
+     * @returns {boolean} True if Player is Stock holder else false.
+     *
+     */
+    isStockHolder: (playerId: string) => boolean;
     /**
      * @returns {string} String with JSON stringified property keys and values.
      */

@@ -33,6 +33,7 @@ var Stock = /** @class */ (function (_super) {
         var _this = _super.call(this, name, id) || this;
         _this.getBuyValue = function () { return Math.floor(_this._value * constants_1.stockConstant.multipliers.stockBuy); };
         _this.getSellValue = function () { return _this._value; };
+        _this.getSupply = function () { return _this._supply; };
         /**
          * Buy Stock to the specified playerId.
          *
@@ -88,6 +89,15 @@ var Stock = /** @class */ (function (_super) {
                 _this._value = newValue;
             }
         };
+        /**
+         * Check if a Player holds any Stock.
+         *
+         * @param   {string}  playerId - String with player id to check.
+         *
+         * @returns {boolean} True if Player is Stock holder else false.
+         *
+         */
+        _this.isStockHolder = function (playerId) { return (util_1.isDefined(_this._supply[playerId]) && _this._supply[playerId] > 0); };
         /**
          * @returns {string} String with JSON stringified property keys and values.
          */
