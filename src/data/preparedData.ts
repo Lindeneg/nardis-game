@@ -270,27 +270,27 @@ export const genericOpponentsName: string[] = [
 export const opponentInformation: OpponentInformation[] = [
     {
         type: PlayerType.Human,
-        color: 'blue',
+        color: 'darkgoldenrod',
         avatar: 0
     },
     {
         type: PlayerType.Computer,
-        color: 'red',
+        color: 'saddlebrown',
         avatar: 1
     },
     {
         type: PlayerType.Computer,
-        color: 'yellow',
+        color: 'teal',
         avatar: 2
     },
     {
         type: PlayerType.Computer,
-        color: 'green',
+        color: 'darkred',
         avatar: 3
     },
     {
         type: PlayerType.Computer,
-        color: 'orange',
+        color: 'purple',
         avatar: 4
     },
     {
