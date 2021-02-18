@@ -128,7 +128,8 @@ test('can handle player upgrades', () => {
         ...handleTurnData,
         playerData: {
             routes: [],
-            upgrades: [speedUpgrade]
+            upgrades: [speedUpgrade],
+            queue: []
         }
     });
 

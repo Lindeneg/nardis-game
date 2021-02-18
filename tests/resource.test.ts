@@ -17,7 +17,7 @@ test('can create Resource instance from model', () => {
 
 const turnChange = []
 for (let i = 1; i < 50; i++) {
-    resource.handleTurn({turn: i, playerData: {routes: [], upgrades: []}, data: {cities: [], resources: [], trains: [], upgrades: []}});
+    resource.handleTurn({turn: i, playerData: {routes: [], upgrades: [], queue: []}, data: {cities: [], resources: [], trains: [], upgrades: []}});
     let val = resource.getValue();
     if (val !== initialValue) {
         turnChange.push({amount: val, turn: i});
