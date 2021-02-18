@@ -46,8 +46,9 @@ export default class Stock extends BaseComponent {
         };
     }
 
-    public getBuyValue  = (): number => Math.floor(this._value * stockConstant.multipliers.stockBuy);
-    public getSellValue = (): number => this._value;
+    public getBuyValue  = (): number      => Math.floor(this._value * stockConstant.multipliers.stockBuy);
+    public getSellValue = (): number      => this._value;
+    public getSupply    = (): StockSupply => this._supply;
 
     /**
      * Buy Stock to the specified playerId.
@@ -120,6 +121,19 @@ export default class Stock extends BaseComponent {
             this._value = newValue;
         }
     }
+
+    /**
+     * Check if a Player holds any Stock.
+     * 
+     * @param   {string}  playerId - String with player id to check.
+     * 
+     * @returns {boolean} True if Player is Stock holder else false.
+     * 
+     */
+
+    public isStockHolder = (playerId: string): boolean => (
+        isDefined(this._supply[playerId]) && this._supply[playerId] > 0 
+    )
 
     /**
      * @returns {string} String with JSON stringified property keys and values.
