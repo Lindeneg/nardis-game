@@ -46,9 +46,10 @@ export default class Stock extends BaseComponent {
         };
     }
 
-    public getBuyValue  = (): number      => Math.floor(this._value * stockConstant.multipliers.stockBuy);
-    public getSellValue = (): number      => this._value;
-    public getSupply    = (): StockSupply => this._supply;
+    public getBuyValue  = (): number         => Math.floor(this._value * stockConstant.multipliers.stockBuy);
+    public getSellValue = (): number         => this._value;
+    public getSupply    = (): StockSupply    => this._supply;
+    public getHistory   = (): ValueHistory[] => this._valueHistory;
 
     /**
      * Buy Stock to the specified playerId.
@@ -143,21 +144,27 @@ export default class Stock extends BaseComponent {
 
 
     /**
-     * Update ValueHistory. If ValueHistory is equal or greater than the default max length,
-     * remove the first entry and then push the new value as the last entry.
+     * Update Stock value and ValueHistory.
      * 
      * @param {number} value - Number with new value of the Stock. 
      * @param {number} turn  - Number with current turn.
      */
 
     private updateValueHistory = (value: number, turn: number): void => {
-        if (this._valueHistory.length >= MAX_VALUE_HISTORY_LENGTH) {
+        /*if (this._valueHistory.length >= MAX_VALUE_HISTORY_LENGTH) {
             this._valueHistory.shift();
+        }*/
+        if (turn > 1 && this._valueHistory.length > 0 && this._valueHistory[this._valueHistory.length - 1].turn === turn) {
+                this._valueHistory[this._valueHistory.length - 1].value = value;
+        } else if (turn > 1) {
+            this._valueHistory.push({
+                value,
+                turn
+            });
+        } else {
+            // console.log(`not updated: v=${value};t=${turn}`);
+            // console.log(this._valueHistory);
         }
-        this._valueHistory.push({
-            value,
-            turn
-        });
     }
 
     /**
