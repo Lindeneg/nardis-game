@@ -478,7 +478,7 @@ export default class Opponent extends Player {
 
     private purchaseRoutes = (game: Nardis, routes: BuyableRoute[]): void => {
         this.log(`attempting to purchase ${routes.length} routes`, routes);
-        const min: number = Math.floor(this._finance.getGold() * 0.1);
+        const min: number = Math.floor(this._finance.getGold() * (this._level / 10));
         for (let i = 0; i < routes.length; i++) {
             if (this._finance.getGold() - (routes[i].goldCost + routes[i].trainCost) <= min || this._queue.length > 5) {
                 this.log('cannot purchase anymore routes');
