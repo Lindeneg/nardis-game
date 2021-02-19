@@ -34,6 +34,7 @@ var Stock = /** @class */ (function (_super) {
         _this.getBuyValue = function () { return Math.floor(_this._value * constants_1.stockConstant.multipliers.stockBuy); };
         _this.getSellValue = function () { return _this._value; };
         _this.getSupply = function () { return _this._supply; };
+        _this.getHistory = function () { return _this._valueHistory; };
         /**
          * Buy Stock to the specified playerId.
          *
@@ -103,20 +104,28 @@ var Stock = /** @class */ (function (_super) {
          */
         _this.deconstruct = function () { return JSON.stringify(_this); };
         /**
-         * Update ValueHistory. If ValueHistory is equal or greater than the default max length,
-         * remove the first entry and then push the new value as the last entry.
+         * Update ValueHistory.
          *
          * @param {number} value - Number with new value of the Stock.
          * @param {number} turn  - Number with current turn.
          */
         _this.updateValueHistory = function (value, turn) {
-            if (_this._valueHistory.length >= constants_1.MAX_VALUE_HISTORY_LENGTH) {
-                _this._valueHistory.shift();
+            /*if (this._valueHistory.length >= MAX_VALUE_HISTORY_LENGTH) {
+                this._valueHistory.shift();
+            }*/
+            if (turn > 1 && _this._valueHistory.length > 0 && _this._valueHistory[_this._valueHistory.length - 1].turn === turn) {
+                _this._valueHistory[_this._valueHistory.length - 1].value = value;
             }
-            _this._valueHistory.push({
-                value: value,
-                turn: turn
-            });
+            else if (turn > 1) {
+                _this._valueHistory.push({
+                    value: value,
+                    turn: turn
+                });
+            }
+            else {
+                console.log("not updated: v=" + value + ";t=" + turn);
+                console.log(_this._valueHistory);
+            }
         };
         _this._owningPlayerId = owningPlayerId;
         _this._value = util_1.isDefined(value) ? value : Math.floor(constants_1.stockConstant.startingShares * constants_1.stockConstant.multipliers.stockHolder);

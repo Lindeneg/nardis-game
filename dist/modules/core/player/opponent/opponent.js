@@ -384,7 +384,7 @@ var Opponent = /** @class */ (function (_super) {
          */
         _this.purchaseRoutes = function (game, routes) {
             _this.log("attempting to purchase " + routes.length + " routes", routes);
-            var min = Math.floor(_this._finance.getGold() * 0.1);
+            var min = Math.floor(_this._finance.getGold() * (_this._level / 10));
             for (var i = 0; i < routes.length; i++) {
                 if (_this._finance.getGold() - (routes[i].goldCost + routes[i].trainCost) <= min || _this._queue.length > 5) {
                     _this.log('cannot purchase anymore routes');

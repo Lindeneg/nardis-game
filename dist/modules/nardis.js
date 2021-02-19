@@ -52,9 +52,9 @@ var Nardis = /** @class */ (function () {
             __spreadArrays(_this.data.cities, _this.data.resources).forEach(function (turnComponent) {
                 turnComponent.handleTurn({ turn: _this._turn, data: _this.data, playerData: { routes: [], upgrades: [], queue: [] } });
             });
+            _this._turn++;
             _this.updateStocks();
             _this.updatePlayersNetWorth();
-            _this._turn++;
             _this.saveGame();
         };
         /**

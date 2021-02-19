@@ -20,6 +20,7 @@ export default class Stock extends BaseComponent {
     getBuyValue: () => number;
     getSellValue: () => number;
     getSupply: () => StockSupply;
+    getHistory: () => ValueHistory[];
     /**
      * Buy Stock to the specified playerId.
      *
@@ -64,8 +65,7 @@ export default class Stock extends BaseComponent {
      */
     deconstruct: () => string;
     /**
-     * Update ValueHistory. If ValueHistory is equal or greater than the default max length,
-     * remove the first entry and then push the new value as the last entry.
+     * Update ValueHistory.
      *
      * @param {number} value - Number with new value of the Stock.
      * @param {number} turn  - Number with current turn.
