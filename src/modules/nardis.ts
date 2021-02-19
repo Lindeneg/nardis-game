@@ -96,9 +96,9 @@ export class Nardis {
         [...this.data.cities, ...this.data.resources].forEach((turnComponent: City | Resource): void => {
             turnComponent.handleTurn({turn: this._turn, data: this.data, playerData: {routes: [], upgrades: [], queue: []}});
         });
+        this._turn++;
         this.updateStocks();
         this.updatePlayersNetWorth();
-        this._turn++;
         this.saveGame();
     }
 
