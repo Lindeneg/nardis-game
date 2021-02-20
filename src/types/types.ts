@@ -110,6 +110,7 @@ export interface StockHolding  extends Indexable<number> {}
 export interface StockConstant {
     maxStockAmount: number,
     startingShares: number,
+    baseValue: number,
     multipliers: {
         stockBuy: number,
         routeLength: number,
