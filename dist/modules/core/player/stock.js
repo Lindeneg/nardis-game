@@ -84,7 +84,7 @@ var Stock = /** @class */ (function (_super) {
         _this.updateValue = function (finance, routes, turn) {
             var newValue = (Math.floor(routes * constants_1.stockConstant.multipliers.routeLength) +
                 Math.floor(finance.getAverageRevenue() / constants_1.stockConstant.divisors.avgRevenue) +
-                Math.floor(_this.currentAmountOfStockHolders() * constants_1.stockConstant.multipliers.stockHolder)) + Math.floor(finance.getTotalProfits() / constants_1.stockConstant.divisors.totalProfits);
+                Math.floor(_this.currentAmountOfStockHolders() * constants_1.stockConstant.multipliers.stockHolder)) + (Math.floor(finance.getTotalProfits() / constants_1.stockConstant.divisors.totalProfits) + constants_1.stockConstant.baseValue);
             if (newValue !== _this._value) {
                 _this.updateValueHistory(newValue, turn);
                 _this._value = newValue;
@@ -104,7 +104,7 @@ var Stock = /** @class */ (function (_super) {
          */
         _this.deconstruct = function () { return JSON.stringify(_this); };
         /**
-         * Update ValueHistory.
+         * Update Stock value and ValueHistory.
          *
          * @param {number} value - Number with new value of the Stock.
          * @param {number} turn  - Number with current turn.
@@ -123,12 +123,12 @@ var Stock = /** @class */ (function (_super) {
                 });
             }
             else {
-                console.log("not updated: v=" + value + ";t=" + turn);
-                console.log(_this._valueHistory);
+                // console.log(`not updated: v=${value};t=${turn}`);
+                // console.log(this._valueHistory);
             }
         };
         _this._owningPlayerId = owningPlayerId;
-        _this._value = util_1.isDefined(value) ? value : Math.floor(constants_1.stockConstant.startingShares * constants_1.stockConstant.multipliers.stockHolder);
+        _this._value = util_1.isDefined(value) ? value : Math.floor(constants_1.stockConstant.startingShares * constants_1.stockConstant.multipliers.stockHolder) + constants_1.stockConstant.baseValue;
         _this._valueHistory = util_1.isDefined(valueHistory) ? valueHistory : [{
                 value: _this._value,
                 turn: 1

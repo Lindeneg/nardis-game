@@ -308,7 +308,7 @@ var Opponent = /** @class */ (function (_super) {
          */
         _this.getFillerCargo = function (cargoConstraint, fillers) {
             var result = [];
-            var initialAmount = fillers[0].available >= cargoConstraint ? cargoConstraint : fillers[0].available;
+            var initialAmount = Math.ceil(cargoConstraint / 2); // fillers[0].available >= cargoConstraint ? cargoConstraint : fillers[0].available;
             var diff = cargoConstraint - initialAmount;
             result.push({
                 resource: fillers[0].resource,

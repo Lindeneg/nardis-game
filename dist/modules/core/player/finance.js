@@ -153,6 +153,7 @@ var Finance = /** @class */ (function (_super) {
             if (util_1.isDefined(_this._stocks[playerId]) && _this._stocks[playerId] > 0) {
                 _this._stocks[playerId] -= 1;
                 _this.addNthTurnObject(types_1.FinanceGeneralType.Income, types_1.FinanceType.StockSell, constants_1.localKeys[types_1.FinanceType.StockSell], 1, value);
+                _this._totalProfits += value;
                 _this.addToTotalHistory(constants_1.localKeys[types_1.FinanceType.StockSell], value);
             }
         };

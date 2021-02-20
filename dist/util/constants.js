@@ -47,10 +47,11 @@ exports.netWorthDivisors = {
 exports.stockConstant = {
     maxStockAmount: 10,
     startingShares: 4,
+    baseValue: 100,
     multipliers: {
-        stockBuy: 1.1,
+        stockBuy: 1.25,
         routeLength: 1.8,
-        stockHolder: 12.5
+        stockHolder: 20
     },
     divisors: {
         avgRevenue: 35,

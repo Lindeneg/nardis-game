@@ -65,7 +65,7 @@ export default class Stock extends BaseComponent {
      */
     deconstruct: () => string;
     /**
-     * Update ValueHistory.
+     * Update Stock value and ValueHistory.
      *
      * @param {number} value - Number with new value of the Stock.
      * @param {number} turn  - Number with current turn.
