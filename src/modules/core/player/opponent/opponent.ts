@@ -395,7 +395,7 @@ export default class Opponent extends Player {
 
     private getFillerCargo = (cargoConstraint: number, fillers: [CityResource, CityResource]): RouteCargo[] => {
         const result: RouteCargo[] = [];
-        const initialAmount: number = fillers[0].available >= cargoConstraint ? cargoConstraint : fillers[0].available;
+        const initialAmount: number = Math.ceil(cargoConstraint / 2); // fillers[0].available >= cargoConstraint ? cargoConstraint : fillers[0].available;
         const diff: number = cargoConstraint - initialAmount;
 
         result.push({
