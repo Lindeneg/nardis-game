@@ -231,6 +231,7 @@ export default class Finance extends BaseComponent implements ITurnable {
                 1, 
                 value
             );
+            this._totalProfits += value;
             this.addToTotalHistory(localKeys[FinanceType.StockSell], value);
         }
     }
