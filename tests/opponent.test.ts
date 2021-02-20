@@ -29,7 +29,7 @@ test('can get correct range from opponent level', () => {
 
 test('can get correct opponent finance', () => {
     expect(finance.getGold()).toEqual(START_GOLD);
-    expect(finance.getNetWorth()).toEqual(START_GOLD + Math.floor(stockConstant.startingShares * (Math.floor(stockConstant.startingShares * stockConstant.multipliers.stockHolder))));
+    expect(finance.getNetWorth()).toEqual(START_GOLD + Math.floor(stockConstant.startingShares * (Math.floor(stockConstant.startingShares * stockConstant.multipliers.stockHolder) + stockConstant.baseValue)));
     expect(finance.getAverageRevenue()).toEqual(0);
     expect(finance.getAverageExpense()).toEqual(0);
     expect(finance.getTotalProfits()).toEqual(0);

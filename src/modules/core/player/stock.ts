@@ -35,7 +35,7 @@ export default class Stock extends BaseComponent {
 
         this._owningPlayerId = owningPlayerId;
 
-        this._value          = isDefined(value) ? value : Math.floor(stockConstant.startingShares * stockConstant.multipliers.stockHolder);
+        this._value          = isDefined(value) ? value : Math.floor(stockConstant.startingShares * stockConstant.multipliers.stockHolder) + stockConstant.baseValue;
         this._valueHistory   = isDefined(valueHistory) ? valueHistory : [{
             value: this._value,
             turn: 1
@@ -116,7 +116,7 @@ export default class Stock extends BaseComponent {
             Math.floor(routes * stockConstant.multipliers.routeLength) +
             Math.floor(finance.getAverageRevenue() / stockConstant.divisors.avgRevenue) +
             Math.floor(this.currentAmountOfStockHolders() * stockConstant.multipliers.stockHolder) 
-        ) + Math.floor(finance.getTotalProfits() / stockConstant.divisors.totalProfits);
+        ) + (Math.floor(finance.getTotalProfits() / stockConstant.divisors.totalProfits) + stockConstant.baseValue);
         if (newValue !== this._value) {
             this.updateValueHistory(newValue, turn);
             this._value = newValue;

@@ -5,18 +5,18 @@ import {
     LevelUpRequirement
 } from '../types/types';
 
-export const MAX_VALUE_HISTORY_LENGTH      : number   = 100;
-export const MAX_START_CITY_SIZE           : number   = 2;
-export const CITY_GROWTH_DECISION_TARGET   : number   = 5;
-export const RESOURCE_VALUE_DECISION_TARGET: number   = 1;
-export const MAX_CITY_SIZE                 : number   = 6;
-export const MAP_RADIUS_IN_KILOMETERS      : number   = 6371;
-export const START_GOLD                    : number   = 1000;
-export const START_OPPONENTS               : number   = 3;
-export const ID_LENGTH                     : number   = 32;
-export const ID_CHARS                      : string   = 'abcdef0123456789';
-export const VOWELS                        : string[] = 'aeiou'.split('');
-export const CONSONANTS                    : string[] = 'bcdfghjklmnpqrstvwxzy'.split('');
+export const MAX_VALUE_HISTORY_LENGTH: number = 100;
+export const MAX_START_CITY_SIZE: number = 2;
+export const CITY_GROWTH_DECISION_TARGET: number = 5;
+export const RESOURCE_VALUE_DECISION_TARGET: number = 1;
+export const MAX_CITY_SIZE: number = 6;
+export const MAP_RADIUS_IN_KILOMETERS: number = 6371;
+export const START_GOLD: number = 1000;
+export const START_OPPONENTS: number = 3;
+export const ID_LENGTH: number = 32;
+export const ID_CHARS: string = 'abcdef0123456789';
+export const VOWELS: string[] = 'aeiou'.split('');
+export const CONSONANTS: string[] = 'bcdfghjklmnpqrstvwxzy'.split('');
 
 
 export const playerLevelMapping: PlayerLevel[] = [
@@ -46,20 +46,21 @@ export const eventLogLevelName: string[] = [
 ];
 
 export const netWorthDivisors: Indexable<number> = {
-    gold   : 1,
-    stock  : 1,
-    tracks : 1.5,
-    train  : 2,
+    gold: 1,
+    stock: 1,
+    tracks: 1.5,
+    train: 2,
     upgrade: 2.5
 }
 
 export const stockConstant: StockConstant = {
     maxStockAmount: 10,
     startingShares: 4,
+    baseValue: 100,
     multipliers: {
-        stockBuy: 1.1,
+        stockBuy: 1.25,
         routeLength: 1.8,
-        stockHolder: 12.5
+        stockHolder: 20
     },
     divisors: {
         avgRevenue: 35,
@@ -68,10 +69,10 @@ export const stockConstant: StockConstant = {
 };
 
 export const rangeCost: Indexable<number> = {
-    "0,100"    : 1,
-    "100,175"  : 2,
-    "175,210"  : 3,
-    "210,260"  : 4,
+    "0,100": 1,
+    "100,175": 2,
+    "175,210": 3,
+    "210,260": 4,
     "260,10000": 5
 }
 
@@ -114,7 +115,7 @@ export const resourcePerSize: [number, number][] = [[4, 6], [6, 8], [8, 12], [12
 // distribution of possible city sizes
 export const citySizes: number[] = [6, 5, 5, 5, 4, 4, 4, 3, 3, 3, 3, 2, 2, 2, 2, 2, 2, 1, 1, 1, 1];
 
-export const CitySizeMaxConcurrentRoutes: {size: number, maxRoutes: number}[] = [
+export const CitySizeMaxConcurrentRoutes: { size: number, maxRoutes: number }[] = [
     {
         size: 0,
         maxRoutes: 0
