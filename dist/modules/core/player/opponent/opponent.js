@@ -42,12 +42,13 @@ var constants_1 = require("../../../../util/constants");
  * @param {Route[]}           routes     - (optional) Array of Routes.
  * @param {Upgrade[]}         upgrades   - (optional) Array of Upgrades.
  * @param {ActionSave}        save       - (optional) Object with save information.
+ * @param {boolean}           isActive   - (optional) Boolean with active specifier.
  * @param {string}            id         - (optional) String number describing id.
  */
 var Opponent = /** @class */ (function (_super) {
     __extends(Opponent, _super);
-    function Opponent(name, startGold, startCity, finance, level, queue, routes, upgrades, save, id) {
-        var _this = _super.call(this, name, startGold, types_1.PlayerType.Computer, startCity, finance, level, queue, routes, upgrades, id) || this;
+    function Opponent(name, startGold, startCity, finance, level, queue, routes, upgrades, save, isActive, id) {
+        var _this = _super.call(this, name, startGold, types_1.PlayerType.Computer, startCity, finance, level, queue, routes, upgrades, isActive, id) || this;
         /**
          * Handle Opponent events and actions.
          *
@@ -55,18 +56,20 @@ var Opponent = /** @class */ (function (_super) {
          * @param {Nardis}         game - Nardis game instance.
          */
         _this.handleTurn = function (info, game) {
-            if (_this.shouldLevelBeIncreased()) {
-                _this.increaseLevel();
-                _this._save = {
-                    should: false,
-                    turn: info.turn,
-                    diff: 0
-                };
+            if (_this._isActive) {
+                if (_this.shouldLevelBeIncreased()) {
+                    _this.increaseLevel();
+                    _this._save = {
+                        should: false,
+                        turn: info.turn,
+                        diff: 0
+                    };
+                }
+                _this.handleQueue();
+                _this.handleRoutes(info);
+                _this.handleFinance(info);
+                _this.deduceAction(info, game);
             }
-            _this.handleQueue();
-            _this.handleRoutes(info);
-            _this.handleFinance(info);
-            _this.deduceAction(info, game);
         };
         // only for unit testing purposes
         _this.setSave = function (save) {
@@ -91,7 +94,8 @@ var Opponent = /** @class */ (function (_super) {
             routes: _this._routes.map(function (e) { return e.deconstruct(); }),
             upgrades: _this._upgrades.map(function (e) { return ({
                 id: e.id
-            }); })
+            }); }),
+            isActive: _this._isActive
         }); };
         /**
          * There are basically five actions:
@@ -418,7 +422,7 @@ var Opponent = /** @class */ (function (_super) {
             var valueRatio = Infinity;
             var i = 0;
             relevantTrains.forEach(function (train, index) {
-                var vr = (train.cost + train.train.upkeep) / (train.train.speed + train.train.cargoSpace);
+                var vr = (train.cost + (train.train.upkeep * 1.5)) / (train.train.speed + (train.train.cargoSpace * 2.5));
                 _this.log("possible train: nme=" + train.train.name + ";vr=" + vr.toFixed(3) + ";cst=" + train.cost + ";vel=" + train.train.speed + ";spa=" + train.train.cargoSpace);
                 if ((vr < valueRatio && train.train.cargoSpace >= currentSpace) || (Math.abs(vr - valueRatio) < Number.EPSILON && train.train.cargoSpace > currentSpace)) {
                     currentSpace = train.train.cargoSpace;
@@ -489,7 +493,7 @@ var Opponent = /** @class */ (function (_super) {
         return new Opponent(parsedJSON.name, parsedJSON.startGold, cities.filter(function (e) { return e.id === parsedJSON.startCityId; })[0], finance_1.default.createFromStringifiedJSON(parsedJSON.finance), parsedJSON.level, parsedJSON.queue.map(function (e) { return ({
             route: route_1.default.createFromStringifiedJSON(e.route, cities, trains, resources),
             turnCost: e.turnCost
-        }); }), parsedJSON.routes.map(function (e) { return route_1.default.createFromStringifiedJSON(e, cities, trains, resources); }), parsedJSON.upgrades.map(function (e) { return upgrades.filter(function (j) { return j.id === e.id; })[0]; }), parsedJSON.save, parsedJSON.id);
+        }); }), parsedJSON.routes.map(function (e) { return route_1.default.createFromStringifiedJSON(e, cities, trains, resources); }), parsedJSON.upgrades.map(function (e) { return upgrades.filter(function (j) { return j.id === e.id; })[0]; }), parsedJSON.save, parsedJSON.isActive, parsedJSON.id);
     };
     return Opponent;
 }(player_1.default));

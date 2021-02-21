@@ -37,12 +37,9 @@ export declare class Nardis {
      */
     getArrayOfAdjustedTrains: () => AdjustedTrain[];
     /**
-     * // TODO update winning condition when net worth and stock is implemented
+     * // TODO
      */
-    hasAnyPlayerWon: () => {
-        player: Player;
-        hasWon: boolean;
-    };
+    hasAnyPlayerWon: () => void;
     /**
      * Add an entry to Player queue.
      *
@@ -87,6 +84,14 @@ export declare class Nardis {
      */
     removeRouteFromPlayerRoutes: (routeId: string, value: number) => boolean;
     /**
+     * Buyout Player(s) of a certain Stock and take over the owning Player.
+     *
+     * @param   {string}  playerId - String with Id of the 'losing' Player.
+     *
+     * @returns {boolean} True if Player was bought out else False.
+     */
+    buyOutPlayer: (playerId: string) => boolean;
+    /**
      * Buy Stock to the Player of the current turn.
      *
      * @param   {string}  playerId - String with id of the owning player of Stock to buy.
@@ -116,6 +121,12 @@ export declare class Nardis {
      */
     private performStockAction;
     /**
+     * Check if a Player is fully owned by a foreign Player. If so, perform a Player takeover.
+     *
+     * @param {Player} stockOwner - Player instance to check if owned by another Player.
+     */
+    private checkIfPlayerIsFullyOwned;
+    /**
      * Update the net worth of every Player in the game.
      */
     private updatePlayersNetWorth;
@@ -135,6 +146,15 @@ export declare class Nardis {
      * @param {Player} player - Player instance whose Stock value should be updated.
      */
     private updateStock;
+    /**
+     * Merge loser Player with victor Player, if the latter is taking over the former.
+     * Merge all Routes, Upgrades, Gold and Stock.
+     *
+     * @param {Player} victor - Player instance taking over.
+     * @param {Player} loser  - Player instance being taken over.
+     * @param {Stock}  stock  - Stock instance of the losing Player.
+     */
+    private playerTakeOver;
     /**
      * Iterate over each Computer player and handle their turns accordingly.
      */

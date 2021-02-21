@@ -31,11 +31,12 @@ var constants_1 = require("../../../util/constants");
  * @param {QueuedRouteItem[]} queue      - (optional) Array of queued Routes.
  * @param {Route[]}           routes     - (optional) Array of Routes.
  * @param {Upgrade[]}         upgrades   - (optional) Array of Upgrades.
+ * @param {boolean}           isActive   - (optional) Boolean with active specifier.
  * @param {string}            id         - (optional) String number describing id.
  */
 var Player = /** @class */ (function (_super) {
     __extends(Player, _super);
-    function Player(name, startGold, playerType, startCity, finance, level, queue, routes, upgrades, id) {
+    function Player(name, startGold, playerType, startCity, finance, level, queue, routes, upgrades, isActive, id) {
         var _this = _super.call(this, name, id) || this;
         _this.getStartCity = function () { return _this._startCity; };
         _this.getFinance = function () { return _this._finance; };
@@ -44,6 +45,7 @@ var Player = /** @class */ (function (_super) {
         _this.getQueue = function () { return _this._queue; };
         _this.getRoutes = function () { return _this._routes; };
         _this.getUpgrades = function () { return _this._upgrades; };
+        _this.isActive = function () { return _this._isActive; };
         /**
          * Handle Player events by checking if level should be increased.
          * Then handle Route queue, built Routes and Finance.
@@ -53,10 +55,12 @@ var Player = /** @class */ (function (_super) {
          * @param {Nardis}         game - (optional) Nardis game instance.
          */
         _this.handleTurn = function (info, game) {
-            _this.checkLevel();
-            _this.handleQueue();
-            _this.handleRoutes(info);
-            _this.handleFinance(info);
+            if (_this._isActive) {
+                _this.checkLevel();
+                _this.handleQueue();
+                _this.handleRoutes(info);
+                _this.handleFinance(info);
+            }
         };
         /**
          * Check if level should be increased and act accordingly.
@@ -65,6 +69,29 @@ var Player = /** @class */ (function (_super) {
             if (_this.shouldLevelBeIncreased()) {
                 _this.increaseLevel();
             }
+        };
+        /**
+         * Merge current Route array with another,
+         *
+         * @param routes - Array of Routes to append to current Route array.
+         */
+        _this.mergeRoutes = function (routes) {
+            _this._routes = _this._routes.concat(routes);
+        };
+        /**
+         * Merge current queue array with another,
+         *
+         * @param queue - Array of QueuedRouteItem to append to current queue array.
+         */
+        _this.mergeQueue = function (queue) {
+            _this._queue = _this._queue.concat(queue);
+        };
+        /**
+         * Set Player to inactive. Also removes all Routes and Upgrades.
+         */
+        _this.setInactive = function () {
+            _this._routes = [], _this._queue = [], _this._upgrades = [];
+            _this._isActive = false;
         };
         /**
          * Add Route to queue.
@@ -143,7 +170,8 @@ var Player = /** @class */ (function (_super) {
             routes: _this._routes.map(function (route) { return route.deconstruct(); }),
             upgrades: _this._upgrades.map(function (upgrade) { return ({
                 id: upgrade.id
-            }); })
+            }); }),
+            isActive: _this._isActive
         }); };
         /**
          * Handle all Routes in queue by checking current turn cost,
@@ -219,6 +247,7 @@ var Player = /** @class */ (function (_super) {
         _this._queue = util_1.isDefined(queue) ? queue : [];
         _this._routes = util_1.isDefined(routes) ? routes : [];
         _this._upgrades = util_1.isDefined(upgrades) ? upgrades : [];
+        _this._isActive = util_1.isDefined(isActive) ? isActive : true;
         _this._range = _this.getRangeFromLevel();
         return _this;
     }
@@ -238,7 +267,7 @@ var Player = /** @class */ (function (_super) {
         return new Player(parsedJSON.name, parsedJSON.startGold, parsedJSON.playerType, cities.filter(function (e) { return e.id === parsedJSON.startCityId; })[0], finance_1.default.createFromStringifiedJSON(parsedJSON.finance), parsedJSON.level, parsedJSON.queue.map(function (e) { return ({
             route: route_1.default.createFromStringifiedJSON(e.route, cities, trains, resources),
             turnCost: e.turnCost
-        }); }), parsedJSON.routes.map(function (e) { return route_1.default.createFromStringifiedJSON(e, cities, trains, resources); }), parsedJSON.upgrades.map(function (e) { return upgrades.filter(function (j) { return j.id === e.id; })[0]; }), parsedJSON.id);
+        }); }), parsedJSON.routes.map(function (e) { return route_1.default.createFromStringifiedJSON(e, cities, trains, resources); }), parsedJSON.upgrades.map(function (e) { return upgrades.filter(function (j) { return j.id === e.id; })[0]; }), parsedJSON.isActive, parsedJSON.id);
     };
     return Player;
 }(base_component_1.default));

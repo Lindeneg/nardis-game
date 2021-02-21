@@ -19,11 +19,12 @@ import { HandleTurnInfo, QueuedRouteItem, PlayerLevel, ActionSave } from '../../
  * @param {Route[]}           routes     - (optional) Array of Routes.
  * @param {Upgrade[]}         upgrades   - (optional) Array of Upgrades.
  * @param {ActionSave}        save       - (optional) Object with save information.
+ * @param {boolean}           isActive   - (optional) Boolean with active specifier.
  * @param {string}            id         - (optional) String number describing id.
  */
 export default class Opponent extends Player {
     private _save;
-    constructor(name: string, startGold: number, startCity: City, finance?: Finance, level?: PlayerLevel, queue?: QueuedRouteItem[], routes?: Route[], upgrades?: Upgrade[], save?: ActionSave, id?: string);
+    constructor(name: string, startGold: number, startCity: City, finance?: Finance, level?: PlayerLevel, queue?: QueuedRouteItem[], routes?: Route[], upgrades?: Upgrade[], save?: ActionSave, isActive?: boolean, id?: string);
     /**
      * Handle Opponent events and actions.
      *

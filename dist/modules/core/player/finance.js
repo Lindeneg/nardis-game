@@ -34,7 +34,7 @@ var types_1 = require("../../../types/types");
  * @param {FinanceTotal}   totalHistory - (optional) FinanceTotal object.
  * @param {number}         totalProfits - (optional) Number with total profits.
  * @param {number}         netWorth     - (optional) Number with net worth.
- * @param {StockHolding}   stock        - (optional) StockHolding object.
+ * @param {StockHolding}   stocks       - (optional) StockHolding object.
  * @param {string}         id           - (optional) String number describing id.
  */
 var Finance = /** @class */ (function (_super) {
@@ -146,12 +146,15 @@ var Finance = /** @class */ (function (_super) {
         /**
          * Remove Stock from StockHolding and handle income.
          *
-         * @param {string} playerId - String with id of the owning player of Stock to remove.
-         * @param {number} value    - SellValue of the Stock.
+         * @param {string} playerId      - String with id of the owning player of Stock to remove.
+         * @param {number} value         - SellValue of the Stock.
+         *
+         * @param {number} stockSubtract - (optional) Number to subtract from current holding.
          */
-        _this.sellStock = function (playerId, value) {
-            if (util_1.isDefined(_this._stocks[playerId]) && _this._stocks[playerId] > 0) {
-                _this._stocks[playerId] -= 1;
+        _this.sellStock = function (playerId, value, stockSubtract) {
+            if (stockSubtract === void 0) { stockSubtract = 1; }
+            if (util_1.isDefined(_this._stocks[playerId]) && _this._stocks[playerId] - stockSubtract >= 0) {
+                _this._stocks[playerId] -= stockSubtract;
                 _this.addNthTurnObject(types_1.FinanceGeneralType.Income, types_1.FinanceType.StockSell, constants_1.localKeys[types_1.FinanceType.StockSell], 1, value);
                 _this._totalProfits += value;
                 _this.addToTotalHistory(constants_1.localKeys[types_1.FinanceType.StockSell], value);

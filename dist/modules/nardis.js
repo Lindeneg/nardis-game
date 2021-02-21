@@ -100,15 +100,9 @@ var Nardis = /** @class */ (function () {
             });
         };
         /**
-         * // TODO update winning condition when net worth and stock is implemented
+         * // TODO
          */
-        this.hasAnyPlayerWon = function () {
-            var result = _this.players.filter(function (player) { return player.getFinance().getGold() > 10000; });
-            return {
-                player: result ? result[0] : null,
-                hasWon: !!result
-            };
-        };
+        this.hasAnyPlayerWon = function () { };
         /**
          * Add an entry to Player queue.
          *
@@ -183,6 +177,44 @@ var Nardis = /** @class */ (function () {
             return false;
         };
         /**
+         * Buyout Player(s) of a certain Stock and take over the owning Player.
+         *
+         * @param   {string}  playerId - String with Id of the 'losing' Player.
+         *
+         * @returns {boolean} True if Player was bought out else False.
+         */
+        this.buyOutPlayer = function (playerId) {
+            var stock = _this.stocks[playerId];
+            var diff = constants_1.stockConstant.maxStockAmount - stock.getSupply()[_this._currentPlayer.id];
+            var cpFinance = _this._currentPlayer.getFinance();
+            if (stock.currentAmountOfStockHolders() >= constants_1.stockConstant.maxStockAmount) {
+                var losingPlayer_1 = _this.players.filter(function (e) { return e.id === playerId; })[0];
+                stock.getBuyOutValues().forEach(function (buyout) {
+                    if (buyout.id !== _this._currentPlayer.id) {
+                        var stockHolder = _this.players.filter(function (e) { return e.id === buyout.id; })[0];
+                        if (buyout.shares > 0) {
+                            if (buyout.id === losingPlayer_1.id) {
+                                losingPlayer_1.getFinance().sellStock(losingPlayer_1.id, 0, buyout.shares);
+                                stock.sellStock(losingPlayer_1.id, buyout.shares);
+                            }
+                            else {
+                                stockHolder.getFinance().sellStock(playerId, buyout.totalValue, buyout.shares);
+                                stock.sellStock(stockHolder.id, buyout.shares);
+                            }
+                            // TODO remove the Finance totalValue from the winning Player's Finance
+                        }
+                    }
+                });
+                for (var i = 0; i < diff; i++) {
+                    stock.buyStock(_this._currentPlayer.id);
+                    cpFinance.buyStock(playerId, 0);
+                }
+                _this.playerTakeOver(_this._currentPlayer, losingPlayer_1, stock);
+                return true;
+            }
+            return false;
+        };
+        /**
          * Buy Stock to the Player of the current turn.
          *
          * @param   {string}  playerId - String with id of the owning player of Stock to buy.
@@ -231,10 +263,23 @@ var Nardis = /** @class */ (function () {
                     _this.updateStock(stockOwner);
                     _this.updatePlayerNetWorth(_this._currentPlayer);
                     _this.updatePlayerNetWorth(stockOwner);
+                    buy ? _this.checkIfPlayerIsFullyOwned(stockOwner) : null;
                     return true;
                 }
             }
             return false;
+        };
+        /**
+         * Check if a Player is fully owned by a foreign Player. If so, perform a Player takeover.
+         *
+         * @param {Player} stockOwner - Player instance to check if owned by another Player.
+         */
+        this.checkIfPlayerIsFullyOwned = function (stockOwner) {
+            var supply = _this.stocks[stockOwner.id].getSupply();
+            if (supply[_this._currentPlayer.id] >= constants_1.stockConstant.maxStockAmount && stockOwner.id !== _this._currentPlayer.id) {
+                console.log(_this._currentPlayer + " owns 100% of " + stockOwner.name);
+                _this.playerTakeOver(_this._currentPlayer, stockOwner, _this.stocks[stockOwner.id]);
+            }
         };
         /**
          * Update the net worth of every Player in the game.
@@ -266,6 +311,30 @@ var Nardis = /** @class */ (function () {
          */
         this.updateStock = function (player) {
             _this.stocks[player.id].updateValue(player.getFinance(), player.getRoutes().length + player.getQueue().length, _this._turn);
+        };
+        /**
+         * Merge loser Player with victor Player, if the latter is taking over the former.
+         * Merge all Routes, Upgrades, Gold and Stock.
+         *
+         * @param {Player} victor - Player instance taking over.
+         * @param {Player} loser  - Player instance being taken over.
+         * @param {Stock}  stock  - Stock instance of the losing Player.
+         */
+        this.playerTakeOver = function (victor, loser, stock) {
+            var vFinance = victor.getFinance();
+            var lFinance = loser.getFinance();
+            var profit = lFinance.getGold();
+            if (profit > 0) {
+                vFinance.sellStock(loser.id, profit, 0);
+                lFinance.addToFinanceExpense(types_1.FinanceType.StockBuy, constants_1.localKeys[types_1.FinanceType.StockBuy], 1, profit);
+            }
+            victor.mergeQueue(loser.getQueue());
+            victor.mergeRoutes(loser.getRoutes());
+            // TODO merge losers foreign stock with victors
+            loser.setInactive();
+            stock.setInactive(_this._turn);
+            _this.updateStocks();
+            _this.updatePlayersNetWorth();
         };
         /**
          * Iterate over each Computer player and handle their turns accordingly.

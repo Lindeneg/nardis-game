@@ -29,7 +29,8 @@ exports.localKeys = [
     'GQnsccS7Gmb9kmZoP4lakp3TIPGvwf07',
     'rDkvsVkOzCBZOyhAKF8bljAVgclTiCAC',
     'QeBo7Miy3RIPHh8mbxWdqoAXny8TsLuF',
-    '0nfKAvFjzJY8H1h9tacz9zzdf0RLlcbl'
+    '0nfKAvFjzJY8H1h9tacz9zzdf0RLlcbl',
+    'uyyoGf0N76Bg9Wdz3Pzfakw40iyEjFDx'
 ];
 exports.eventLogLevelName = [
     'game',
@@ -47,7 +48,7 @@ exports.netWorthDivisors = {
 exports.stockConstant = {
     maxStockAmount: 10,
     startingShares: 4,
-    baseValue: 100,
+    baseValue: 50,
     multipliers: {
         stockBuy: 1.25,
         routeLength: 1.8,

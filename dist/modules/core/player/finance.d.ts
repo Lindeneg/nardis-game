@@ -10,7 +10,7 @@ import { FinanceHistory, FinanceTotal, HandleTurnInfo, ITurnable, FinanceType, P
  * @param {FinanceTotal}   totalHistory - (optional) FinanceTotal object.
  * @param {number}         totalProfits - (optional) Number with total profits.
  * @param {number}         netWorth     - (optional) Number with net worth.
- * @param {StockHolding}   stock        - (optional) StockHolding object.
+ * @param {StockHolding}   stocks       - (optional) StockHolding object.
  * @param {string}         id           - (optional) String number describing id.
  */
 export default class Finance extends BaseComponent implements ITurnable {
@@ -82,10 +82,12 @@ export default class Finance extends BaseComponent implements ITurnable {
     /**
      * Remove Stock from StockHolding and handle income.
      *
-     * @param {string} playerId - String with id of the owning player of Stock to remove.
-     * @param {number} value    - SellValue of the Stock.
+     * @param {string} playerId      - String with id of the owning player of Stock to remove.
+     * @param {number} value         - SellValue of the Stock.
+     *
+     * @param {number} stockSubtract - (optional) Number to subtract from current holding.
      */
-    sellStock: (playerId: string, value: number) => void;
+    sellStock: (playerId: string, value: number, stockSubtract?: number) => void;
     /**
      * @returns {string} String with JSON stringified property keys and values.
      */

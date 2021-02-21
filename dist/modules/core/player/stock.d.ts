@@ -1,6 +1,6 @@
 import BaseComponent from "../../component/base-component";
 import Finance from "../../core/player/finance";
-import { StockSupply, ValueHistory } from "../../../types/types";
+import { BuyOutValue, StockSupply, ValueHistory } from "../../../types/types";
 /**
  * @constructor
  * @param {string}         name           - Name of the Stock instance.
@@ -9,18 +9,33 @@ import { StockSupply, ValueHistory } from "../../../types/types";
  * @param {number}         value          - (optional) Number with Stock sell value.
  * @param {ValueHistory[]} valueHistory   - (optional) Object with Stock ValueHistory.
  * @param {StockSupply}    supply         - (optional) Object with StockSupply.
+ * @param {boolean}        isActive       - (optional) Boolean with active specifier.
  * @param {string}         id             - (optional) String number describing id.
  */
 export default class Stock extends BaseComponent {
-    private _owningPlayerId;
+    readonly owningPlayerId: string;
     private _value;
     private _valueHistory;
     private _supply;
-    constructor(name: string, owningPlayerId: string, value?: number, valueHistory?: ValueHistory[], supply?: StockSupply, id?: string);
+    private _isActive;
+    constructor(name: string, owningPlayerId: string, value?: number, valueHistory?: ValueHistory[], supply?: StockSupply, isActive?: boolean, id?: string);
     getBuyValue: () => number;
     getSellValue: () => number;
     getSupply: () => StockSupply;
     getHistory: () => ValueHistory[];
+    isActive: () => boolean;
+    /**
+     * Set Stock as inactive.
+     *
+     * @param {number} turn - Number with current turn at hand.
+     */
+    setInactive: (turn: number) => void;
+    /**
+     * Get buyout value for all Stock holders, if there's no Stock supply left.
+     *
+     * @returns {BuyOutValue[]} Array of BuyOutValue objects.
+     */
+    getBuyOutValues: () => BuyOutValue[];
     /**
      * Buy Stock to the specified playerId.
      *
@@ -34,9 +49,11 @@ export default class Stock extends BaseComponent {
      *
      * @param   {string}  playerId - String with playerId to sell Stock from.
      *
+     * @param   {number}  amount   - (optional) Number with share amount to sell.
+     *
      * @returns {boolean} True if Stock was sold else false.
      */
-    sellStock: (playerId: string) => boolean;
+    sellStock: (playerId: string, amount?: number) => boolean;
     /**
      * Get total amount of current Stock holders and their respective quantities.
      *

@@ -19,6 +19,7 @@ import { QueuedRouteItem, HandleTurnInfo, ITurnable, PlayerType, PlayerLevel } f
  * @param {QueuedRouteItem[]} queue      - (optional) Array of queued Routes.
  * @param {Route[]}           routes     - (optional) Array of Routes.
  * @param {Upgrade[]}         upgrades   - (optional) Array of Upgrades.
+ * @param {boolean}           isActive   - (optional) Boolean with active specifier.
  * @param {string}            id         - (optional) String number describing id.
  */
 export default class Player extends BaseComponent implements ITurnable {
@@ -31,7 +32,8 @@ export default class Player extends BaseComponent implements ITurnable {
     protected _queue: QueuedRouteItem[];
     protected _routes: Route[];
     protected _upgrades: Upgrade[];
-    constructor(name: string, startGold: number, playerType: PlayerType, startCity: City, finance?: Finance, level?: PlayerLevel, queue?: QueuedRouteItem[], routes?: Route[], upgrades?: Upgrade[], id?: string);
+    protected _isActive: boolean;
+    constructor(name: string, startGold: number, playerType: PlayerType, startCity: City, finance?: Finance, level?: PlayerLevel, queue?: QueuedRouteItem[], routes?: Route[], upgrades?: Upgrade[], isActive?: boolean, id?: string);
     getStartCity: () => City;
     getFinance: () => Finance;
     getLevel: () => PlayerLevel;
@@ -39,6 +41,7 @@ export default class Player extends BaseComponent implements ITurnable {
     getQueue: () => QueuedRouteItem[];
     getRoutes: () => Route[];
     getUpgrades: () => Upgrade[];
+    isActive: () => boolean;
     /**
      * Handle Player events by checking if level should be increased.
      * Then handle Route queue, built Routes and Finance.
@@ -52,6 +55,22 @@ export default class Player extends BaseComponent implements ITurnable {
      * Check if level should be increased and act accordingly.
      */
     checkLevel: () => void;
+    /**
+     * Merge current Route array with another,
+     *
+     * @param routes - Array of Routes to append to current Route array.
+     */
+    mergeRoutes: (routes: Route[]) => void;
+    /**
+     * Merge current queue array with another,
+     *
+     * @param queue - Array of QueuedRouteItem to append to current queue array.
+     */
+    mergeQueue: (queue: QueuedRouteItem[]) => void;
+    /**
+     * Set Player to inactive. Also removes all Routes and Upgrades.
+     */
+    setInactive: () => void;
     /**
      * Add Route to queue.
      *

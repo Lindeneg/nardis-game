@@ -24,17 +24,45 @@ var util_1 = require("../../../util/util");
  * @param {number}         value          - (optional) Number with Stock sell value.
  * @param {ValueHistory[]} valueHistory   - (optional) Object with Stock ValueHistory.
  * @param {StockSupply}    supply         - (optional) Object with StockSupply.
+ * @param {boolean}        isActive       - (optional) Boolean with active specifier.
  * @param {string}         id             - (optional) String number describing id.
  */
 var Stock = /** @class */ (function (_super) {
     __extends(Stock, _super);
-    function Stock(name, owningPlayerId, value, valueHistory, supply, id) {
+    function Stock(name, owningPlayerId, value, valueHistory, supply, isActive, id) {
         var _a;
         var _this = _super.call(this, name, id) || this;
         _this.getBuyValue = function () { return Math.floor(_this._value * constants_1.stockConstant.multipliers.stockBuy); };
         _this.getSellValue = function () { return _this._value; };
         _this.getSupply = function () { return _this._supply; };
         _this.getHistory = function () { return _this._valueHistory; };
+        _this.isActive = function () { return _this._isActive; };
+        /**
+         * Set Stock as inactive.
+         *
+         * @param {number} turn - Number with current turn at hand.
+         */
+        _this.setInactive = function (turn) {
+            _this._value = 0;
+            _this._valueHistory.push({ turn: turn, value: _this._value });
+            _this._isActive = false;
+        };
+        /**
+         * Get buyout value for all Stock holders, if there's no Stock supply left.
+         *
+         * @returns {BuyOutValue[]} Array of BuyOutValue objects.
+         */
+        _this.getBuyOutValues = function () {
+            var buyOutValues = [];
+            if (_this.currentAmountOfStockHolders() >= constants_1.stockConstant.maxStockAmount) {
+                buyOutValues.push.apply(buyOutValues, Object.keys(_this._supply).map(function (id) { return ({
+                    totalValue: Math.floor(_this._supply[id] * _this._value),
+                    shares: _this._supply[id],
+                    id: id
+                }); }));
+            }
+            return buyOutValues;
+        };
         /**
          * Buy Stock to the specified playerId.
          *
@@ -59,11 +87,14 @@ var Stock = /** @class */ (function (_super) {
          *
          * @param   {string}  playerId - String with playerId to sell Stock from.
          *
+         * @param   {number}  amount   - (optional) Number with share amount to sell.
+         *
          * @returns {boolean} True if Stock was sold else false.
          */
-        _this.sellStock = function (playerId) {
-            if (util_1.isDefined(_this._supply[playerId]) && _this._supply[playerId] > 0) {
-                _this._supply[playerId] -= 1;
+        _this.sellStock = function (playerId, amount) {
+            if (amount === void 0) { amount = 1; }
+            if (util_1.isDefined(_this._supply[playerId]) && _this._supply[playerId] - amount >= 0) {
+                _this._supply[playerId] -= amount;
                 return true;
             }
             return false;
@@ -82,12 +113,14 @@ var Stock = /** @class */ (function (_super) {
          * @param {number}  turn    - Number with current turn.
          */
         _this.updateValue = function (finance, routes, turn) {
-            var newValue = (Math.floor(routes * constants_1.stockConstant.multipliers.routeLength) +
-                Math.floor(finance.getAverageRevenue() / constants_1.stockConstant.divisors.avgRevenue) +
-                Math.floor(_this.currentAmountOfStockHolders() * constants_1.stockConstant.multipliers.stockHolder)) + (Math.floor(finance.getTotalProfits() / constants_1.stockConstant.divisors.totalProfits) + constants_1.stockConstant.baseValue);
-            if (newValue !== _this._value) {
-                _this.updateValueHistory(newValue, turn);
-                _this._value = newValue;
+            if (_this.isActive()) {
+                var newValue = (Math.floor(routes * constants_1.stockConstant.multipliers.routeLength) +
+                    Math.floor(finance.getAverageRevenue() / constants_1.stockConstant.divisors.avgRevenue) +
+                    Math.floor(_this.currentAmountOfStockHolders() * constants_1.stockConstant.multipliers.stockHolder)) + (Math.floor(finance.getTotalProfits() / constants_1.stockConstant.divisors.totalProfits) + constants_1.stockConstant.baseValue);
+                if (newValue !== _this._value) {
+                    _this.updateValueHistory(newValue, turn);
+                    _this._value = newValue;
+                }
             }
         };
         /**
@@ -110,9 +143,6 @@ var Stock = /** @class */ (function (_super) {
          * @param {number} turn  - Number with current turn.
          */
         _this.updateValueHistory = function (value, turn) {
-            /*if (this._valueHistory.length >= MAX_VALUE_HISTORY_LENGTH) {
-                this._valueHistory.shift();
-            }*/
             if (turn > 1 && _this._valueHistory.length > 0 && _this._valueHistory[_this._valueHistory.length - 1].turn === turn) {
                 _this._valueHistory[_this._valueHistory.length - 1].value = value;
             }
@@ -122,20 +152,17 @@ var Stock = /** @class */ (function (_super) {
                     turn: turn
                 });
             }
-            else {
-                // console.log(`not updated: v=${value};t=${turn}`);
-                // console.log(this._valueHistory);
-            }
         };
-        _this._owningPlayerId = owningPlayerId;
+        _this.owningPlayerId = owningPlayerId;
         _this._value = util_1.isDefined(value) ? value : Math.floor(constants_1.stockConstant.startingShares * constants_1.stockConstant.multipliers.stockHolder) + constants_1.stockConstant.baseValue;
         _this._valueHistory = util_1.isDefined(valueHistory) ? valueHistory : [{
                 value: _this._value,
                 turn: 1
             }];
         _this._supply = util_1.isDefined(supply) ? supply : (_a = {},
-            _a[_this._owningPlayerId] = constants_1.stockConstant.startingShares,
+            _a[_this.owningPlayerId] = constants_1.stockConstant.startingShares,
             _a);
+        _this._isActive = util_1.isDefined(isActive) ? isActive : true;
         return _this;
     }
     /**
@@ -147,7 +174,7 @@ var Stock = /** @class */ (function (_super) {
      */
     Stock.createFromStringifiedJSON = function (stringifiedJSON) {
         var parsedJSON = typeof stringifiedJSON === 'string' ? JSON.parse(stringifiedJSON) : stringifiedJSON;
-        return new Stock(parsedJSON.name, parsedJSON._owningPlayerId, parsedJSON._value, parsedJSON._valueHistory, parsedJSON._supply, parsedJSON.id);
+        return new Stock(parsedJSON.name, parsedJSON.owningPlayerId, parsedJSON._value, parsedJSON._valueHistory, parsedJSON._supply, parsedJSON._isActive, parsedJSON.id);
     };
     return Stock;
 }(base_component_1.default));

@@ -98,7 +98,7 @@ exports.trainData = [
         cost: [240, 260],
         upkeep: [20, 25],
         speed: [130, 140],
-        cargoSpace: [5, 7],
+        cargoSpace: [6, 7],
         levelRequired: 2
     },
     {
@@ -146,17 +146,17 @@ exports.highYieldData = [
     {
         name: "medicine",
         weight: 5,
-        value: [80, 180],
-        minValue: 80,
-        maxValue: 180,
+        value: [90, 180],
+        minValue: 86,
+        maxValue: 200,
         valueVolatility: [3, 7]
     },
     {
         name: "technology",
         weight: 5,
         value: [90, 155],
-        minValue: 80,
-        maxValue: 180,
+        minValue: 86,
+        maxValue: 200,
         valueVolatility: [1, 4]
     },
     {
@@ -254,7 +254,7 @@ exports.genericOpponentsName = [
 exports.opponentInformation = [
     {
         type: types_1.PlayerType.Human,
-        color: 'darkgoldenrod',
+        color: 'darkslategray',
         avatar: 0
     },
     {
