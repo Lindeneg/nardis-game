@@ -86,6 +86,12 @@ export interface OpponentInformation {
     avatar: number
 }
 
+export interface BuyOutValue {
+    id: string,
+    totalValue: number,
+    shares: number
+}
+
 export interface GameEvent {
     level: EventLogLevel,
     origin: string,

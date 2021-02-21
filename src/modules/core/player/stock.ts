@@ -1,7 +1,7 @@
 import BaseComponent from "../../component/base-component";
 import Finance from "../../core/player/finance";
-import { StockSupply, ValueHistory } from "../../../types/types";
-import { MAX_VALUE_HISTORY_LENGTH, stockConstant } from "../../../util/constants";
+import { BuyOutValue, StockSupply, ValueHistory } from "../../../types/types";
+import { stockConstant } from "../../../util/constants";
 import { isDefined } from "../../../util/util";
 
 
@@ -13,15 +13,18 @@ import { isDefined } from "../../../util/util";
  * @param {number}         value          - (optional) Number with Stock sell value.
  * @param {ValueHistory[]} valueHistory   - (optional) Object with Stock ValueHistory.
  * @param {StockSupply}    supply         - (optional) Object with StockSupply.
+ * @param {boolean}        isActive       - (optional) Boolean with active specifier.
  * @param {string}         id             - (optional) String number describing id.
  */
 
 export default class Stock extends BaseComponent {
 
-    private _owningPlayerId: string;
+    readonly owningPlayerId: string;
+
     private _value         : number;
     private _valueHistory  : ValueHistory[];
     private _supply        : StockSupply;
+    private _isActive      : boolean;
 
     constructor(
         name               : string,
@@ -29,11 +32,12 @@ export default class Stock extends BaseComponent {
         value             ?: number,
         valueHistory      ?: ValueHistory[],
         supply            ?: StockSupply,
+        isActive          ?: boolean,
         id                ?: string
     ) {
         super(name, id);
 
-        this._owningPlayerId = owningPlayerId;
+        this.owningPlayerId = owningPlayerId;
 
         this._value          = isDefined(value) ? value : Math.floor(stockConstant.startingShares * stockConstant.multipliers.stockHolder) + stockConstant.baseValue;
         this._valueHistory   = isDefined(valueHistory) ? valueHistory : [{
@@ -42,14 +46,47 @@ export default class Stock extends BaseComponent {
         }];
 
         this._supply         = isDefined(supply) ? supply : {
-            [this._owningPlayerId]: stockConstant.startingShares
+            [this.owningPlayerId]: stockConstant.startingShares
         };
+
+        this._isActive       = isDefined(isActive) ? isActive : true;
     }
 
     public getBuyValue  = (): number         => Math.floor(this._value * stockConstant.multipliers.stockBuy);
     public getSellValue = (): number         => this._value;
     public getSupply    = (): StockSupply    => this._supply;
     public getHistory   = (): ValueHistory[] => this._valueHistory;
+    public isActive     = (): boolean        => this._isActive;
+
+    /**
+     * Set Stock as inactive.
+     * 
+     * @param {number} turn - Number with current turn at hand.
+     */
+    
+    public setInactive  = (turn: number): void => {
+        this._value = 0;
+        this._valueHistory.push({turn, value: this._value});
+        this._isActive = false;
+    }
+
+    /**
+     * Get buyout value for all Stock holders, if there's no Stock supply left.
+     * 
+     * @returns {BuyOutValue[]} Array of BuyOutValue objects.
+     */
+
+    public getBuyOutValues = (): BuyOutValue[] => {
+        const buyOutValues: BuyOutValue[] = [];
+        if (this.currentAmountOfStockHolders() >= stockConstant.maxStockAmount) {
+            buyOutValues.push(...Object.keys(this._supply).map((id: string): BuyOutValue => ({
+                totalValue: Math.floor(this._supply[id] * this._value),
+                shares: this._supply[id],
+                id
+            })));
+        }
+        return buyOutValues;
+    }
 
     /**
      * Buy Stock to the specified playerId.
@@ -76,12 +113,14 @@ export default class Stock extends BaseComponent {
      * 
      * @param   {string}  playerId - String with playerId to sell Stock from. 
      * 
+     * @param   {number}  amount   - (optional) Number with share amount to sell.
+     * 
      * @returns {boolean} True if Stock was sold else false.
      */
 
-    public sellStock = (playerId: string): boolean => {
-        if (isDefined(this._supply[playerId]) && this._supply[playerId] > 0) {
-            this._supply[playerId] -= 1;
+    public sellStock = (playerId: string, amount: number = 1): boolean => {
+        if (isDefined(this._supply[playerId]) && this._supply[playerId] - amount >= 0) {
+            this._supply[playerId] -= amount;
             return true;
         }   
         return false;
@@ -112,14 +151,16 @@ export default class Stock extends BaseComponent {
         routes : number,
         turn   : number
     ): void => {
-        const newValue: number = (
-            Math.floor(routes * stockConstant.multipliers.routeLength) +
-            Math.floor(finance.getAverageRevenue() / stockConstant.divisors.avgRevenue) +
-            Math.floor(this.currentAmountOfStockHolders() * stockConstant.multipliers.stockHolder) 
-        ) + (Math.floor(finance.getTotalProfits() / stockConstant.divisors.totalProfits) + stockConstant.baseValue);
-        if (newValue !== this._value) {
-            this.updateValueHistory(newValue, turn);
-            this._value = newValue;
+        if (this.isActive()) {
+            const newValue: number = (
+                Math.floor(routes * stockConstant.multipliers.routeLength) +
+                Math.floor(finance.getAverageRevenue() / stockConstant.divisors.avgRevenue) +
+                Math.floor(this.currentAmountOfStockHolders() * stockConstant.multipliers.stockHolder) 
+            ) + (Math.floor(finance.getTotalProfits() / stockConstant.divisors.totalProfits) + stockConstant.baseValue);
+            if (newValue !== this._value) {
+                this.updateValueHistory(newValue, turn);
+                this._value = newValue;
+            }
         }
     }
 
@@ -151,9 +192,6 @@ export default class Stock extends BaseComponent {
      */
 
     private updateValueHistory = (value: number, turn: number): void => {
-        /*if (this._valueHistory.length >= MAX_VALUE_HISTORY_LENGTH) {
-            this._valueHistory.shift();
-        }*/
         if (turn > 1 && this._valueHistory.length > 0 && this._valueHistory[this._valueHistory.length - 1].turn === turn) {
                 this._valueHistory[this._valueHistory.length - 1].value = value;
         } else if (turn > 1) {
@@ -161,9 +199,6 @@ export default class Stock extends BaseComponent {
                 value,
                 turn
             });
-        } else {
-            // console.log(`not updated: v=${value};t=${turn}`);
-            // console.log(this._valueHistory);
         }
     }
 
@@ -179,10 +214,11 @@ export default class Stock extends BaseComponent {
         const parsedJSON = typeof stringifiedJSON === 'string' ? JSON.parse(stringifiedJSON) : stringifiedJSON;
         return new Stock(
             parsedJSON.name,
-            parsedJSON._owningPlayerId,
+            parsedJSON.owningPlayerId,
             parsedJSON._value,
             parsedJSON._valueHistory,
             parsedJSON._supply,
+            parsedJSON._isActive,
             parsedJSON.id,
         );
     }

@@ -19,10 +19,12 @@ import {
     RoutePlanCargo,
     AdjustedTrain,
     Stocks,
-    Indexable
+    Indexable,
+    StockSupply,
+    BuyOutValue
 } from '../types/types';
 import {
-    localKeys, START_GOLD, START_OPPONENTS
+    localKeys, START_GOLD, START_OPPONENTS, stockConstant
 } from '../util/constants';
 import {
     generateData
@@ -135,7 +137,9 @@ export class Nardis {
      */
 
     public getArrayOfAdjustedTrains = (): AdjustedTrain[] => {
-        const upgrades: Upgrade[] = this._currentPlayer.getUpgrades().filter((upgrade: Upgrade): boolean => upgrade.type === UpgradeType.TrainValueCheaper);
+        const upgrades: Upgrade[] = this._currentPlayer.getUpgrades().filter(
+            (upgrade: Upgrade): boolean => upgrade.type === UpgradeType.TrainValueCheaper
+        );
         return this.data.trains.map((train: Train): AdjustedTrain => {
             let cost: number = train.cost;
             upgrades.forEach((upgrade: Upgrade): void => {
@@ -149,16 +153,10 @@ export class Nardis {
     }
 
     /**
-     * // TODO update winning condition when net worth and stock is implemented
+     * // TODO
      */
 
-    public hasAnyPlayerWon = (): {player: Player, hasWon: boolean} => {
-        const result = this.players.filter(player => player.getFinance().getGold() > 10000);
-        return {
-            player: result ? result[0] : null,
-            hasWon: !!result
-        };
-    }
+    public hasAnyPlayerWon = () => {}
 
     /**
      * Add an entry to Player queue.
@@ -215,7 +213,12 @@ export class Nardis {
      * @returns {boolean}        True if Route was altered else false.
      */
 
-    public changeActivePlayerRoute = (routeId: string, train: Train, routePlan: RoutePlanCargo, cost: number): boolean => {
+    public changeActivePlayerRoute = (
+        routeId  : string, 
+        train    : Train, 
+        routePlan: RoutePlanCargo, 
+        cost     : number
+    ): boolean => {
         const routes: Route[] = this._currentPlayer.getRoutes().filter(e => e.id === routeId);
         if (routes.length > 0) {
             if (cost > 0) {
@@ -252,6 +255,45 @@ export class Nardis {
     public removeRouteFromPlayerRoutes = (routeId: string, value: number): boolean => {
         if (this._currentPlayer.removeRouteFromRoutes(routeId)) {
             this._currentPlayer.getFinance().recoupDeletedRoute(value);
+            return true;
+        }
+        return false;
+    }
+
+    /**
+     * Buyout Player(s) of a certain Stock and take over the owning Player.
+     * 
+     * @param   {string}  playerId - String with Id of the 'losing' Player. 
+     * 
+     * @returns {boolean} True if Player was bought out else False. 
+     */
+
+    public buyOutPlayer = (playerId: string): boolean => {
+        const stock: Stock = this.stocks[playerId];
+        const diff: number = stockConstant.maxStockAmount - stock.getSupply()[this._currentPlayer.id];
+        const cpFinance: Finance = this._currentPlayer.getFinance();
+        if (stock.currentAmountOfStockHolders() >= stockConstant.maxStockAmount) {
+            const losingPlayer: Player = this.players.filter(e => e.id === playerId)[0];
+            stock.getBuyOutValues().forEach((buyout: BuyOutValue): void => {
+                if (buyout.id !== this._currentPlayer.id) {
+                    const stockHolder: Player = this.players.filter(e => e.id === buyout.id)[0];
+                    if (buyout.shares > 0) {
+                        if (buyout.id === losingPlayer.id) {
+                            losingPlayer.getFinance().sellStock(losingPlayer.id, 0, buyout.shares);
+                            stock.sellStock(losingPlayer.id, buyout.shares);
+                        } else {
+                            stockHolder.getFinance().sellStock(playerId, buyout.totalValue, buyout.shares);
+                            stock.sellStock(stockHolder.id, buyout.shares);
+                        }
+                        // TODO remove the Finance totalValue from the winning Player's Finance
+                    }
+                }
+            });
+            for (let i: number = 0; i < diff; i++) {
+                stock.buyStock(this._currentPlayer.id);
+                cpFinance.buyStock(playerId, 0);
+            }
+            this.playerTakeOver(this._currentPlayer, losingPlayer, stock);
             return true;
         }
         return false;
@@ -319,10 +361,25 @@ export class Nardis {
                 this.updateStock(stockOwner);
                 this.updatePlayerNetWorth(this._currentPlayer);
                 this.updatePlayerNetWorth(stockOwner);
+                buy ? this.checkIfPlayerIsFullyOwned(stockOwner) : null;
                 return true;
             }
         }
         return false;
+    }
+
+    /**
+     * Check if a Player is fully owned by a foreign Player. If so, perform a Player takeover.
+     * 
+     * @param {Player} stockOwner - Player instance to check if owned by another Player. 
+     */
+
+    private checkIfPlayerIsFullyOwned = (stockOwner: Player): void => {
+        const supply: StockSupply = this.stocks[stockOwner.id].getSupply();
+        if (supply[this._currentPlayer.id] >= stockConstant.maxStockAmount && stockOwner.id !== this._currentPlayer.id) {
+            console.log(`${this._currentPlayer} owns 100% of ${stockOwner.name}`);
+            this.playerTakeOver(this._currentPlayer, stockOwner, this.stocks[stockOwner.id]);
+        } 
     }
 
     /**
@@ -366,6 +423,31 @@ export class Nardis {
             player.getRoutes().length + player.getQueue().length, 
             this._turn
         );
+    }
+
+    /**
+     * Merge loser Player with victor Player, if the latter is taking over the former.
+     * Merge all Routes, Upgrades, Gold and Stock.
+     * 
+     * @param {Player} victor - Player instance taking over.
+     * @param {Player} loser  - Player instance being taken over.
+     * @param {Stock}  stock  - Stock instance of the losing Player.
+     */
+
+    private playerTakeOver = (victor: Player, loser: Player, stock: Stock): void => {
+        const vFinance: Finance = victor.getFinance(); const lFinance: Finance = loser.getFinance();
+        const profit: number = lFinance.getGold();
+        if (profit > 0) {
+            vFinance.sellStock(loser.id, profit, 0);
+            lFinance.addToFinanceExpense(FinanceType.StockBuy, localKeys[FinanceType.StockBuy], 1, profit);
+        }
+        victor.mergeQueue(loser.getQueue());
+        victor.mergeRoutes(loser.getRoutes());
+        // TODO merge losers foreign stock with victors
+        loser.setInactive();
+        stock.setInactive(this._turn);
+        this.updateStocks();
+        this.updatePlayersNetWorth();
     }
 
     /**

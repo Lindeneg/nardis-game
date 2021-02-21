@@ -36,6 +36,7 @@ import {
  * @param {QueuedRouteItem[]} queue      - (optional) Array of queued Routes.
  * @param {Route[]}           routes     - (optional) Array of Routes.
  * @param {Upgrade[]}         upgrades   - (optional) Array of Upgrades.
+ * @param {boolean}           isActive   - (optional) Boolean with active specifier.
  * @param {string}            id         - (optional) String number describing id.
  */
 
@@ -51,6 +52,7 @@ export default class Player extends BaseComponent implements ITurnable {
     protected _queue    : QueuedRouteItem[];
     protected _routes   : Route[];
     protected _upgrades : Upgrade[];
+    protected _isActive : boolean;
 
     constructor(
             name        : string,
@@ -62,6 +64,7 @@ export default class Player extends BaseComponent implements ITurnable {
             queue      ?: QueuedRouteItem[],
             routes     ?: Route[],
             upgrades   ?: Upgrade[],
+            isActive   ?: boolean,
             id         ?: string
     ) {
         super(name, id);
@@ -75,6 +78,7 @@ export default class Player extends BaseComponent implements ITurnable {
         this._queue     = isDefined(queue)    ? queue    : [];
         this._routes    = isDefined(routes)   ? routes   : [];
         this._upgrades  = isDefined(upgrades) ? upgrades : [];
+        this._isActive  = isDefined(isActive) ? isActive : true;
         this._range     = this.getRangeFromLevel();
 
     }
@@ -86,6 +90,7 @@ export default class Player extends BaseComponent implements ITurnable {
     public getQueue     = (): QueuedRouteItem[] => this._queue;
     public getRoutes    = (): Route[]           => this._routes;
     public getUpgrades  = (): Upgrade[]         => this._upgrades;
+    public isActive     = (): boolean           => this._isActive;
 
     /**
      * Handle Player events by checking if level should be increased.
@@ -97,10 +102,12 @@ export default class Player extends BaseComponent implements ITurnable {
      */
 
     public handleTurn = (info: HandleTurnInfo, game?: Nardis): void => {
-        this.checkLevel();
-        this.handleQueue();
-        this.handleRoutes(info);
-        this.handleFinance(info);
+        if (this._isActive) {
+            this.checkLevel();
+            this.handleQueue();
+            this.handleRoutes(info);
+            this.handleFinance(info);
+        }
     }
 
     /**
@@ -111,6 +118,35 @@ export default class Player extends BaseComponent implements ITurnable {
         if (this.shouldLevelBeIncreased()) {
             this.increaseLevel();
         }
+    }
+
+    /**
+     * Merge current Route array with another,
+     * 
+     * @param routes - Array of Routes to append to current Route array.
+     */
+
+    public mergeRoutes = (routes: Route[]): void => {
+        this._routes = this._routes.concat(routes);
+    }
+
+    /**
+     * Merge current queue array with another,
+     * 
+     * @param queue - Array of QueuedRouteItem to append to current queue array.
+     */
+
+    public mergeQueue = (queue: QueuedRouteItem[]): void => {
+        this._queue = this._queue.concat(queue);
+    }
+
+    /**
+     * Set Player to inactive. Also removes all Routes and Upgrades.
+     */
+
+    public setInactive = (): void => {
+        this._routes = [], this._queue = [], this._upgrades = [];
+        this._isActive = false;
     }
 
     /**
@@ -199,7 +235,8 @@ export default class Player extends BaseComponent implements ITurnable {
         routes     : this._routes.map((route: Route): string => route.deconstruct()),
         upgrades   : this._upgrades.map((upgrade: Upgrade): Indexable<string> => ({
             id: upgrade.id
-        }))
+        })),
+        isActive   : this._isActive
     });
 
     /**
@@ -308,6 +345,7 @@ export default class Player extends BaseComponent implements ITurnable {
             })),
             parsedJSON.routes.map(e => Route.createFromStringifiedJSON(e, cities, trains, resources)),
             parsedJSON.upgrades.map(e => upgrades.filter(j => j.id === e.id)[0]),
+            parsedJSON.isActive,
             parsedJSON.id
         )
     }

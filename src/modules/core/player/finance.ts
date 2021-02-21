@@ -35,7 +35,7 @@ import {
  * @param {FinanceTotal}   totalHistory - (optional) FinanceTotal object.
  * @param {number}         totalProfits - (optional) Number with total profits.
  * @param {number}         netWorth     - (optional) Number with net worth.
- * @param {StockHolding}   stock        - (optional) StockHolding object.
+ * @param {StockHolding}   stocks       - (optional) StockHolding object.
  * @param {string}         id           - (optional) String number describing id.
  */
 
@@ -217,13 +217,15 @@ export default class Finance extends BaseComponent implements ITurnable {
     /**
      * Remove Stock from StockHolding and handle income.
      * 
-     * @param {string} playerId - String with id of the owning player of Stock to remove.
-     * @param {number} value    - SellValue of the Stock. 
+     * @param {string} playerId      - String with id of the owning player of Stock to remove.
+     * @param {number} value         - SellValue of the Stock. 
+     * 
+     * @param {number} stockSubtract - (optional) Number to subtract from current holding.
      */
     
-    public sellStock = (playerId: string, value: number): void => {
-        if (isDefined(this._stocks[playerId]) && this._stocks[playerId] > 0) {
-            this._stocks[playerId] -= 1;
+    public sellStock = (playerId: string, value: number, stockSubtract: number = 1): void => {
+        if (isDefined(this._stocks[playerId]) && this._stocks[playerId] - stockSubtract >= 0) {
+            this._stocks[playerId] -= stockSubtract;
             this.addNthTurnObject(
                 FinanceGeneralType.Income, 
                 FinanceType.StockSell, 
