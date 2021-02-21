@@ -41,6 +41,7 @@ import { levelUpRequirements } from '../../../../util/constants';
  * @param {Route[]}           routes     - (optional) Array of Routes.
  * @param {Upgrade[]}         upgrades   - (optional) Array of Upgrades.
  * @param {ActionSave}        save       - (optional) Object with save information.
+ * @param {boolean}           isActive   - (optional) Boolean with active specifier.
  * @param {string}            id         - (optional) String number describing id.
  */
 
@@ -58,9 +59,10 @@ export default class Opponent extends Player {
         routes  ?: Route[],
         upgrades?: Upgrade[],
         save    ?: ActionSave,
+        isActive?: boolean,
         id      ?: string
     ) {
-        super(name, startGold, PlayerType.Computer, startCity, finance, level, queue, routes, upgrades, id);
+        super(name, startGold, PlayerType.Computer, startCity, finance, level, queue, routes, upgrades, isActive, id);
 
         this._save = isDefined(save) ? save : {
             should: false,
@@ -77,18 +79,20 @@ export default class Opponent extends Player {
      */
 
     public handleTurn = (info: HandleTurnInfo, game: Nardis): void => {
-        if (this.shouldLevelBeIncreased()) {
-            this.increaseLevel();
-            this._save = {
-                should: false,
-                turn: info.turn,
-                diff: 0
-            };
+        if (this._isActive) {
+            if (this.shouldLevelBeIncreased()) {
+                this.increaseLevel();
+                this._save = {
+                    should: false,
+                    turn: info.turn,
+                    diff: 0
+                };
+            }
+            this.handleQueue();
+            this.handleRoutes(info);
+            this.handleFinance(info);
+            this.deduceAction(info, game);
         }
-        this.handleQueue();
-        this.handleRoutes(info);
-        this.handleFinance(info);
-        this.deduceAction(info, game);
     }
 
     // only for unit testing purposes
@@ -116,7 +120,8 @@ export default class Opponent extends Player {
         routes: this._routes.map(e => e.deconstruct()),
         upgrades: this._upgrades.map(e => ({
             id: e.id
-        }))
+        })),
+        isActive: this._isActive
     });
 
     /**
@@ -514,7 +519,7 @@ export default class Opponent extends Player {
         const relevantTrains: AdjustedTrain[] = trains.filter((e: AdjustedTrain): boolean => this._level >= e.train.levelRequired);
         let currentSpace: number = 0; let valueRatio: number = Infinity; let i: number = 0;
         relevantTrains.forEach((train: AdjustedTrain, index: number): void => {
-            const vr: number = (train.cost + train.train.upkeep) / (train.train.speed + train.train.cargoSpace);
+            const vr: number = (train.cost + (train.train.upkeep * 1.5)) / (train.train.speed + (train.train.cargoSpace * 2.5));
 
             this.log(`possible train: nme=${train.train.name};vr=${vr.toFixed(3)};cst=${train.cost};vel=${train.train.speed};spa=${train.train.cargoSpace}`);
 
@@ -595,6 +600,7 @@ export default class Opponent extends Player {
             parsedJSON.routes.map(e => Route.createFromStringifiedJSON(e, cities, trains, resources)),
             parsedJSON.upgrades.map(e => upgrades.filter(j => j.id === e.id)[0]),
             parsedJSON.save,
+            parsedJSON.isActive,
             parsedJSON.id
         )
     }
