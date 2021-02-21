@@ -35,7 +35,8 @@ export const localKeys: string[] = [
     'GQnsccS7Gmb9kmZoP4lakp3TIPGvwf07',
     'rDkvsVkOzCBZOyhAKF8bljAVgclTiCAC',
     'QeBo7Miy3RIPHh8mbxWdqoAXny8TsLuF',
-    '0nfKAvFjzJY8H1h9tacz9zzdf0RLlcbl'
+    '0nfKAvFjzJY8H1h9tacz9zzdf0RLlcbl',
+    'uyyoGf0N76Bg9Wdz3Pzfakw40iyEjFDx'
 ];
 
 export const eventLogLevelName: string[] = [
@@ -56,7 +57,7 @@ export const netWorthDivisors: Indexable<number> = {
 export const stockConstant: StockConstant = {
     maxStockAmount: 10,
     startingShares: 4,
-    baseValue: 100,
+    baseValue: 50, // TODO real val: 500, test val: 50
     multipliers: {
         stockBuy: 1.25,
         routeLength: 1.8,
