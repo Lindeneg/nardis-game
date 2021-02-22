@@ -13,6 +13,7 @@ export const MAX_CITY_SIZE: number = 6;
 export const MAP_RADIUS_IN_KILOMETERS: number = 6371;
 export const START_GOLD: number = 1000;
 export const START_OPPONENTS: number = 3;
+export const DEFAULT_SAVE: number = 5;
 export const ID_LENGTH: number = 32;
 export const ID_CHARS: string = 'abcdef0123456789';
 export const VOWELS: string[] = 'aeiou'.split('');
@@ -57,7 +58,7 @@ export const netWorthDivisors: Indexable<number> = {
 export const stockConstant: StockConstant = {
     maxStockAmount: 10,
     startingShares: 4,
-    baseValue: 50, // TODO real val: 500, test val: 50
+    baseValue: 500,
     multipliers: {
         stockBuy: 1.25,
         routeLength: 1.8,
