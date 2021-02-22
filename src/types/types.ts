@@ -69,7 +69,8 @@ export interface Indexable<T> {
 export interface ActionSave {
     should: boolean,
     turn: number,
-    diff: number
+    diff: number,
+    callback: () => void
 };
 
 export interface ISaveable {
@@ -84,6 +85,11 @@ export interface OpponentInformation {
     type: PlayerType,
     color: string,
     avatar: number
+}
+
+export interface GameStatus {
+    id: string,
+    gameOver: boolean
 }
 
 export interface BuyOutValue {
