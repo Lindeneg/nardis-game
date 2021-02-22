@@ -6,7 +6,13 @@ import Route from '../../route';
 import City from '../../city';
 import Train from '../../train';
 import Resource from '../../resource';
+import Stock from '../stock';
 import { isDefined } from '../../../../util/util';
+import { 
+    DEFAULT_SAVE, 
+    levelUpRequirements, 
+    stockConstant 
+} from '../../../../util/constants';
 import {
     HandleTurnInfo,
     QueuedRouteItem,
@@ -23,10 +29,8 @@ import {
     IRoute,
     BuyableRoute,
     StockHolding,
-    Stocks,
     ActionSave
 } from '../../../../types/types';
-import { levelUpRequirements } from '../../../../util/constants';
 
 
 /**
@@ -64,11 +68,7 @@ export default class Opponent extends Player {
     ) {
         super(name, startGold, PlayerType.Computer, startCity, finance, level, queue, routes, upgrades, isActive, id);
 
-        this._save = isDefined(save) ? save : {
-            should: false,
-            turn: 1,
-            diff: 0
-        };
+        this._save = isDefined(save) ? save : this.getDefaultSave(1);
     }
 
     /**
@@ -82,22 +82,14 @@ export default class Opponent extends Player {
         if (this._isActive) {
             if (this.shouldLevelBeIncreased()) {
                 this.increaseLevel();
-                this._save = {
-                    should: false,
-                    turn: info.turn,
-                    diff: 0
-                };
             }
             this.handleQueue();
             this.handleRoutes(info);
             this.handleFinance(info);
             this.deduceAction(info, game);
+        } else {
+            this.handleFinance({...info, playerData: {routes: [], upgrades: [], queue: []}});
         }
-    }
-
-    // only for unit testing purposes
-    public setSave = (save: ActionSave): void => {
-        this._save = save;
     }
 
     /**
@@ -144,15 +136,22 @@ export default class Opponent extends Player {
 
     private deduceAction = (info: HandleTurnInfo, game: Nardis): void => {
         this.log(`turn=${info.turn} | name=${this.name}`);
+        if (this._save.should && info.turn < this._save.turn + this._save.diff) {
+            return;
+        } else if (this._save.should && info.turn >= this._save.turn + this._save.diff) {
+            this._save.callback();            
+            this._save = this.getDefaultSave(info.turn);
+        }
         this.buyAvailableUpgrades(info, game);
-        this.inspectStockOptions(game.stocks, this._finance.getStocks());
+        this.inspectStockOptions(game);
         if (this.shouldPurchaseRoutes(info.turn)) {
             const train: AdjustedTrain = this.getSuggestedTrain(game.getArrayOfAdjustedTrains());
             const originRoutes: OriginRoutePotential[] = this.getInterestingRoutes(game, train);
-            this.purchaseRoutes(game, this.pickNInterestingRoutes(originRoutes, this.getN(originRoutes), train));
+            const n: number = originRoutes.length > 0 ? originRoutes[0].pRoutes.length : 0; 
+            this.purchaseRoutes(game, this.pickNInterestingRoutes(originRoutes, n, train));
         }
-
         this.deleteConsistentlyUnprofitableRoutes();
+        this.checkIfAnyPlayerCanBeBoughtOut(game, info.turn);
         this.log('\n\n');
     }
 
@@ -221,7 +220,6 @@ export default class Opponent extends Player {
      */
 
     private buyAvailableUpgrades = (info: HandleTurnInfo, game: Nardis): void => {
-        if (this._save.should) { return; }
         info.data.upgrades.filter((upgrade: Upgrade): boolean => (
             this._level >= upgrade.levelRequired &&
             this._upgrades.filter((boughtUpgrade: Upgrade): boolean => boughtUpgrade.equals(upgrade)).length <= 0)
@@ -327,18 +325,73 @@ export default class Opponent extends Player {
         };
     }
 
-    
     /**
-     * // TODO
-     */ 
+     * Inspect Stock options and depending upon the Finance at hand, either buy, sell or hold Stock.
+     * 
+     * If selling, sell hightest valued Stock. If buying, buy lowest valued Stock.
+     * 
+     * @param {nardis} game - Nardis game instance.  
+     */
 
-    private inspectStockOptions = (gameStocks: Stocks, ownedStocks: StockHolding): void => {
+    private inspectStockOptions = (game: Nardis): void => {
+        const currentGold: number = this._finance.getGold();
+        const ownedStock: StockHolding = this._finance.getStocks();
         const profit: number = this._finance.getAverageRevenue() - this._finance.getAverageExpense();
-        if (this._finance.getGold() <= 0 && profit <= 0)  {
-            // sell stock, first foreign stock if any, else own stock
-        } else if (this._finance.getGold() > Math.floor(this.startGold / 2) && profit > 0) {
-            // buy stock
+        if (currentGold <= 0 && profit <= 0)  {
+            const keys: string[] = Object.keys(ownedStock);
+            if (keys.length > 0) {
+                game.sellStock(
+                    keys.map((key: string) => ({
+                        id: key,
+                        amount: ownedStock[key],
+                        value: game.stocks[key].getSellValue()
+                    }))
+                    .filter(e => e.amount > 0)
+                    .sort((a, b) => b.value - a.value)[0].id
+                );
+            }
+        } else if (currentGold > Math.floor(this.startGold / 10) && profit > 0) {
+            const potentialStock: Stock[] = Object.keys(game.stocks)
+            .map((key: string) => game.stocks[key])
+            .filter(e => e.currentAmountOfStockHolders() < stockConstant.maxStockAmount && currentGold >= e.getBuyValue())
+            .sort((a, b) => a.getBuyValue() - b.getBuyValue());
+            if (potentialStock.length > 0) {
+                game.buyStock(potentialStock[0].owningPlayerId);
+            }
         }
+    }
+
+    /**
+     * Check if any Player can be bought out and either buy out that Player or save and try again.
+     * 
+     * @param {Nardis} game - Nardis game instance. 
+     * @param {number} turn - Number with current turn. 
+     */
+
+    private checkIfAnyPlayerCanBeBoughtOut = (game: Nardis, turn: number): void => {
+        Object.keys(game.stocks).forEach((key: string): void => {
+            const stock: Stock = game.stocks[key];
+            if (
+                stock.currentAmountOfStockHolders() >= stockConstant.maxStockAmount && 
+                stock.isStockHolder(this.id) && stock.owningPlayerId !== this.id
+            ) {
+                const buyOut: number = stock.getBuyOutValues().filter(e => e.id !== this.id).reduce((a, b) => a + b.totalValue, 0);
+                if (this._finance.getGold() >= buyOut) {
+                    game.buyOutPlayer(stock.owningPlayerId);
+                } else {
+                    this._save = {
+                        should: true,
+                        turn,
+                        diff: DEFAULT_SAVE,
+                        callback: ((game: Nardis, id: string): void => {
+                            if (this._finance.getGold() >= game.stocks[id].getBuyOutValues().filter(e => e.id !== this.id).reduce((a, b) => a + b.totalValue, 0)) {
+                                game.buyOutPlayer(id);
+                            }
+                        }).bind(this, game, stock.owningPlayerId)
+                    }
+                }
+            }
+        });
     }
 
     /**
@@ -421,23 +474,6 @@ export default class Opponent extends Player {
     }
 
     /**
-     * Get number with limit of purchasing Routes. Not a great logic thus far. Needs to be re-looked at.
-     * 
-     * @param   {OriginRoutePotential[]} originRoutes - Array of OriginRoutePotentials.
-     * 
-     * @returns {number}                 Number with suggested limit of Route purchase.
-     */
-
-    private getN = (originRoutes: OriginRoutePotential[]): number => {
-        const amount: number = originRoutes
-            .map((origin: OriginRoutePotential): number => origin.aRoutes.length)
-            .reduce((a: number, b: number): number => a + b, 0);
-        return this._finance.getAverageRevenue() >= 0 && this._finance.getGold() > 0 ? (
-            this._queue.length === 0 ? amount : Math.floor(amount / 2)
-        ) : 0
-    }
-
-    /**
      * The default state is basically to buy Routes unless cash is needed for level up or stock purchase.
      * 
      * @param   {number}  turn - Number with current turn. 
@@ -447,28 +483,25 @@ export default class Opponent extends Player {
 
     private shouldPurchaseRoutes = (turn: number): boolean => {
         let shouldPurchase: boolean;
-        if (this._save.should && turn < this._save.turn + this._save.diff) {
-            shouldPurchase = false;
-        } else {
-            const levelUpReq = levelUpRequirements[this._level + 1];
-            if (isDefined(levelUpReq)) {
-                if (this._routes.length < levelUpReq.routes) {
-                    shouldPurchase = true;
-                } else {
-                    if (this._finance.getAverageRevenue() >= levelUpReq.revenuePerTurn && this._finance.getGold() < levelUpReq.gold) {
-                        this._save = {
-                            should: true,
-                            turn: turn,
-                            diff: 5
-                        };
-                        shouldPurchase = false;
-                    } else {
-                        shouldPurchase = true;
-                    }
-                }
-            } else {
+        const levelUpReq = levelUpRequirements[this._level + 1];
+        if (isDefined(levelUpReq)) {
+            if (this._routes.length < levelUpReq.routes) {
                 shouldPurchase = true;
+            } else {
+                if (this._finance.getAverageRevenue() >= levelUpReq.revenuePerTurn && this._finance.getGold() < levelUpReq.gold) {
+                    this._save = {
+                        should: true,
+                        turn: turn,
+                        diff: DEFAULT_SAVE,
+                        callback: () => null
+                    };
+                    shouldPurchase = false;
+                } else {
+                    shouldPurchase = true;
+                }
             }
+        } else {
+            shouldPurchase = true;
         }
         this.log(`should purchase: ${shouldPurchase}`);
         return shouldPurchase;
@@ -483,9 +516,9 @@ export default class Opponent extends Player {
 
     private purchaseRoutes = (game: Nardis, routes: BuyableRoute[]): void => {
         this.log(`attempting to purchase ${routes.length} routes`, routes);
-        const min: number = Math.floor(this._finance.getGold() * (this._level / 10));
+        const min: number = this._level === PlayerLevel.Novice ? 0 : Math.floor(this._finance.getGold() * ((this._level + 2) / 10));
         for (let i = 0; i < routes.length; i++) {
-            if (this._finance.getGold() - (routes[i].goldCost + routes[i].trainCost) <= min || this._queue.length > 5) {
+            if (this._finance.getGold() - (routes[i].goldCost + routes[i].trainCost) <= min || this._queue.length >= 5) {
                 this.log('cannot purchase anymore routes');
                 break;
             }
@@ -558,6 +591,17 @@ export default class Opponent extends Player {
         return origins;
     }
 
+    /**
+     * 
+     */
+
+    private getDefaultSave = (turn: number): ActionSave => ({
+        turn,
+        should: false,
+        diff: 0,
+        callback: () => null
+    });
+
      /**
       * For debugging purposes.
       * 
@@ -599,7 +643,12 @@ export default class Opponent extends Player {
             })),
             parsedJSON.routes.map(e => Route.createFromStringifiedJSON(e, cities, trains, resources)),
             parsedJSON.upgrades.map(e => upgrades.filter(j => j.id === e.id)[0]),
-            parsedJSON.save,
+            {
+                should: parsedJSON.save.should,
+                turn: parsedJSON.save.turn,
+                diff: parsedJSON.save.diff,
+                callback: () => null
+            },
             parsedJSON.isActive,
             parsedJSON.id
         )
