@@ -107,6 +107,8 @@ export default class Player extends BaseComponent implements ITurnable {
             this.handleQueue();
             this.handleRoutes(info);
             this.handleFinance(info);
+        } else {
+            this.handleFinance({...info, playerData: {routes: [], queue: [], upgrades: []}});
         }
     }
 
