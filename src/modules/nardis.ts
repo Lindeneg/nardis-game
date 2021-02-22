@@ -21,7 +21,9 @@ import {
     Stocks,
     Indexable,
     StockSupply,
-    BuyOutValue
+    BuyOutValue,
+    StockHolding,
+    GameStatus
 } from '../types/types';
 import {
     localKeys, START_GOLD, START_OPPONENTS, stockConstant
@@ -153,11 +155,20 @@ export class Nardis {
     }
 
     /**
-     * // TODO
+     * Check if a single Player is left and thus is the winner of the game.
+     * 
+     * @returns {GameStatus} GameStatus of the Nardis instance in question.
      */
 
-    public hasAnyPlayerWon = () => {}
-
+    public getGameStatus = (): GameStatus => {
+        const winner: Player[] = this.players.filter((player: Player): boolean => player.isActive());
+        let id: string = ''; let gameOver: boolean = false;
+        if (winner.length === 1) {
+            id = winner[0].id; gameOver = true;
+        }
+        return {id, gameOver};
+    }
+    
     /**
      * Add an entry to Player queue.
      * 
@@ -274,6 +285,7 @@ export class Nardis {
         const cpFinance: Finance = this._currentPlayer.getFinance();
         if (stock.currentAmountOfStockHolders() >= stockConstant.maxStockAmount) {
             const losingPlayer: Player = this.players.filter(e => e.id === playerId)[0];
+            let expense: number = 0;
             stock.getBuyOutValues().forEach((buyout: BuyOutValue): void => {
                 if (buyout.id !== this._currentPlayer.id) {
                     const stockHolder: Player = this.players.filter(e => e.id === buyout.id)[0];
@@ -285,10 +297,11 @@ export class Nardis {
                             stockHolder.getFinance().sellStock(playerId, buyout.totalValue, buyout.shares);
                             stock.sellStock(stockHolder.id, buyout.shares);
                         }
-                        // TODO remove the Finance totalValue from the winning Player's Finance
+                        expense += buyout.totalValue;
                     }
                 }
-            });
+            }); 
+            cpFinance.addToFinanceExpense(FinanceType.StockBuy, localKeys[FinanceType.StockBuy], 1, expense);
             for (let i: number = 0; i < diff; i++) {
                 stock.buyStock(this._currentPlayer.id);
                 cpFinance.buyStock(playerId, 0);
@@ -443,11 +456,35 @@ export class Nardis {
         }
         victor.mergeQueue(loser.getQueue());
         victor.mergeRoutes(loser.getRoutes());
-        // TODO merge losers foreign stock with victors
+        this.mergeStock(victor, loser);
         loser.setInactive();
         stock.setInactive(this._turn);
         this.updateStocks();
         this.updatePlayersNetWorth();
+    }
+
+    /**
+     * Merge losing Player Stock into winning Player Stock.
+     * 
+     * @param {Player} victor - Player instance taking over.
+     * @param {Player} loser  - Player instance being taken over.
+     */
+
+    private mergeStock = (victor: Player, loser: Player): void => {
+        const vFinance: Finance = victor.getFinance(); const lFinance: Finance = loser.getFinance();
+        const lStocks: StockHolding = lFinance.getStocks();
+        Object.keys(lStocks).forEach((key: string): void => {
+            if (key !== loser.id && lStocks[key] > 0) {
+                const stock: Stock = this.stocks[key];
+                const amount: number = lStocks[key];
+                lFinance.sellStock(key, 0, amount);
+                stock.sellStock(loser.id, amount);
+                for (let i: number = 0; i < amount; i++) {
+                    vFinance.buyStock(key, 0);
+                    stock.buyStock(victor.id);
+                }
+            }
+        });
     }
 
     /**
