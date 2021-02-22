@@ -100,9 +100,20 @@ var Nardis = /** @class */ (function () {
             });
         };
         /**
-         * // TODO
+         * Check if a single Player is left and thus is the winner of the game.
+         *
+         * @returns {GameStatus} GameStatus of the Nardis instance in question.
          */
-        this.hasAnyPlayerWon = function () { };
+        this.getGameStatus = function () {
+            var winner = _this.players.filter(function (player) { return player.isActive(); });
+            var id = '';
+            var gameOver = false;
+            if (winner.length === 1) {
+                id = winner[0].id;
+                gameOver = true;
+            }
+            return { id: id, gameOver: gameOver };
+        };
         /**
          * Add an entry to Player queue.
          *
@@ -189,6 +200,7 @@ var Nardis = /** @class */ (function () {
             var cpFinance = _this._currentPlayer.getFinance();
             if (stock.currentAmountOfStockHolders() >= constants_1.stockConstant.maxStockAmount) {
                 var losingPlayer_1 = _this.players.filter(function (e) { return e.id === playerId; })[0];
+                var expense_1 = 0;
                 stock.getBuyOutValues().forEach(function (buyout) {
                     if (buyout.id !== _this._currentPlayer.id) {
                         var stockHolder = _this.players.filter(function (e) { return e.id === buyout.id; })[0];
@@ -201,10 +213,11 @@ var Nardis = /** @class */ (function () {
                                 stockHolder.getFinance().sellStock(playerId, buyout.totalValue, buyout.shares);
                                 stock.sellStock(stockHolder.id, buyout.shares);
                             }
-                            // TODO remove the Finance totalValue from the winning Player's Finance
+                            expense_1 += buyout.totalValue;
                         }
                     }
                 });
+                cpFinance.addToFinanceExpense(types_1.FinanceType.StockBuy, constants_1.localKeys[types_1.FinanceType.StockBuy], 1, expense_1);
                 for (var i = 0; i < diff; i++) {
                     stock.buyStock(_this._currentPlayer.id);
                     cpFinance.buyStock(playerId, 0);
@@ -330,11 +343,34 @@ var Nardis = /** @class */ (function () {
             }
             victor.mergeQueue(loser.getQueue());
             victor.mergeRoutes(loser.getRoutes());
-            // TODO merge losers foreign stock with victors
+            _this.mergeStock(victor, loser);
             loser.setInactive();
             stock.setInactive(_this._turn);
             _this.updateStocks();
             _this.updatePlayersNetWorth();
+        };
+        /**
+         * Merge losing Player Stock into winning Player Stock.
+         *
+         * @param {Player} victor - Player instance taking over.
+         * @param {Player} loser  - Player instance being taken over.
+         */
+        this.mergeStock = function (victor, loser) {
+            var vFinance = victor.getFinance();
+            var lFinance = loser.getFinance();
+            var lStocks = lFinance.getStocks();
+            Object.keys(lStocks).forEach(function (key) {
+                if (key !== loser.id && lStocks[key] > 0) {
+                    var stock = _this.stocks[key];
+                    var amount = lStocks[key];
+                    lFinance.sellStock(key, 0, amount);
+                    stock.sellStock(loser.id, amount);
+                    for (var i = 0; i < amount; i++) {
+                        vFinance.buyStock(key, 0);
+                        stock.buyStock(victor.id);
+                    }
+                }
+            });
         };
         /**
          * Iterate over each Computer player and handle their turns accordingly.

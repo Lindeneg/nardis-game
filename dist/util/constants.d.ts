@@ -7,6 +7,7 @@ export declare const MAX_CITY_SIZE: number;
 export declare const MAP_RADIUS_IN_KILOMETERS: number;
 export declare const START_GOLD: number;
 export declare const START_OPPONENTS: number;
+export declare const DEFAULT_SAVE: number;
 export declare const ID_LENGTH: number;
 export declare const ID_CHARS: string;
 export declare const VOWELS: string[];

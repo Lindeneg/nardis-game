@@ -28,8 +28,8 @@ var player_1 = require("../player");
 var finance_1 = require("../finance");
 var route_1 = require("../../route");
 var util_1 = require("../../../../util/util");
-var types_1 = require("../../../../types/types");
 var constants_1 = require("../../../../util/constants");
+var types_1 = require("../../../../types/types");
 /**
  * @constructor
  * @param {string}            name       - String with name.
@@ -59,21 +59,15 @@ var Opponent = /** @class */ (function (_super) {
             if (_this._isActive) {
                 if (_this.shouldLevelBeIncreased()) {
                     _this.increaseLevel();
-                    _this._save = {
-                        should: false,
-                        turn: info.turn,
-                        diff: 0
-                    };
                 }
                 _this.handleQueue();
                 _this.handleRoutes(info);
                 _this.handleFinance(info);
                 _this.deduceAction(info, game);
             }
-        };
-        // only for unit testing purposes
-        _this.setSave = function (save) {
-            _this._save = save;
+            else {
+                _this.handleFinance(__assign(__assign({}, info), { playerData: { routes: [], upgrades: [], queue: [] } }));
+            }
         };
         /**
          * @returns {string} String with JSON stringified property keys and values.
@@ -116,14 +110,23 @@ var Opponent = /** @class */ (function (_super) {
          */
         _this.deduceAction = function (info, game) {
             _this.log("turn=" + info.turn + " | name=" + _this.name);
+            if (_this._save.should && info.turn < _this._save.turn + _this._save.diff) {
+                return;
+            }
+            else if (_this._save.should && info.turn >= _this._save.turn + _this._save.diff) {
+                _this._save.callback();
+                _this._save = _this.getDefaultSave(info.turn);
+            }
             _this.buyAvailableUpgrades(info, game);
-            _this.inspectStockOptions(game.stocks, _this._finance.getStocks());
+            _this.inspectStockOptions(game);
             if (_this.shouldPurchaseRoutes(info.turn)) {
                 var train = _this.getSuggestedTrain(game.getArrayOfAdjustedTrains());
                 var originRoutes = _this.getInterestingRoutes(game, train);
-                _this.purchaseRoutes(game, _this.pickNInterestingRoutes(originRoutes, _this.getN(originRoutes), train));
+                var n = originRoutes.length > 0 ? originRoutes[0].pRoutes.length : 0;
+                _this.purchaseRoutes(game, _this.pickNInterestingRoutes(originRoutes, n, train));
             }
             _this.deleteConsistentlyUnprofitableRoutes();
+            _this.checkIfAnyPlayerCanBeBoughtOut(game, info.turn);
             _this.log('\n\n');
         };
         /**
@@ -170,9 +173,6 @@ var Opponent = /** @class */ (function (_super) {
          * @param {Nardis}         game - Nardis game instance.
          */
         _this.buyAvailableUpgrades = function (info, game) {
-            if (_this._save.should) {
-                return;
-            }
             info.data.upgrades.filter(function (upgrade) { return (_this._level >= upgrade.levelRequired &&
                 _this._upgrades.filter(function (boughtUpgrade) { return boughtUpgrade.equals(upgrade); }).length <= 0); }).forEach(function (upgrade) {
                 if (_this._finance.getGold() - upgrade.cost >= 0) {
@@ -252,16 +252,67 @@ var Opponent = /** @class */ (function (_super) {
             };
         };
         /**
-         * // TODO
+         * Inspect Stock options and depending upon the Finance at hand, either buy, sell or hold Stock.
+         *
+         * If selling, sell hightest valued Stock. If buying, buy lowest valued Stock.
+         *
+         * @param {nardis} game - Nardis game instance.
          */
-        _this.inspectStockOptions = function (gameStocks, ownedStocks) {
+        _this.inspectStockOptions = function (game) {
+            var currentGold = _this._finance.getGold();
+            var ownedStock = _this._finance.getStocks();
             var profit = _this._finance.getAverageRevenue() - _this._finance.getAverageExpense();
-            if (_this._finance.getGold() <= 0 && profit <= 0) {
-                // sell stock, first foreign stock if any, else own stock
+            if (currentGold <= 0 && profit <= 0) {
+                var keys = Object.keys(ownedStock);
+                if (keys.length > 0) {
+                    game.sellStock(keys.map(function (key) { return ({
+                        id: key,
+                        amount: ownedStock[key],
+                        value: game.stocks[key].getSellValue()
+                    }); })
+                        .filter(function (e) { return e.amount > 0; })
+                        .sort(function (a, b) { return b.value - a.value; })[0].id);
+                }
             }
-            else if (_this._finance.getGold() > Math.floor(_this.startGold / 2) && profit > 0) {
-                // buy stock
+            else if (currentGold > Math.floor(_this.startGold / 10) && profit > 0) {
+                var potentialStock = Object.keys(game.stocks)
+                    .map(function (key) { return game.stocks[key]; })
+                    .filter(function (e) { return e.currentAmountOfStockHolders() < constants_1.stockConstant.maxStockAmount && currentGold >= e.getBuyValue(); })
+                    .sort(function (a, b) { return a.getBuyValue() - b.getBuyValue(); });
+                if (potentialStock.length > 0) {
+                    game.buyStock(potentialStock[0].owningPlayerId);
+                }
             }
+        };
+        /**
+         * Check if any Player can be bought out and either buy out that Player or save and try again.
+         *
+         * @param {Nardis} game - Nardis game instance.
+         * @param {number} turn - Number with current turn.
+         */
+        _this.checkIfAnyPlayerCanBeBoughtOut = function (game, turn) {
+            Object.keys(game.stocks).forEach(function (key) {
+                var stock = game.stocks[key];
+                if (stock.currentAmountOfStockHolders() >= constants_1.stockConstant.maxStockAmount &&
+                    stock.isStockHolder(_this.id) && stock.owningPlayerId !== _this.id) {
+                    var buyOut = stock.getBuyOutValues().filter(function (e) { return e.id !== _this.id; }).reduce(function (a, b) { return a + b.totalValue; }, 0);
+                    if (_this._finance.getGold() >= buyOut) {
+                        game.buyOutPlayer(stock.owningPlayerId);
+                    }
+                    else {
+                        _this._save = {
+                            should: true,
+                            turn: turn,
+                            diff: constants_1.DEFAULT_SAVE,
+                            callback: (function (game, id) {
+                                if (_this._finance.getGold() >= game.stocks[id].getBuyOutValues().filter(function (e) { return e.id !== _this.id; }).reduce(function (a, b) { return a + b.totalValue; }, 0)) {
+                                    game.buyOutPlayer(id);
+                                }
+                            }).bind(_this, game, stock.owningPlayerId)
+                        };
+                    }
+                }
+            });
         };
         /**
          * Get array of suggested RouteCargo for a given route.
@@ -329,19 +380,6 @@ var Opponent = /** @class */ (function (_super) {
             return result;
         };
         /**
-         * Get number with limit of purchasing Routes. Not a great logic thus far. Needs to be re-looked at.
-         *
-         * @param   {OriginRoutePotential[]} originRoutes - Array of OriginRoutePotentials.
-         *
-         * @returns {number}                 Number with suggested limit of Route purchase.
-         */
-        _this.getN = function (originRoutes) {
-            var amount = originRoutes
-                .map(function (origin) { return origin.aRoutes.length; })
-                .reduce(function (a, b) { return a + b; }, 0);
-            return _this._finance.getAverageRevenue() >= 0 && _this._finance.getGold() > 0 ? (_this._queue.length === 0 ? amount : Math.floor(amount / 2)) : 0;
-        };
-        /**
          * The default state is basically to buy Routes unless cash is needed for level up or stock purchase.
          *
          * @param   {number}  turn - Number with current turn.
@@ -350,32 +388,28 @@ var Opponent = /** @class */ (function (_super) {
          */
         _this.shouldPurchaseRoutes = function (turn) {
             var shouldPurchase;
-            if (_this._save.should && turn < _this._save.turn + _this._save.diff) {
-                shouldPurchase = false;
-            }
-            else {
-                var levelUpReq = constants_1.levelUpRequirements[_this._level + 1];
-                if (util_1.isDefined(levelUpReq)) {
-                    if (_this._routes.length < levelUpReq.routes) {
-                        shouldPurchase = true;
-                    }
-                    else {
-                        if (_this._finance.getAverageRevenue() >= levelUpReq.revenuePerTurn && _this._finance.getGold() < levelUpReq.gold) {
-                            _this._save = {
-                                should: true,
-                                turn: turn,
-                                diff: 5
-                            };
-                            shouldPurchase = false;
-                        }
-                        else {
-                            shouldPurchase = true;
-                        }
-                    }
-                }
-                else {
+            var levelUpReq = constants_1.levelUpRequirements[_this._level + 1];
+            if (util_1.isDefined(levelUpReq)) {
+                if (_this._routes.length < levelUpReq.routes) {
                     shouldPurchase = true;
                 }
+                else {
+                    if (_this._finance.getAverageRevenue() >= levelUpReq.revenuePerTurn && _this._finance.getGold() < levelUpReq.gold) {
+                        _this._save = {
+                            should: true,
+                            turn: turn,
+                            diff: constants_1.DEFAULT_SAVE,
+                            callback: function () { return null; }
+                        };
+                        shouldPurchase = false;
+                    }
+                    else {
+                        shouldPurchase = true;
+                    }
+                }
+            }
+            else {
+                shouldPurchase = true;
             }
             _this.log("should purchase: " + shouldPurchase);
             return shouldPurchase;
@@ -388,9 +422,9 @@ var Opponent = /** @class */ (function (_super) {
          */
         _this.purchaseRoutes = function (game, routes) {
             _this.log("attempting to purchase " + routes.length + " routes", routes);
-            var min = Math.floor(_this._finance.getGold() * (_this._level / 10));
+            var min = _this._level === types_1.PlayerLevel.Novice ? 0 : Math.floor(_this._finance.getGold() * ((_this._level + 2) / 10));
             for (var i = 0; i < routes.length; i++) {
-                if (_this._finance.getGold() - (routes[i].goldCost + routes[i].trainCost) <= min || _this._queue.length > 5) {
+                if (_this._finance.getGold() - (routes[i].goldCost + routes[i].trainCost) <= min || _this._queue.length >= 5) {
                     _this.log('cannot purchase anymore routes');
                     break;
                 }
@@ -458,6 +492,15 @@ var Opponent = /** @class */ (function (_super) {
             return origins;
         };
         /**
+         *
+         */
+        _this.getDefaultSave = function (turn) { return ({
+            turn: turn,
+            should: false,
+            diff: 0,
+            callback: function () { return null; }
+        }); };
+        /**
          * For debugging purposes.
          *
          * @param {string} msg - String with message to log.
@@ -470,11 +513,7 @@ var Opponent = /** @class */ (function (_super) {
                 obj ? console.log(obj) : null;
             }
         };
-        _this._save = util_1.isDefined(save) ? save : {
-            should: false,
-            turn: 1,
-            diff: 0
-        };
+        _this._save = util_1.isDefined(save) ? save : _this.getDefaultSave(1);
         return _this;
     }
     /**
@@ -493,7 +532,12 @@ var Opponent = /** @class */ (function (_super) {
         return new Opponent(parsedJSON.name, parsedJSON.startGold, cities.filter(function (e) { return e.id === parsedJSON.startCityId; })[0], finance_1.default.createFromStringifiedJSON(parsedJSON.finance), parsedJSON.level, parsedJSON.queue.map(function (e) { return ({
             route: route_1.default.createFromStringifiedJSON(e.route, cities, trains, resources),
             turnCost: e.turnCost
-        }); }), parsedJSON.routes.map(function (e) { return route_1.default.createFromStringifiedJSON(e, cities, trains, resources); }), parsedJSON.upgrades.map(function (e) { return upgrades.filter(function (j) { return j.id === e.id; })[0]; }), parsedJSON.save, parsedJSON.isActive, parsedJSON.id);
+        }); }), parsedJSON.routes.map(function (e) { return route_1.default.createFromStringifiedJSON(e, cities, trains, resources); }), parsedJSON.upgrades.map(function (e) { return upgrades.filter(function (j) { return j.id === e.id; })[0]; }), {
+            should: parsedJSON.save.should,
+            turn: parsedJSON.save.turn,
+            diff: parsedJSON.save.diff,
+            callback: function () { return null; }
+        }, parsedJSON.isActive, parsedJSON.id);
     };
     return Opponent;
 }(player_1.default));

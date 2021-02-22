@@ -1,7 +1,7 @@
 import City from './core/city';
 import Player from './core/player/player';
 import Train from './core/train';
-import { GameData, PotentialRoute, BuyableRoute, RoutePlanCargo, AdjustedTrain, Stocks } from '../types/types';
+import { GameData, PotentialRoute, BuyableRoute, RoutePlanCargo, AdjustedTrain, Stocks, GameStatus } from '../types/types';
 /**
  * @constructor
  * @param {GameData} data          - Object with GameData.
@@ -37,9 +37,11 @@ export declare class Nardis {
      */
     getArrayOfAdjustedTrains: () => AdjustedTrain[];
     /**
-     * // TODO
+     * Check if a single Player is left and thus is the winner of the game.
+     *
+     * @returns {GameStatus} GameStatus of the Nardis instance in question.
      */
-    hasAnyPlayerWon: () => void;
+    getGameStatus: () => GameStatus;
     /**
      * Add an entry to Player queue.
      *
@@ -155,6 +157,13 @@ export declare class Nardis {
      * @param {Stock}  stock  - Stock instance of the losing Player.
      */
     private playerTakeOver;
+    /**
+     * Merge losing Player Stock into winning Player Stock.
+     *
+     * @param {Player} victor - Player instance taking over.
+     * @param {Player} loser  - Player instance being taken over.
+     */
+    private mergeStock;
     /**
      * Iterate over each Computer player and handle their turns accordingly.
      */

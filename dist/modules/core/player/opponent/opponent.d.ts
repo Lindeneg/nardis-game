@@ -32,7 +32,6 @@ export default class Opponent extends Player {
      * @param {Nardis}         game - Nardis game instance.
      */
     handleTurn: (info: HandleTurnInfo, game: Nardis) => void;
-    setSave: (save: ActionSave) => void;
     /**
      * @returns {string} String with JSON stringified property keys and values.
      */
@@ -115,9 +114,20 @@ export default class Opponent extends Player {
      */
     private getSuggestedRoutePlan;
     /**
-     * // TODO
+     * Inspect Stock options and depending upon the Finance at hand, either buy, sell or hold Stock.
+     *
+     * If selling, sell hightest valued Stock. If buying, buy lowest valued Stock.
+     *
+     * @param {nardis} game - Nardis game instance.
      */
     private inspectStockOptions;
+    /**
+     * Check if any Player can be bought out and either buy out that Player or save and try again.
+     *
+     * @param {Nardis} game - Nardis game instance.
+     * @param {number} turn - Number with current turn.
+     */
+    private checkIfAnyPlayerCanBeBoughtOut;
     /**
      * Get array of suggested RouteCargo for a given route.
      *
@@ -142,14 +152,6 @@ export default class Opponent extends Player {
      * @returns {RouteCargo[]}                 Array of filler CityResources.
      */
     private getFillerCargo;
-    /**
-     * Get number with limit of purchasing Routes. Not a great logic thus far. Needs to be re-looked at.
-     *
-     * @param   {OriginRoutePotential[]} originRoutes - Array of OriginRoutePotentials.
-     *
-     * @returns {number}                 Number with suggested limit of Route purchase.
-     */
-    private getN;
     /**
      * The default state is basically to buy Routes unless cash is needed for level up or stock purchase.
      *
@@ -185,6 +187,10 @@ export default class Opponent extends Player {
      * @returns {City[]} Array of unique City origins.
      */
     private getUniqueOrigins;
+    /**
+     *
+     */
+    private getDefaultSave;
     /**
      * For debugging purposes.
      *

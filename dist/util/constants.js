@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.possibleCityCoords = exports.CitySizeMaxConcurrentRoutes = exports.citySizes = exports.resourcePerSize = exports.resourcesPerSize = exports.rangePerLevel = exports.levelUpRequirements = exports.rangeCost = exports.stockConstant = exports.netWorthDivisors = exports.eventLogLevelName = exports.localKeys = exports.playerLevelMapping = exports.CONSONANTS = exports.VOWELS = exports.ID_CHARS = exports.ID_LENGTH = exports.START_OPPONENTS = exports.START_GOLD = exports.MAP_RADIUS_IN_KILOMETERS = exports.MAX_CITY_SIZE = exports.RESOURCE_VALUE_DECISION_TARGET = exports.CITY_GROWTH_DECISION_TARGET = exports.MAX_START_CITY_SIZE = exports.MAX_VALUE_HISTORY_LENGTH = void 0;
+exports.possibleCityCoords = exports.CitySizeMaxConcurrentRoutes = exports.citySizes = exports.resourcePerSize = exports.resourcesPerSize = exports.rangePerLevel = exports.levelUpRequirements = exports.rangeCost = exports.stockConstant = exports.netWorthDivisors = exports.eventLogLevelName = exports.localKeys = exports.playerLevelMapping = exports.CONSONANTS = exports.VOWELS = exports.ID_CHARS = exports.ID_LENGTH = exports.DEFAULT_SAVE = exports.START_OPPONENTS = exports.START_GOLD = exports.MAP_RADIUS_IN_KILOMETERS = exports.MAX_CITY_SIZE = exports.RESOURCE_VALUE_DECISION_TARGET = exports.CITY_GROWTH_DECISION_TARGET = exports.MAX_START_CITY_SIZE = exports.MAX_VALUE_HISTORY_LENGTH = void 0;
 var types_1 = require("../types/types");
 exports.MAX_VALUE_HISTORY_LENGTH = 100;
 exports.MAX_START_CITY_SIZE = 2;
@@ -10,6 +10,7 @@ exports.MAX_CITY_SIZE = 6;
 exports.MAP_RADIUS_IN_KILOMETERS = 6371;
 exports.START_GOLD = 1000;
 exports.START_OPPONENTS = 3;
+exports.DEFAULT_SAVE = 5;
 exports.ID_LENGTH = 32;
 exports.ID_CHARS = 'abcdef0123456789';
 exports.VOWELS = 'aeiou'.split('');
@@ -48,7 +49,7 @@ exports.netWorthDivisors = {
 exports.stockConstant = {
     maxStockAmount: 10,
     startingShares: 4,
-    baseValue: 50,
+    baseValue: 500,
     multipliers: {
         stockBuy: 1.25,
         routeLength: 1.8,
