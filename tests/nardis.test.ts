@@ -16,6 +16,7 @@ import {
 } from '../src/util/util';
 import Stock from '../src/modules/core/player/stock';
 
+// TODO test stock buy/sell, player buyout and player takeover.
 
 const data = getRouteConfig();
 

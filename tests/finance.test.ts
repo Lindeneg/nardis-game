@@ -13,6 +13,8 @@ import {
 } from '../src/util/constants';
 import { getRouteConfig } from './data';
 
+// TODO test stock buy/sell
+
 const data = getRouteConfig();
 const { c1, c2, t1, distance, r1, r2} = data.data.initiated;
 const routePlanCargo = data.routePlanCargo;

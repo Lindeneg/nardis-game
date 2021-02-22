@@ -9,6 +9,7 @@ import {
     rangePerLevel
 } from '../src/util/constants';
 import Opponent from '../src/modules/core/player/opponent/opponent';
+import { isDefined } from '../src';
 
 
 const START_GOLD = 5000;
@@ -84,18 +85,10 @@ test('can get finance on second turn', () => {
     );
 });
 
-test('can generate money through routes and thus level up', () => {
-    const level = opponent.getLevel();
+test('can generate revenue and expenses', () => {
     for (let i = 0; i < 50; i++) {
-        if (opponent.getLevel() > level) {
-            break;
-        }
         game.endTurn();
     }
-    expect(opponent.getLevel()).toBe(level + 1);
-});
-
-test('can generate revenue and expenses', () => {
     expect(finance.getAverageRevenue()).toBeGreaterThan(0);
     expect(finance.getAverageExpense() * -1).toBeLessThan(0);
 });
@@ -105,19 +98,16 @@ test('can keep money positive', () => {
 });
 
 test('can get correct net worth', () => {
-    //@ts-expect-error
-    opponent.setSave({
-        should: true,
-        turn: game.getCurrentTurn(),
-        diff: 5
-    });
+    const stocks = finance.getStocks();
     game.endTurn();
     expect(finance.getNetWorth()).toEqual(opponent.getUpgrades()
         .map(e => Math.floor(e.cost / netWorthDivisors.upgrade))
         .reduce((a, b) => a + b, [...opponent.getQueue().map(k => k.route), ...opponent.getRoutes()]
             .map(e => Math.floor(e.getCost() / netWorthDivisors.tracks) + Math.floor(e.getTrain().cost / netWorthDivisors.train))
         .reduce((a, b) => a + b, 
-            Math.floor(stockConstant.startingShares * game.stocks[opponent.id].getSellValue()) + 
+            Math.floor((Object.keys(stocks).map((key: string): number => (
+                isDefined(game.stocks[key]) ? game.stocks[key].getSellValue() * stocks[key] : 0
+            )).reduce((a, b) => a + b, 0))) + 
             Math.floor(finance.getGold() / netWorthDivisors.gold)
         ))
     );

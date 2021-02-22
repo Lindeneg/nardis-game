@@ -15,6 +15,7 @@ import {
     getRouteConfig 
 } from './data';
 
+// TODO test stock and reset
 
 const generateRoute = () => {
     const city1 = data.data.cities[randomNumber(0, data.data.cities.length - 1)];
