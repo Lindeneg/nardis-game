@@ -88,11 +88,13 @@ export declare class Nardis {
     /**
      * Buyout Player(s) of a certain Stock and take over the owning Player.
      *
-     * @param   {string}  playerId - String with Id of the 'losing' Player.
+     * @param   {string}  playerId   - String with Id of the 'losing' Player.
+     *
+     * @param   {boolean} selfBuyOut - (optional) Boolean describing if the takeover is from/to the same Player.
      *
      * @returns {boolean} True if Player was bought out else False.
      */
-    buyOutPlayer: (playerId: string) => boolean;
+    buyOutPlayer: (playerId: string, selfBuyOut?: boolean) => boolean;
     /**
      * Buy Stock to the Player of the current turn.
      *

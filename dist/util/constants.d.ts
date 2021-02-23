@@ -1,5 +1,4 @@
 import { PlayerLevel, Indexable, StockConstant, LevelUpRequirement } from '../types/types';
-export declare const MAX_VALUE_HISTORY_LENGTH: number;
 export declare const MAX_START_CITY_SIZE: number;
 export declare const CITY_GROWTH_DECISION_TARGET: number;
 export declare const RESOURCE_VALUE_DECISION_TARGET: number;
@@ -14,7 +13,6 @@ export declare const VOWELS: string[];
 export declare const CONSONANTS: string[];
 export declare const playerLevelMapping: PlayerLevel[];
 export declare const localKeys: string[];
-export declare const eventLogLevelName: string[];
 export declare const netWorthDivisors: Indexable<number>;
 export declare const stockConstant: StockConstant;
 export declare const rangeCost: Indexable<number>;

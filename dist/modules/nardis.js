@@ -120,7 +120,7 @@ var Nardis = /** @class */ (function () {
          * @param {BuyableRoute} buyableRoute - BuyableRoute to add.
          */
         this.addRouteToPlayerQueue = function (buyableRoute) {
-            var route = new route_1.default(buyableRoute.cityOne.name + " <--> " + buyableRoute.cityTwo.name, buyableRoute.cityOne, buyableRoute.cityTwo, buyableRoute.train, buyableRoute.routePlanCargo, buyableRoute.distance, buyableRoute.goldCost, buyableRoute.purchasedOnTurn);
+            var route = new route_1.default('', buyableRoute.cityOne, buyableRoute.cityTwo, buyableRoute.train, buyableRoute.routePlanCargo, buyableRoute.distance, buyableRoute.goldCost, buyableRoute.purchasedOnTurn);
             _this.handleNewRoutePlayerFinance(buyableRoute, route.id);
             _this._currentPlayer.addRouteToQueue(route, buyableRoute.turnCost);
         };
@@ -190,11 +190,14 @@ var Nardis = /** @class */ (function () {
         /**
          * Buyout Player(s) of a certain Stock and take over the owning Player.
          *
-         * @param   {string}  playerId - String with Id of the 'losing' Player.
+         * @param   {string}  playerId   - String with Id of the 'losing' Player.
+         *
+         * @param   {boolean} selfBuyOut - (optional) Boolean describing if the takeover is from/to the same Player.
          *
          * @returns {boolean} True if Player was bought out else False.
          */
-        this.buyOutPlayer = function (playerId) {
+        this.buyOutPlayer = function (playerId, selfBuyOut) {
+            if (selfBuyOut === void 0) { selfBuyOut = false; }
             var stock = _this.stocks[playerId];
             var diff = constants_1.stockConstant.maxStockAmount - stock.getSupply()[_this._currentPlayer.id];
             var cpFinance = _this._currentPlayer.getFinance();
@@ -205,7 +208,7 @@ var Nardis = /** @class */ (function () {
                     if (buyout.id !== _this._currentPlayer.id) {
                         var stockHolder = _this.players.filter(function (e) { return e.id === buyout.id; })[0];
                         if (buyout.shares > 0) {
-                            if (buyout.id === losingPlayer_1.id) {
+                            if (buyout.id === losingPlayer_1.id && !selfBuyOut) {
                                 losingPlayer_1.getFinance().sellStock(losingPlayer_1.id, 0, buyout.shares);
                                 stock.sellStock(losingPlayer_1.id, buyout.shares);
                             }
@@ -222,7 +225,7 @@ var Nardis = /** @class */ (function () {
                     stock.buyStock(_this._currentPlayer.id);
                     cpFinance.buyStock(playerId, 0);
                 }
-                _this.playerTakeOver(_this._currentPlayer, losingPlayer_1, stock);
+                !selfBuyOut ? _this.playerTakeOver(_this._currentPlayer, losingPlayer_1, stock) : null;
                 return true;
             }
             return false;
@@ -459,7 +462,7 @@ var Nardis = /** @class */ (function () {
                 window.localStorage.setItem(constants_1.localKeys[types_1.LocalKey.Upgrades], btoa(JSON.stringify(_this.data.upgrades.map(function (e) { return e.deconstruct(); }))));
                 window.localStorage.setItem(constants_1.localKeys[types_1.LocalKey.Cities], btoa(JSON.stringify(_this.data.cities.map(function (e) { return e.deconstruct(); }))));
                 window.localStorage.setItem(constants_1.localKeys[types_1.LocalKey.Players], btoa(JSON.stringify(_this.players.map(function (e) { return e.deconstruct(); }))));
-                window.localStorage.setItem(constants_1.localKeys[types_1.LocalKey.CurrentPlayer], btoa(JSON.stringify(_this._currentPlayer.deconstruct())));
+                window.localStorage.setItem(constants_1.localKeys[types_1.LocalKey.CurrentPlayer], btoa(_this._currentPlayer.id));
                 window.localStorage.setItem(constants_1.localKeys[types_1.LocalKey.Stocks], btoa(JSON.stringify(Object.keys(_this.stocks).map(function (key) { return ({
                     key: key,
                     stock: _this.stocks[key].deconstruct()
@@ -491,7 +494,7 @@ var Nardis = /** @class */ (function () {
         var resourcesRaw = JSON.parse(atob(window.localStorage.getItem(constants_1.localKeys[types_1.LocalKey.Resources])));
         var upgradesRaw = JSON.parse(atob(window.localStorage.getItem(constants_1.localKeys[types_1.LocalKey.Upgrades])));
         var playersRaw = JSON.parse(atob(window.localStorage.getItem(constants_1.localKeys[types_1.LocalKey.Players])));
-        var currentPlayerRaw = JSON.parse(atob(window.localStorage.getItem(constants_1.localKeys[types_1.LocalKey.CurrentPlayer])));
+        var currentPlayerRaw = atob(window.localStorage.getItem(constants_1.localKeys[types_1.LocalKey.CurrentPlayer]));
         var stocks = {};
         JSON.parse(atob(window.localStorage.getItem(constants_1.localKeys[types_1.LocalKey.Stocks]))).forEach(function (e) {
             stocks[e.key] = stock_1.default.createFromStringifiedJSON(e.stock);
@@ -509,7 +512,7 @@ var Nardis = /** @class */ (function () {
             }
             return player_1.default.createFromStringifiedJSON(playerString, cities, trains, resources, upgrades);
         });
-        var currentPlayer = players.filter(function (player) { return player.id === currentPlayerRaw.id; })[0];
+        var currentPlayer = players.filter(function (player) { return player.id === currentPlayerRaw; })[0];
         var turn = parseInt(atob(window.localStorage.getItem(constants_1.localKeys[types_1.LocalKey.Turn])));
         return new Nardis({
             trains: trains,

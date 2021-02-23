@@ -15,12 +15,6 @@ export declare enum PlayerType {
     Human = 0,
     Computer = 1
 }
-export declare enum EventLogLevel {
-    GAME = 0,
-    DEBUG = 1,
-    WARNING = 2,
-    ERROR = 3
-}
 export declare enum FinanceType {
     Resource = 0,
     Track = 1,
@@ -60,7 +54,7 @@ export interface ActionSave {
     should: boolean;
     turn: number;
     diff: number;
-    callback: () => void;
+    callback: () => boolean;
 }
 export interface ISaveable {
     deconstruct: () => string;
@@ -81,11 +75,6 @@ export interface BuyOutValue {
     id: string;
     totalValue: number;
     shares: number;
-}
-export interface GameEvent {
-    level: EventLogLevel;
-    origin: string;
-    message: string;
 }
 export interface ValueHistory {
     value: number;

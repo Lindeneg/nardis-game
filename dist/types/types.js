@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.LocalKey = exports.UpgradeType = exports.FinanceGeneralType = exports.FinanceType = exports.EventLogLevel = exports.PlayerType = exports.PlayerLevel = void 0;
+exports.LocalKey = exports.UpgradeType = exports.FinanceGeneralType = exports.FinanceType = exports.PlayerType = exports.PlayerLevel = void 0;
 var PlayerLevel;
 (function (PlayerLevel) {
     PlayerLevel[PlayerLevel["None"] = 0] = "None";
@@ -14,13 +14,6 @@ var PlayerType;
     PlayerType[PlayerType["Human"] = 0] = "Human";
     PlayerType[PlayerType["Computer"] = 1] = "Computer";
 })(PlayerType = exports.PlayerType || (exports.PlayerType = {}));
-var EventLogLevel;
-(function (EventLogLevel) {
-    EventLogLevel[EventLogLevel["GAME"] = 0] = "GAME";
-    EventLogLevel[EventLogLevel["DEBUG"] = 1] = "DEBUG";
-    EventLogLevel[EventLogLevel["WARNING"] = 2] = "WARNING";
-    EventLogLevel[EventLogLevel["ERROR"] = 3] = "ERROR";
-})(EventLogLevel = exports.EventLogLevel || (exports.EventLogLevel = {}));
 var FinanceType;
 (function (FinanceType) {
     FinanceType[FinanceType["Resource"] = 0] = "Resource";

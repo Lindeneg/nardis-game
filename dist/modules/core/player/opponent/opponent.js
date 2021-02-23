@@ -109,13 +109,17 @@ var Opponent = /** @class */ (function (_super) {
          * @param {Nardis}         game - Nardis game instance.
          */
         _this.deduceAction = function (info, game) {
-            _this.log("turn=" + info.turn + " | name=" + _this.name);
+            _this.log("turn=" + info.turn + " | name=" + _this.name, _this._save);
             if (_this._save.should && info.turn < _this._save.turn + _this._save.diff) {
                 return;
             }
             else if (_this._save.should && info.turn >= _this._save.turn + _this._save.diff) {
-                _this._save.callback();
-                _this._save = _this.getDefaultSave(info.turn);
+                if (_this._save.callback()) {
+                    _this._save = _this.getDefaultSave(info.turn);
+                }
+                else {
+                    return;
+                }
             }
             _this.buyAvailableUpgrades(info, game);
             _this.inspectStockOptions(game);
@@ -125,7 +129,7 @@ var Opponent = /** @class */ (function (_super) {
                 var n = originRoutes.length > 0 ? originRoutes[0].pRoutes.length : 0;
                 _this.purchaseRoutes(game, _this.pickNInterestingRoutes(originRoutes, n, train));
             }
-            _this.deleteConsistentlyUnprofitableRoutes();
+            _this.deleteConsistentlyUnprofitableRoutes(game, info.turn);
             _this.checkIfAnyPlayerCanBeBoughtOut(game, info.turn);
             _this.log('\n\n');
         };
@@ -303,11 +307,13 @@ var Opponent = /** @class */ (function (_super) {
                         _this._save = {
                             should: true,
                             turn: turn,
-                            diff: constants_1.DEFAULT_SAVE,
+                            diff: 1,
                             callback: (function (game, id) {
                                 if (_this._finance.getGold() >= game.stocks[id].getBuyOutValues().filter(function (e) { return e.id !== _this.id; }).reduce(function (a, b) { return a + b.totalValue; }, 0)) {
                                     game.buyOutPlayer(id);
+                                    return true;
                                 }
+                                return false;
                             }).bind(_this, game, stock.owningPlayerId)
                         };
                     }
@@ -399,7 +405,7 @@ var Opponent = /** @class */ (function (_super) {
                             should: true,
                             turn: turn,
                             diff: constants_1.DEFAULT_SAVE,
-                            callback: function () { return null; }
+                            callback: function () { return true; }
                         };
                         shouldPurchase = false;
                     }
@@ -411,7 +417,6 @@ var Opponent = /** @class */ (function (_super) {
             else {
                 shouldPurchase = true;
             }
-            _this.log("should purchase: " + shouldPurchase);
             return shouldPurchase;
         };
         /**
@@ -433,13 +438,20 @@ var Opponent = /** @class */ (function (_super) {
             }
         };
         /**
-         * // TODO
+         * If any Route has been unprofitable for four the amount of turns a full revolution takes, delete it.
+         *
+         * @param {Nardis}  game - Nardis game instance.
+         * @param {number}  turn - Number with current turn.
          */
-        _this.deleteConsistentlyUnprofitableRoutes = function () {
+        _this.deleteConsistentlyUnprofitableRoutes = function (game, turn) {
             _this.log('active routes', _this._routes);
-            _this._routes.forEach(function (e, i) {
-                var p = e.getProfit();
-                _this.log((p > 0 ? 'profitable' : 'unprofitable') + " " + i);
+            _this._routes.forEach(function (route) {
+                if (route.getProfit() < 0) {
+                    if (turn - route.getPurchasedOnTurn() >= (Math.ceil(route.getDistance() / route.getTrain().speed) * 2) * 2) {
+                        _this.log("deleting route", route);
+                        game.removeRouteFromPlayerRoutes(route.id, Math.floor(route.getCost() / 2));
+                    }
+                }
             });
         };
         /**
@@ -492,13 +504,17 @@ var Opponent = /** @class */ (function (_super) {
             return origins;
         };
         /**
+         * Get default ActionSave object.
          *
+         * @param   {number}     turn - Number with current turn.
+         *
+         * @returns {ActionSave} ActionSave object with default values.
          */
         _this.getDefaultSave = function (turn) { return ({
             turn: turn,
             should: false,
             diff: 0,
-            callback: function () { return null; }
+            callback: function () { return false; }
         }); };
         /**
          * For debugging purposes.
@@ -536,7 +552,7 @@ var Opponent = /** @class */ (function (_super) {
             should: parsedJSON.save.should,
             turn: parsedJSON.save.turn,
             diff: parsedJSON.save.diff,
-            callback: function () { return null; }
+            callback: function () { return true; }
         }, parsedJSON.isActive, parsedJSON.id);
     };
     return Opponent;

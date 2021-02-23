@@ -168,7 +168,10 @@ export default class Opponent extends Player {
      */
     private purchaseRoutes;
     /**
-     * // TODO
+     * If any Route has been unprofitable for four the amount of turns a full revolution takes, delete it.
+     *
+     * @param {Nardis}  game - Nardis game instance.
+     * @param {number}  turn - Number with current turn.
      */
     private deleteConsistentlyUnprofitableRoutes;
     /**
@@ -188,7 +191,11 @@ export default class Opponent extends Player {
      */
     private getUniqueOrigins;
     /**
+     * Get default ActionSave object.
      *
+     * @param   {number}     turn - Number with current turn.
+     *
+     * @returns {ActionSave} ActionSave object with default values.
      */
     private getDefaultSave;
     /**
