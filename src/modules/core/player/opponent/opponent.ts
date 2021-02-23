@@ -135,12 +135,13 @@ export default class Opponent extends Player {
      */
 
     private deduceAction = (info: HandleTurnInfo, game: Nardis): void => {
-        this.log(`turn=${info.turn} | name=${this.name}`);
+        this.log(`turn=${info.turn} | name=${this.name}`, this._save);
         if (this._save.should && info.turn < this._save.turn + this._save.diff) {
             return;
         } else if (this._save.should && info.turn >= this._save.turn + this._save.diff) {
-            this._save.callback();            
-            this._save = this.getDefaultSave(info.turn);
+            if (this._save.callback()) {
+                this._save = this.getDefaultSave(info.turn);
+            } else { return; }
         }
         this.buyAvailableUpgrades(info, game);
         this.inspectStockOptions(game);
@@ -150,7 +151,7 @@ export default class Opponent extends Player {
             const n: number = originRoutes.length > 0 ? originRoutes[0].pRoutes.length : 0; 
             this.purchaseRoutes(game, this.pickNInterestingRoutes(originRoutes, n, train));
         }
-        this.deleteConsistentlyUnprofitableRoutes();
+        this.deleteConsistentlyUnprofitableRoutes(game, info.turn);
         this.checkIfAnyPlayerCanBeBoughtOut(game, info.turn);
         this.log('\n\n');
     }
@@ -382,11 +383,13 @@ export default class Opponent extends Player {
                     this._save = {
                         should: true,
                         turn,
-                        diff: DEFAULT_SAVE,
-                        callback: ((game: Nardis, id: string): void => {
+                        diff: 1,
+                        callback: ((game: Nardis, id: string): boolean => {
                             if (this._finance.getGold() >= game.stocks[id].getBuyOutValues().filter(e => e.id !== this.id).reduce((a, b) => a + b.totalValue, 0)) {
                                 game.buyOutPlayer(id);
+                                return true;
                             }
+                            return false;
                         }).bind(this, game, stock.owningPlayerId)
                     }
                 }
@@ -493,7 +496,7 @@ export default class Opponent extends Player {
                         should: true,
                         turn: turn,
                         diff: DEFAULT_SAVE,
-                        callback: () => null
+                        callback: (): boolean => true
                     };
                     shouldPurchase = false;
                 } else {
@@ -503,7 +506,6 @@ export default class Opponent extends Player {
         } else {
             shouldPurchase = true;
         }
-        this.log(`should purchase: ${shouldPurchase}`);
         return shouldPurchase;
     }
 
@@ -526,16 +528,23 @@ export default class Opponent extends Player {
             game.addRouteToPlayerQueue(routes[i]);
         }
     }
-
+    
     /**
-     * // TODO
-     */ 
+     * If any Route has been unprofitable for four the amount of turns a full revolution takes, delete it.
+     * 
+     * @param {Nardis}  game - Nardis game instance.
+     * @param {number}  turn - Number with current turn. 
+     */
 
-    private deleteConsistentlyUnprofitableRoutes = (): void => {
+    private deleteConsistentlyUnprofitableRoutes = (game: Nardis, turn: number): void => {
         this.log('active routes', this._routes);
-        this._routes.forEach((e, i) => {
-            let p = e.getProfit();
-            this.log(`${p > 0 ? 'profitable' : 'unprofitable'} ${i}`);
+        this._routes.forEach((route: Route): void => {
+            if (route.getProfit() < 0) {
+                if (turn - route.getPurchasedOnTurn() >= (Math.ceil(route.getDistance() / route.getTrain().speed) * 2) * 2) {
+                    this.log(`deleting route`, route);
+                    game.removeRouteFromPlayerRoutes(route.id, Math.floor(route.getCost() / 2));
+                }
+            }
         });
     }
 
@@ -592,14 +601,18 @@ export default class Opponent extends Player {
     }
 
     /**
+     * Get default ActionSave object.
      * 
+     * @param   {number}     turn - Number with current turn. 
+     * 
+     * @returns {ActionSave} ActionSave object with default values.
      */
 
     private getDefaultSave = (turn: number): ActionSave => ({
         turn,
         should: false,
         diff: 0,
-        callback: () => null
+        callback: (): boolean => false
     });
 
      /**
@@ -647,7 +660,7 @@ export default class Opponent extends Player {
                 should: parsedJSON.save.should,
                 turn: parsedJSON.save.turn,
                 diff: parsedJSON.save.diff,
-                callback: () => null
+                callback: (): boolean => true
             },
             parsedJSON.isActive,
             parsedJSON.id
