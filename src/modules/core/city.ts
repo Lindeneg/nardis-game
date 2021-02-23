@@ -25,7 +25,6 @@ import {
     isDefined
 } from '../../util/util';
 
-
 /**
  * @constructor
  * @param {string}         name                - String with name.
@@ -84,6 +83,7 @@ export default class City extends BaseComponent implements ITurnable {
         this._supplyRefillDecider = isDefined(supplyRefillDecider) ? supplyRefillDecider : 0;
         this._currentRouteCount   = isDefined(currentRouteCount)   ? currentRouteCount   : 0;
         this._maxConcurrentRoutes = this.getMaxConcurrentRoutes();
+
     }
 
     public getSize                = ()                  : number         => this._size;

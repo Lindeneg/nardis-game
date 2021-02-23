@@ -5,7 +5,6 @@ import {
     LevelUpRequirement
 } from '../types/types';
 
-export const MAX_VALUE_HISTORY_LENGTH: number = 100;
 export const MAX_START_CITY_SIZE: number = 2;
 export const CITY_GROWTH_DECISION_TARGET: number = 5;
 export const RESOURCE_VALUE_DECISION_TARGET: number = 1;
@@ -38,13 +37,6 @@ export const localKeys: string[] = [
     'QeBo7Miy3RIPHh8mbxWdqoAXny8TsLuF',
     '0nfKAvFjzJY8H1h9tacz9zzdf0RLlcbl',
     'uyyoGf0N76Bg9Wdz3Pzfakw40iyEjFDx'
-];
-
-export const eventLogLevelName: string[] = [
-    'game',
-    'debug',
-    'warning',
-    'error'
 ];
 
 export const netWorthDivisors: Indexable<number> = {
