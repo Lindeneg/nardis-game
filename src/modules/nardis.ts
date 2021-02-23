@@ -177,7 +177,7 @@ export class Nardis {
 
     public addRouteToPlayerQueue = (buyableRoute: BuyableRoute): void => {
         const route: Route = new Route(
-            `${buyableRoute.cityOne.name} <--> ${buyableRoute.cityTwo.name}`,
+            '',
             buyableRoute.cityOne,
             buyableRoute.cityTwo,
             buyableRoute.train,
@@ -274,12 +274,14 @@ export class Nardis {
     /**
      * Buyout Player(s) of a certain Stock and take over the owning Player.
      * 
-     * @param   {string}  playerId - String with Id of the 'losing' Player. 
+     * @param   {string}  playerId   - String with Id of the 'losing' Player. 
+     * 
+     * @param   {boolean} selfBuyOut - (optional) Boolean describing if the takeover is from/to the same Player.
      * 
      * @returns {boolean} True if Player was bought out else False. 
      */
 
-    public buyOutPlayer = (playerId: string): boolean => {
+    public buyOutPlayer = (playerId: string, selfBuyOut: boolean = false): boolean => {
         const stock: Stock = this.stocks[playerId];
         const diff: number = stockConstant.maxStockAmount - stock.getSupply()[this._currentPlayer.id];
         const cpFinance: Finance = this._currentPlayer.getFinance();
@@ -290,7 +292,7 @@ export class Nardis {
                 if (buyout.id !== this._currentPlayer.id) {
                     const stockHolder: Player = this.players.filter(e => e.id === buyout.id)[0];
                     if (buyout.shares > 0) {
-                        if (buyout.id === losingPlayer.id) {
+                        if (buyout.id === losingPlayer.id && !selfBuyOut) {
                             losingPlayer.getFinance().sellStock(losingPlayer.id, 0, buyout.shares);
                             stock.sellStock(losingPlayer.id, buyout.shares);
                         } else {
@@ -306,7 +308,7 @@ export class Nardis {
                 stock.buyStock(this._currentPlayer.id);
                 cpFinance.buyStock(playerId, 0);
             }
-            this.playerTakeOver(this._currentPlayer, losingPlayer, stock);
+            !selfBuyOut ? this.playerTakeOver(this._currentPlayer, losingPlayer, stock) : null;
             return true;
         }
         return false;
@@ -600,7 +602,7 @@ export class Nardis {
                 localKeys[LocalKey.Players], btoa(JSON.stringify(this.players.map(e => e.deconstruct())))
             );
             window.localStorage.setItem(
-                localKeys[LocalKey.CurrentPlayer], btoa(JSON.stringify(this._currentPlayer.deconstruct()))
+                localKeys[LocalKey.CurrentPlayer], btoa(this._currentPlayer.id)
             );
             window.localStorage.setItem(
                 localKeys[LocalKey.Stocks], btoa(JSON.stringify(Object.keys(this.stocks).map(key => ({
@@ -642,9 +644,9 @@ export class Nardis {
         const playersRaw                = JSON.parse(atob(
             window.localStorage.getItem(localKeys[LocalKey.Players])
         ));
-        const currentPlayerRaw          = JSON.parse(atob(
+        const currentPlayerRaw          = atob(
             window.localStorage.getItem(localKeys[LocalKey.CurrentPlayer])
-        ));
+        );
         const stocks                    = {};
         JSON.parse(atob(
             window.localStorage.getItem(localKeys[LocalKey.Stocks])
@@ -675,7 +677,7 @@ export class Nardis {
                 return Player.createFromStringifiedJSON(playerString, cities, trains, resources, upgrades);
             }
         );
-        const currentPlayer: Player     = players.filter(player => player.id === currentPlayerRaw.id)[0];
+        const currentPlayer: Player     = players.filter(player => player.id === currentPlayerRaw)[0];
         const turn         : number     = parseInt(atob(window.localStorage.getItem(localKeys[LocalKey.Turn])));
 
         return new Nardis(
