@@ -24,7 +24,9 @@ export const getTestData = () => {
         data: standardData,
         playerData: {
             routes: [],
-            upgrades: []
+            upgrades: [],
+            queue: [],
+            gameStocks: {}
         }
     };
     const distance = standardData.cities[0].distanceTo(standardData.cities[1]);
@@ -37,8 +39,8 @@ export const getTestData = () => {
             t1: standardData.trains[0],
             distance: distance,
             turnsToArrival: Math.ceil(distance / standardData.trains[0].speed) + 1,
-            r1: standardData.cities[0].getSupply()[0],
-            r2: standardData.cities[1].getSupply()[0]
+            r1: standardData.cities[0].getSupply().filter(e => e.resource.name === 'passengers')[0],
+            r2: standardData.cities[1].getSupply().filter(e => e.resource.name === 'passengers')[0]
         }
     };
 }
@@ -99,12 +101,12 @@ export const getRouteConfig = () => {
         routePlanCargo: {
             cityOne: [{
                 resource: testData.initiated.r1.resource,
-                targetAmount: 2,
+                targetAmount: 4,
                 actualAmount: 0
             }],
             cityTwo: [{
                 resource: testData.initiated.r2.resource,
-                targetAmount: 1,
+                targetAmount: 4,
                 actualAmount: 0
             }]
         }

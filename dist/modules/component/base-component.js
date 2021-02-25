@@ -11,19 +11,13 @@ var util_1 = require("../../util/util");
 var BaseComponent = /** @class */ (function () {
     function BaseComponent(name, id) {
         var _this = this;
-        // TODO is it necessary to override toString?
-        this.toString = function () { return _this.id; };
         /**
-         * @return {boolean} True if instances has same id else false.
+         * @returns {boolean} True if instances has same id else false.
         */
         this.equals = function (other) {
             return _this.id === other.id;
         };
-        /**
-         * @return {string} String with JSON stringified property keys and values.
-        */
-        this.deconstruct = function () { return JSON.stringify(_this); };
-        this.id = id ? id : util_1.createId();
+        this.id = util_1.isDefined(id) ? id : util_1.createId();
         this.name = name;
     }
     return BaseComponent;

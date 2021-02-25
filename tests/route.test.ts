@@ -17,7 +17,7 @@ const speedUpgrade = new Upgrade(
 );
 
 const route = new Route(
-    '',
+    'testRoute',
     c1,
     c2,
     t1,
@@ -128,7 +128,8 @@ test('can handle player upgrades', () => {
         ...handleTurnData,
         playerData: {
             routes: [],
-            upgrades: [speedUpgrade]
+            upgrades: [speedUpgrade],
+            queue: []
         }
     });
 

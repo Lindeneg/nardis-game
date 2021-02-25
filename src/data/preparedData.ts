@@ -4,7 +4,9 @@ import {
     DataResourceModel
 } from '../types/model';
 import {
+    OpponentInformation,
     PlayerLevel,
+    PlayerType,
     UpgradeType
 } from '../types/types';
 
@@ -72,7 +74,7 @@ export const trainData: DataTrainModel[] = [
     {
         name: "",
         cost: [90, 110],
-        upkeep: [3, 5],
+        upkeep: [3, 4],
         speed: [40, 50],
         cargoSpace: [4, 4],
         levelRequired: 1
@@ -80,7 +82,7 @@ export const trainData: DataTrainModel[] = [
     {
         name: "",
         cost: [130, 150],
-        upkeep: [6, 11],
+        upkeep: [6, 10],
         speed: [60, 80],
         cargoSpace: [4, 5],
         levelRequired: 1
@@ -104,15 +106,15 @@ export const trainData: DataTrainModel[] = [
     {
         name: "",
         cost: [240, 260],
-        upkeep: [20, 25],
+        upkeep: [15, 20],
         speed: [130, 140],
-        cargoSpace: [5, 7],
+        cargoSpace: [6, 7],
         levelRequired: 2
     },
     {
         name: "",
         cost: [270, 300],
-        upkeep: [30, 35],
+        upkeep: [25, 30],
         speed: [140, 160],
         cargoSpace: [6, 7],
         levelRequired: 2
@@ -120,7 +122,7 @@ export const trainData: DataTrainModel[] = [
     {
         name: "",
         cost: [310, 330],
-        upkeep: [40, 45],
+        upkeep: [35, 40],
         speed: [160, 180],
         cargoSpace: [8, 9],
         levelRequired: 3
@@ -128,7 +130,7 @@ export const trainData: DataTrainModel[] = [
     {
         name: "",
         cost: [330, 350],
-        upkeep: [50, 55],
+        upkeep: [45, 50],
         speed: [180, 200],
         cargoSpace: [8, 9],
         levelRequired: 3
@@ -136,7 +138,7 @@ export const trainData: DataTrainModel[] = [
     {
         name: "",
         cost: [400, 450],
-        upkeep: [56, 60],
+        upkeep: [50, 55],
         speed: [210, 250],
         cargoSpace: [10, 12],
         levelRequired: 4
@@ -155,23 +157,23 @@ export const highYieldData: DataResourceModel[] = [
     {
         name: "medicine",
         weight: 5,
-        value: [85, 120],
-        minValue: 85,
-        maxValue: 150,
-        valueVolatility: [1, 5]
+        value: [90, 180],
+        minValue: 86,
+        maxValue: 200,
+        valueVolatility: [3, 7]
     },
     {
         name: "technology",
         weight: 5,
-        value: [90, 120],
-        minValue: 90,
-        maxValue: 150,
-        valueVolatility: [1, 5]
+        value: [90, 155],
+        minValue: 86,
+        maxValue: 200,
+        valueVolatility: [1, 4]
     },
     {
         name: "arms",
         weight: 6,
-        value: [120, 250],
+        value: [140, 160],
         minValue: 100,
         maxValue: 300,
         valueVolatility: [1, 4]
@@ -182,9 +184,9 @@ export const mediumYieldData: DataResourceModel[] = [
     {
         name: "grain",
         weight: 2,
-        value: [20, 30],
-        minValue: 15,
-        maxValue: 35,
+        value: [30, 45],
+        minValue: 30,
+        maxValue: 55,
         valueVolatility: [3, 7]
     },
     {
@@ -192,47 +194,47 @@ export const mediumYieldData: DataResourceModel[] = [
         weight: 2,
         value: [25, 35],
         minValue: 20,
-        maxValue: 40,
+        maxValue: 45,
         valueVolatility: [3, 7]
     },
     {
         name: "beer",
         weight: 2,
-        value: [30, 35],
-        minValue: 10,
-        maxValue: 50,
+        value: [15, 35],
+        minValue: 14,
+        maxValue: 45,
         valueVolatility: [5, 7]
     },
     {
         name: "ore",
         weight: 3,
-        value: [35, 50],
+        value: [25, 80],
         minValue: 25,
-        maxValue: 65,
+        maxValue: 80,
         valueVolatility: [3, 5]
     },
     {
         name: "paper",
         weight: 3,
-        value: [35, 40],
+        value: [35, 55],
         minValue: 35,
-        maxValue: 55,
-        valueVolatility: [1, 7]
+        maxValue: 80,
+        valueVolatility: [4, 7]
     },
     {
         name: "coal",
         weight: 4,
-        value: [65, 75],
-        minValue: 50,
-        maxValue: 80,
+        value: [45, 75],
+        minValue: 45,
+        maxValue: 85,
         valueVolatility: [4, 7]
     },
     {
         name: "oil",
         weight: 4,
-        value: [65, 75],
+        value: [50, 75],
         minValue: 50,
-        maxValue: 80,
+        maxValue: 85,
         valueVolatility: [4, 7]
     },
 ];
@@ -245,7 +247,7 @@ export const lowYieldData: DataResourceModel[] = [
         value: [10, 15],
         minValue: 5,
         maxValue: 15,
-        valueVolatility: [6, 7]
+        valueVolatility: [4, 7]
     },
     {
         name: "mail",
@@ -253,6 +255,47 @@ export const lowYieldData: DataResourceModel[] = [
         value: [10, 15],
         minValue: 5,
         maxValue: 15,
-        valueVolatility: [6, 7]
+        valueVolatility: [4, 7]
+    }
+];
+
+export const genericOpponentsName: string[] = [
+    'J. Hamilton',
+    'C. H. Pryce',
+    'R. Hendrix',
+    'P. Peterson',
+    'H. Underfoot'
+];
+
+export const opponentInformation: OpponentInformation[] = [
+    {
+        type: PlayerType.Human,
+        color: 'teal',
+        avatar: 0
+    },
+    {
+        type: PlayerType.Computer,
+        color: 'saddlebrown',
+        avatar: 1
+    },
+    {
+        type: PlayerType.Computer,
+        color: 'purple',
+        avatar: 2
+    },
+    {
+        type: PlayerType.Computer,
+        color: 'darkred',
+        avatar: 3
+    },
+    {
+        type: PlayerType.Computer,
+        color: 'darkslategray',
+        avatar: 4
+    },
+    {
+        type: PlayerType.Computer,
+        color: 'pink',
+        avatar: 5
     }
 ];

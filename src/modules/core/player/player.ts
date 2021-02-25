@@ -5,18 +5,24 @@ import City from '../city';
 import Train from '../train';
 import Resource from '../resource';
 import Route from '../route';
+import Logger from '../../../util/logger';
+import { Nardis } from '../../nardis';
 import {
     QueuedRouteItem,
     HandleTurnInfo,
     ITurnable,
     PlayerType,
     PlayerLevel,
+    LevelUpRequirement,
+    Indexable,
+    PartialLog,
+    LogLevel,
 } from '../../../types/types';
 import {
-    getPlayerLevelFromNumber
+    getPlayerLevelFromNumber, 
+    isDefined
 } from '../../../util/util';
 import {
-    START_GOLD,
     rangePerLevel,
     levelUpRequirements
 } from '../../../util/constants';
@@ -25,6 +31,7 @@ import {
 /**
  * @constructor
  * @param {string}            name       - String with name.
+ * @param {number}            startGold  - Number with start gold.
  * @param {PlayerType}        playerType - PlayerType either human or computer.
  * @param {City}              startCity  - City describing the start location.
  * 
@@ -33,13 +40,13 @@ import {
  * @param {QueuedRouteItem[]} queue      - (optional) Array of queued Routes.
  * @param {Route[]}           routes     - (optional) Array of Routes.
  * @param {Upgrade[]}         upgrades   - (optional) Array of Upgrades.
+ * @param {boolean}           isActive   - (optional) Boolean with active specifier.
  * @param {string}            id         - (optional) String number describing id.
  */
 
-
 export default class Player extends BaseComponent implements ITurnable {
 
-    readonly gold       : number;
+    readonly startGold  : number;
     readonly playerType : PlayerType;
 
     protected _startCity: City;
@@ -49,9 +56,13 @@ export default class Player extends BaseComponent implements ITurnable {
     protected _queue    : QueuedRouteItem[];
     protected _routes   : Route[];
     protected _upgrades : Upgrade[];
+    protected _isActive : boolean;
+
+    protected log       : PartialLog;
 
     constructor(
             name        : string,
+            startGold   : number,
             playerType  : PlayerType,
             startCity   : City,
             finance    ?: Finance,
@@ -59,20 +70,25 @@ export default class Player extends BaseComponent implements ITurnable {
             queue      ?: QueuedRouteItem[],
             routes     ?: Route[],
             upgrades   ?: Upgrade[],
+            isActive   ?: boolean,
             id         ?: string
     ) {
         super(name, id);
 
+        this.startGold  = startGold;
         this.playerType = playerType;
+        
         this._startCity = startCity;
-        this._finance   = finance  ? finance  : new Finance(this.name, START_GOLD);
-        this._level     = level    ? level    : PlayerLevel.Novice;
-        this._queue     = queue    ? queue    : [];
-        this._routes    = routes   ? routes   : [];
-        this._upgrades  = upgrades ? upgrades : [];
+        this._finance   = isDefined(finance)  ? finance  : new Finance(this.name, this.id, this.startGold);
+        this._level     = isDefined(level)    ? level    : PlayerLevel.Novice;
+        this._queue     = isDefined(queue)    ? queue    : [];
+        this._routes    = isDefined(routes)   ? routes   : [];
+        this._upgrades  = isDefined(upgrades) ? upgrades : [];
+        this._isActive  = isDefined(isActive) ? isActive : true;
         this._range     = this.getRangeFromLevel();
 
-        this.gold = ((): number => this._finance.getGold())();
+        this.log        = Logger.log.bind(null, (playerType === PlayerType.Human ? LogLevel.All : LogLevel.Opponent), `player-${this.name}`);
+
     }
 
     public getStartCity = (): City              => this._startCity;
@@ -82,21 +98,72 @@ export default class Player extends BaseComponent implements ITurnable {
     public getQueue     = (): QueuedRouteItem[] => this._queue;
     public getRoutes    = (): Route[]           => this._routes;
     public getUpgrades  = (): Upgrade[]         => this._upgrades;
+    public isActive     = (): boolean           => this._isActive;
 
     /**
      * Handle Player events by checking if level should be increased.
      * Then handle Route queue, built Routes and Finance.
      * 
      * @param {HandleTurnInfo} info - Object with relevant turn information.
+     * 
+     * @param {Nardis}         game - (optional) Nardis game instance.
      */
 
-    public handleTurn = (info: HandleTurnInfo) => {
+    public handleTurn = (info: HandleTurnInfo, game?: Nardis): void => {
+        if (this._isActive) {
+            this.checkLevel();
+            this.handleQueue();
+            this.handleRoutes(info);
+            this.handleFinance(info);
+        } else {
+            this.handleFinance({...info, playerData: {routes: [], queue: [], upgrades: []}});
+        }
+    }
+
+    /**
+     * Check if level should be increased and act accordingly. 
+     */
+
+    public checkLevel = (): void => {
         if (this.shouldLevelBeIncreased()) {
             this.increaseLevel();
         }
-        this.handleQueue();
-        this.handleRoutes(info);
-        this.handleFinance(info);
+    }
+
+    /**
+     * Merge current Route array with another,
+     * 
+     * @param   {Route[]} routes - Array of Routes to append to active Route array.
+     * 
+     * @returns {number}  Number with amount of Routes appended to Player.
+     */
+
+    public mergeRoutes = (routes: Route[]): number => {
+        this._routes = this._routes.concat(routes);
+        return routes.length;
+    }
+
+    /**
+     * Merge current queue array with another,
+     *  
+     * @param   {QueuedRouteItem[]} queue - Array of QueuedRouteItem to append to current queue array.
+     * 
+     * @returns {number}            Number with amount of Routes appended to Player.
+     */
+
+    public mergeQueue = (queue: QueuedRouteItem[]): number => {
+        this._queue = this._queue.concat(queue);
+        return queue.length;
+    }
+
+    /**
+     * Set Player to inactive. Also removes all Routes and Upgrades.
+     */
+
+    public setInactive = (): void => {
+        this.log(`setting player inactive`);
+        this._routes = [], this._queue = [], this._upgrades = [];
+        this._isActive = false;
     }
 
     /**
@@ -107,6 +174,7 @@ export default class Player extends BaseComponent implements ITurnable {
      */
 
     public addRouteToQueue = (route: Route, turnCost: number): void => {
+        this.log(`adding route '${route.id}' to queue with turn cost ${turnCost}`);
         route.getCityOne().incrementRouteCount();
         route.getCityTwo().incrementRouteCount();
         this._queue.push({
@@ -118,42 +186,46 @@ export default class Player extends BaseComponent implements ITurnable {
     /**
      * Remove Route from queue.
      * 
-     * @param {string}    id - String with id of Route to remove.
+     * @param   {string}  id - String with id of Route to remove.
      * 
-     * @returns {boolean}      True if the Route was removed from queue else false.
+     * @returns {boolean} True if the Route was removed from queue else false.
      */
 
     public removeRouteFromQueue = (id: string): boolean => {
-        for (let i = 0; i < this._queue.length; i++) {
-            const route: Route = this._queue[i].route;
+        for (let i: number = 0; i < this._queue.length; i++) {
+            const { route, turnCost } = this._queue[i];
             if (route.id === id) {
+                this.log(`removing route '${route.id}' from queue with turns ${turnCost} left`);
                 route.getCityOne().decrementRouteCount();
                 route.getCityTwo().decrementRouteCount();
                 this._queue.splice(i, 1);
                 return true;
             }
         }
+        this.log(`cannot remove route '${id}' from queue: not found`);
         return false;
     }
 
     /**
      * Remove Route from routes.
      * 
-     * @param {string}    id - String with id of Route to remove.
+     * @param   {string}  id - String with id of Route to remove.
      * 
-     * @returns {boolean}      True if the Route was removed from queue else false.
+     * @returns {boolean} True if the Route was removed from queue else false.
      */
 
     public removeRouteFromRoutes = (id: string): boolean => {
-        for (let i = 0; i < this._routes.length; i++) {
+        for (let i: number = 0; i < this._routes.length; i++) {
             const route: Route = this._routes[i];
             if (route.id === id) {
+                this.log(`removing route '${route.id}' from active routes`);
                 route.getCityOne().decrementRouteCount();
                 route.getCityTwo().decrementRouteCount();
                 this._routes.splice(i, 1);
                 return true;
             }
         }
+        this.log(`cannot remove route '${id}' from active routes: not found`);
         return false;
     }
 
@@ -167,6 +239,28 @@ export default class Player extends BaseComponent implements ITurnable {
         this._upgrades.push(upgrade);
     }
 
+    /** 
+     * @returns {string} String with JSON stringified property keys and values.
+    */
+   
+    public deconstruct = (): string => JSON.stringify({
+        name       : this.name,
+        playerType : this.playerType,
+        level      : this._level,
+        id         : this.id,
+        startCityId: this._startCity.id,
+        finance    : this._finance.deconstruct(),
+        queue      : this._queue.map((queued: QueuedRouteItem): Indexable<string | number> => ({
+            route: queued.route.deconstruct(),
+            turnCost: queued.turnCost
+        })),
+        routes     : this._routes.map((route: Route): string => route.deconstruct()),
+        upgrades   : this._upgrades.map((upgrade: Upgrade): Indexable<string> => ({
+            id: upgrade.id
+        })),
+        isActive   : this._isActive
+    });
+
     /**
      * Handle all Routes in queue by checking current turn cost,
      * If non-positive, remove from queue and add to Routes,
@@ -175,7 +269,8 @@ export default class Player extends BaseComponent implements ITurnable {
 
     protected handleQueue = (): void => {
         const completed: string[] = [];
-        for (let i = 0; i < this._queue.length; i++) {
+        this.log(`handling ${this._queue.length} queue items`);
+        for (let i: number = 0; i < this._queue.length; i++) {
             if (this._queue[i].turnCost <= 0) {
                 this._routes.push(this._queue[i].route);
                 completed.push(this._queue[i].route.id);
@@ -183,7 +278,8 @@ export default class Player extends BaseComponent implements ITurnable {
                 this._queue[i].turnCost--;
             }
         }
-        this._queue = this._queue.filter(e => !(completed.indexOf(e.route.id) > -1));
+        this.log(`handled ${this._queue.length} queue items and finished ${completed.length} of them`);
+        this._queue = this._queue.filter((item: QueuedRouteItem): boolean => !(completed.indexOf(item.route.id) > -1));
     }
 
     /**
@@ -193,7 +289,7 @@ export default class Player extends BaseComponent implements ITurnable {
      */
 
     protected handleRoutes = (info: HandleTurnInfo): void => {
-        this._routes.forEach(route => {
+        this._routes.forEach((route: Route): void => {
             route.handleTurn(info);
         });
     }
@@ -214,14 +310,12 @@ export default class Player extends BaseComponent implements ITurnable {
 
     protected shouldLevelBeIncreased = (): boolean => {
         if (this._level < PlayerLevel.Master) {
-            const requirements = levelUpRequirements[this._level + 1];
-            if (requirements) {
-                return (
-                    this._routes.length >= requirements.routes &&
-                    this._finance.getAverageRevenue() >= requirements.revenuePerTurn &&
-                    this.gold >= requirements.gold
-                );
-            }
+            const requirements: LevelUpRequirement = levelUpRequirements[this._level + 1];
+            const r = this._routes.length >= requirements.routes; 
+            const a = this._finance.getAverageRevenue() >= requirements.revenuePerTurn;
+            const g = this._finance.getGold() >= requirements.gold;
+            this.log(`met level up requirements: routes=${r}, revenue=${a}, gold=${g}`);
+            return r && a && g;
         }
         return false;
     }
@@ -233,8 +327,11 @@ export default class Player extends BaseComponent implements ITurnable {
     protected increaseLevel = (): boolean => {
         const newLevel: PlayerLevel = getPlayerLevelFromNumber(this._level + 1);
         if (newLevel !== PlayerLevel.None) {
+            const r: number = this._range;
             this._level = newLevel;
             this._range = this.getRangeFromLevel();
+            this.log(`increasing level ${this._level - 1}->${this._level}`);
+            this.log(`increasing range ${r}->${this._range}`);
             return true;
         }
         return false;
@@ -251,37 +348,32 @@ export default class Player extends BaseComponent implements ITurnable {
     /**
      * Get Player instance from stringified JSON.
      * 
-     * @param {string}     stringifiedJSON - String with information to be used.
-     * @param {City[]}     cities          - City instances used in the current game.
-     * @param {Upgrades[]} upgrades        - Upgrade instances used in the current game.
+     * @param   {string}     stringifiedJSON - String with information to be used.
+     * @param   {City[]}     cities          - City instances used in the current game.
+     * @param   {Train[]}    trains          - Train instances used in the current game.
+     * @param   {Resource[]} resources       - Resource instances used in the current game.
+     * @param   {Upgrades[]} upgrades        - Upgrade instances used in the current game.
      * 
-     * @return {Player}                      Player instance created from stringifiedJSON.
+     * @returns {Player}     Player instance created from stringifiedJSON.
      */
 
-    public static createFromStringifiedJSON = (stringifiedJSON: string, cities: City[], trains: Train[], resources: Resource[]): Player => {
+    public static createFromStringifiedJSON = (stringifiedJSON: string, cities: City[], trains: Train[], resources: Resource[], upgrades: Upgrade[]): Player => {
         const parsedJSON: any = JSON.parse(stringifiedJSON);
         return new Player(
             parsedJSON.name,
+            parsedJSON.startGold,
             parsedJSON.playerType,
-            cities.filter(e => e.id === parsedJSON._startCity.id)[0],
-            new Finance(
-                parsedJSON._finance.name,
-                parsedJSON._finance._gold,
-                parsedJSON._finance._history,
-                parsedJSON._finance._totalHistory,
-                parsedJSON._finance._totalProfits,
-                parsedJSON._finance.id
-            ),
-            parsedJSON._level,
-            parsedJSON._queue.map(e => {
-                return {
-                    route: Route.createFromStringifiedJSON(JSON.stringify(e.route), cities, trains, resources),
-                    turnCost: e.turnCost
-                };
-            }), 
-            parsedJSON._routes.map(e => Route.createFromStringifiedJSON(JSON.stringify(e), cities, trains, resources)),
-            parsedJSON._upgrades.map(e => Upgrade.createFromStringifiedJSON(JSON.stringify(e))),
+            cities.filter(e => e.id === parsedJSON.startCityId)[0],
+            Finance.createFromStringifiedJSON(parsedJSON.finance),
+            parsedJSON.level,
+            parsedJSON.queue.map(e => ({
+                route: Route.createFromStringifiedJSON(e.route, cities, trains, resources),
+                turnCost: e.turnCost
+            })),
+            parsedJSON.routes.map(e => Route.createFromStringifiedJSON(e, cities, trains, resources)),
+            parsedJSON.upgrades.map(e => upgrades.filter(j => j.id === e.id)[0]),
+            parsedJSON.isActive,
             parsedJSON.id
-        );
+        )
     }
 }

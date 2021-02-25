@@ -5,19 +5,19 @@ import Train from './train';
 import { RoutePlanCargo, RouteState, HandleTurnInfo, ITurnable } from '../../types/types';
 /**
  * @constructor
- * @param {string}     name                - string with name.
+ * @param {string}     name                - String with name.
  * @param {City}       cityOne             - City specifying initial departure.
  * @param {City}       cityTwo             - City specifying initial arrival.
  * @param {Train}      train               - Train instance to be used.
  * @param {RoutePlan}  routePlan           - RoutePlan describing cargo.
- * @param {number}     distance            - number with distance in kilometers.
- * @param {number}     cost                - number with cost in gold.
- * @param {number}     purchasedOnTurn     - number with turn count.
+ * @param {number}     distance            - Number with distance in kilometers.
+ * @param {number}     cost                - Number with cost in gold.
+ * @param {number}     purchasedOnTurn     - Number with turn count.
  *
- * @param {number}     profit              - (optional) number with profit in gold.
- * @param {number}     kilometersTravelled - (optional) kilometers travelled in total for route.
+ * @param {number}     profit              - (optional) Number with profit in gold.
+ * @param {number}     kilometersTravelled - (optional) Number with total kilometers travelled.
  * @param {RouteState} routeState          - (optional) RouteState of the route.
- * @param {string}     id                  - (optional) string number describing id.
+ * @param {string}     id                  - (optional) String number describing id.
  */
 export default class Route extends BaseComponent implements ITurnable {
     private _cityOne;
@@ -30,6 +30,7 @@ export default class Route extends BaseComponent implements ITurnable {
     private _routeState;
     private _profit;
     private _kilometersTravelled;
+    private log;
     constructor(name: string, cityOne: City, cityTwo: City, train: Train, routePlanCargo: RoutePlanCargo, distance: number, cost: number, purchasedOnTurn: number, profit?: number, kilometersTravelled?: number, routeState?: RouteState, id?: string);
     getCityOne: () => City;
     getCityTwo: () => City;
@@ -69,28 +70,37 @@ export default class Route extends BaseComponent implements ITurnable {
      */
     change: (train: Train, routePlan: RoutePlanCargo) => void;
     /**
+     * @returns {string} String with JSON stringified property keys and values.
+    */
+    deconstruct: () => string;
+    /**
      * Get Train speed with Player upgrades taken into consideration.
      *
-     * @return {number} - Number with the correct Train speed.
+     * @returns {number} - Number with the correct Train speed.
      */
     private getTrainSpeed;
     /**
      * Get appropriate array RouteCargo when between arrival and departure. Ensures that the
      * amount of each cargo respects the available amount from the City where the cargo is fetched from.
      *
-     * @return {RouteCargo[]} - Array of RouteCargo objects.
+     * @returns {RouteCargo[]} - Array of RouteCargo objects.
      */
     private getChangedCargo;
+    /**
+     * Reset the RouteState to its default values.
+     *
+     * @param {boolean} edit - True if the reset is due to an edit of an active Route, else false.
+     */
     private resetRouteState;
     /**
      * Get Route instance from stringified JSON.
      *
-     * @param {string}     stringifiedJSON - String with information to be used.
-     * @param {City[]}     cities          - Array of City instances used in game.
-     * @param {Train[]}    trains          - Array of Train instances used in game.
-     * @param {Resource[]} resources       - Array of Resource instances used in game.
+     * @param   {string}     stringifiedJSON - String with information to be used.
+     * @param   {City[]}     cities          - Array of City instances used in game.
+     * @param   {Train[]}    trains          - Array of Train instances used in game.
+     * @param   {Resource[]} resources       - Array of Resource instances used in game.
      *
-     * @return {Route}                       Route instance created from the string.
+     * @returns {Route}      Route instance created from the string.
      */
-    static createFromStringifiedJSON: (stringifiedJSON: string, cities: City[], trains: Train[], resources: Resource[]) => Route;
+    static createFromStringifiedJSON: (stringifiedJSON: string | object, cities: City[], trains: Train[], resources: Resource[]) => Route;
 }

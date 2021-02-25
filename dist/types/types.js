@@ -1,6 +1,12 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.LocalKey = exports.UpgradeType = exports.FinanceGeneralType = exports.FinanceType = exports.EventLogLevel = exports.PlayerType = exports.PlayerLevel = void 0;
+exports.LocalKey = exports.UpgradeType = exports.FinanceGeneralType = exports.FinanceType = exports.PlayerType = exports.PlayerLevel = exports.LogLevel = void 0;
+var LogLevel;
+(function (LogLevel) {
+    LogLevel[LogLevel["None"] = 0] = "None";
+    LogLevel[LogLevel["Opponent"] = 1] = "Opponent";
+    LogLevel[LogLevel["All"] = 2] = "All";
+})(LogLevel = exports.LogLevel || (exports.LogLevel = {}));
 var PlayerLevel;
 (function (PlayerLevel) {
     PlayerLevel[PlayerLevel["None"] = 0] = "None";
@@ -14,13 +20,6 @@ var PlayerType;
     PlayerType[PlayerType["Human"] = 0] = "Human";
     PlayerType[PlayerType["Computer"] = 1] = "Computer";
 })(PlayerType = exports.PlayerType || (exports.PlayerType = {}));
-var EventLogLevel;
-(function (EventLogLevel) {
-    EventLogLevel[EventLogLevel["GAME"] = 0] = "GAME";
-    EventLogLevel[EventLogLevel["DEBUG"] = 1] = "DEBUG";
-    EventLogLevel[EventLogLevel["WARNING"] = 2] = "WARNING";
-    EventLogLevel[EventLogLevel["ERROR"] = 3] = "ERROR";
-})(EventLogLevel = exports.EventLogLevel || (exports.EventLogLevel = {}));
 var FinanceType;
 (function (FinanceType) {
     FinanceType[FinanceType["Resource"] = 0] = "Resource";
@@ -28,6 +27,9 @@ var FinanceType;
     FinanceType[FinanceType["Upkeep"] = 2] = "Upkeep";
     FinanceType[FinanceType["Upgrade"] = 3] = "Upgrade";
     FinanceType[FinanceType["Train"] = 4] = "Train";
+    FinanceType[FinanceType["Recoup"] = 5] = "Recoup";
+    FinanceType[FinanceType["StockBuy"] = 6] = "StockBuy";
+    FinanceType[FinanceType["StockSell"] = 7] = "StockSell";
 })(FinanceType = exports.FinanceType || (exports.FinanceType = {}));
 var FinanceGeneralType;
 (function (FinanceGeneralType) {
@@ -51,5 +53,8 @@ var LocalKey;
     LocalKey[LocalKey["Players"] = 4] = "Players";
     LocalKey[LocalKey["CurrentPlayer"] = 5] = "CurrentPlayer";
     LocalKey[LocalKey["Turn"] = 6] = "Turn";
-    LocalKey[LocalKey["HasActiveGame"] = 7] = "HasActiveGame";
+    LocalKey[LocalKey["Stocks"] = 7] = "Stocks";
+    LocalKey[LocalKey["HasActiveGame"] = 8] = "HasActiveGame";
 })(LocalKey = exports.LocalKey || (exports.LocalKey = {}));
+;
+;

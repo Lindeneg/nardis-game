@@ -10,13 +10,12 @@ export default abstract class BaseComponent implements ISaveable {
     readonly id: string;
     readonly name: string;
     constructor(name: string, id?: string);
-    toString: () => string;
     /**
-     * @return {boolean} True if instances has same id else false.
+     * @returns {boolean} True if instances has same id else false.
     */
     equals: (other: BaseComponent) => boolean;
     /**
-     * @return {string} String with JSON stringified property keys and values.
+     * Deconstruction for localStorage use.
     */
-    deconstruct: () => string;
+    abstract deconstruct(): string;
 }

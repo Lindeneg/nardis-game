@@ -31,6 +31,10 @@ var Train = /** @class */ (function (_super) {
     __extends(Train, _super);
     function Train(name, cost, upkeep, speed, cargoSpace, levelRequired, id) {
         var _this = _super.call(this, name, id) || this;
+        /**
+         * @returns {string} String with JSON stringified property keys and values.
+        */
+        _this.deconstruct = function () { return JSON.stringify(_this); };
         _this.cost = cost;
         _this.upkeep = upkeep;
         _this.speed = speed;
@@ -41,9 +45,9 @@ var Train = /** @class */ (function (_super) {
     /**
      * Get Train instance from a ResourceModel.
      *
-     * @param {TrainModel}  model - TrainModel to be used.
+     * @param   {TrainModel}  model - TrainModel to be used.
      *
-     * @return {Train}              Train instance created from the model.
+     * @returns {Train}       Train instance created from the model.
      */
     Train.createFromModel = function (model) {
         return new Train(model.name, model.cost, model.upkeep, model.speed, model.cargoSpace, model.levelRequired);
@@ -51,9 +55,9 @@ var Train = /** @class */ (function (_super) {
     /**
      * Get Train instance from stringified JSON.
      *
-     * @param {string}  stringifiedJSON - String with information to be used.
+     * @param   {string} stringifiedJSON - String with information to be used.
      *
-     * @return {Train}                    Train instance created from the string.
+     * @returns {Train}  Train instance created from the string.
      */
     Train.createFromStringifiedJSON = function (stringifiedJSON) {
         var parsedJSON = JSON.parse(stringifiedJSON);

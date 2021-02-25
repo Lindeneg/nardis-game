@@ -14,6 +14,8 @@ var __extends = (this && this.__extends) || (function () {
 })();
 Object.defineProperty(exports, "__esModule", { value: true });
 var base_component_1 = require("../component/base-component");
+var logger_1 = require("../../util/logger");
+var types_1 = require("../../types/types");
 var util_1 = require("../../util/util");
 var constants_1 = require("../../util/constants");
 /**
@@ -26,7 +28,7 @@ var constants_1 = require("../../util/constants");
  * @param {number}                 valueVolatility    - Number with value volatility.
  *
  * @param {number}                 valueChangeDecider - (optional) Number with value decider.
- * @param {ResourceValueHistory[]} valueHistory       - (optional) Object with history.
+ * @param {ValueHistory[]}         valueHistory       - (optional) Object with history.
  * @param {string}                 id                 - (optional) String number describing id.
  */
 var Resource = /** @class */ (function (_super) {
@@ -55,16 +57,18 @@ var Resource = /** @class */ (function (_super) {
             }
         };
         /**
+         * @returns {string} String with JSON stringified property keys and values.
+        */
+        _this.deconstruct = function () { return JSON.stringify(_this); };
+        /**
          * Set a new value for the resource.
          *
-         * @param {number}    value - Number with new value to be used.
-         * @param {number}    turn  - Number with turn count.
+         * @param   {number}  value - Number with new value to be used.
+         * @param   {number}  turn  - Number with turn count.
          *
-         * @return {boolean}          True if value was set else false.
+         * @returns {boolean} True if value was set else false.
          */
         _this.setNewValue = function (value, turn) {
-            /* if the value last entry in the history object is equal
-               to the value trying to be set, do not do anything */
             if (_this._valueHistory[_this._valueHistory.length - 1].value === value) {
                 return false;
             }
@@ -72,24 +76,26 @@ var Resource = /** @class */ (function (_super) {
                 value: value,
                 turn: turn
             });
+            _this.log("updating value " + _this._value + "->" + value);
             _this._value = value;
             return true;
         };
         /**
          * Generates a new random value based upon the current value and the Resource value volatility.
          *
-         * @return {number} Number with new value.
+         * @returns {number} Number with new value.
          */
         _this.getNewValue = function () {
             var maxSign = util_1.randomNumber(0, 9) <= Math.round(_this._valueVolatility * 10) ? -1 : 1;
             var sign = util_1.randomNumber(0, 9) >= 5 ? -1 : 1;
             var newValue = null;
+            var tmp;
             if (_this._value >= _this._maxValue) {
-                var tmp = _this._value + (util_1.randomNumber(1, 3) * maxSign);
+                tmp = _this._value + (util_1.randomNumber(1, 3) * maxSign);
                 newValue = tmp >= _this._maxValue ? _this._maxValue : tmp;
             }
             else {
-                var tmp = _this._value + (util_1.randomNumber(2, 5) * sign);
+                tmp = _this._value + (util_1.randomNumber(2, 5) * sign);
                 if (tmp >= _this._maxValue) {
                     newValue = _this._maxValue;
                 }
@@ -113,19 +119,20 @@ var Resource = /** @class */ (function (_super) {
         _this._minValue = minValue;
         _this._maxValue = maxValue;
         _this._valueVolatility = valueVolatility;
-        _this._valueChangeDecider = valueChangeDecider ? valueChangeDecider : 0;
-        _this._valueHistory = valueHistory ? valueHistory : [{
+        _this._valueChangeDecider = util_1.isDefined(valueChangeDecider) ? valueChangeDecider : 0;
+        _this._valueHistory = util_1.isDefined(valueHistory) ? valueHistory : [{
                 value: _this._value,
                 turn: 1
             }];
+        _this.log = logger_1.default.log.bind(null, types_1.LogLevel.All, "resource-" + _this.name);
         return _this;
     }
     /**
      * Get Resource instance from a ResourceModel.
      *
-     * @param {ResourceModel}  model - ResourceModel to be used.
+     * @param   {ResourceModel}  model - ResourceModel to be used.
      *
-     * @return {Resource}              Resource instance created from the model.
+     * @returns {Resource}       Resource instance created from the model.
      */
     Resource.createFromModel = function (model) {
         return new Resource(model.name, model.weight, model.value, model.minValue, model.maxValue, model.valueVolatility);
@@ -133,9 +140,9 @@ var Resource = /** @class */ (function (_super) {
     /**
      * Get Resource instance from stringified JSON.
      *
-     * @param {string}    stringifiedJSON - String with information to be used.
+     * @param   {string}    stringifiedJSON - String with information to be used.
      *
-     * @return {Resource}                   Resource instance created from the string.
+     * @returns {Resource}  Resource instance created from the string.
      */
     Resource.createFromStringifiedJSON = function (stringifiedJSON) {
         var parsedJSON = JSON.parse(stringifiedJSON);

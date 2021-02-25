@@ -1,11 +1,12 @@
 import Player from '../src/modules/core/player/player';
+import Stock from '../src/modules/core/player/stock';
 import Route from '../src/modules/core/route';
 import { 
     PlayerType, 
     PlayerLevel 
 } from '../src/types/types';
 import {
-    rangePerLevel
+    rangePerLevel, START_GOLD
 } from '../src/util/constants';
 import {
     randomNumber
@@ -14,6 +15,7 @@ import {
     getRouteConfig 
 } from './data';
 
+// TODO test stock and reset
 
 const generateRoute = () => {
     const city1 = data.data.cities[randomNumber(0, data.data.cities.length - 1)];
@@ -50,22 +52,24 @@ const config = {
     startCity: c1
 };
 
-const config2 = {
-    name: "christian2",
-    playerType: PlayerType.Human,
-    startCity: c1,
-    finance: null,
-    playerLevel: PlayerLevel.Novice,
-    queue: [],
-    routes: routes,
-    upgrades: []
-};
-
 const player = new Player(
     config.name,
+    START_GOLD,
     config.playerType,
     config.startCity
 );
+
+const stock = new Stock('test', player.id, 0);
+
+const handleTurnData = {
+    ...data.data.handleTurnData,
+    playerData: {
+        ...data.data.handleTurnData.playerData,
+        gameStock: {
+            [player.id]: stock
+        }
+    }
+};
 
 const upgrade = data.data.upgrades[0];
 
@@ -100,41 +104,10 @@ test('can add upgrade', () => {
     expect(player.getUpgrades()[0].equals(upgrade)).toBe(true);
 });
 
-
-test('can increase level', () => {
-    const player2 = new Player(
-        config2.name,
-        config2.playerType,
-        config2.startCity,
-        config2.finance,
-        config2.playerLevel,
-        config2.queue,
-        config2.routes,
-        config2.upgrades
-    );
-    let didLevelIncrease: boolean = false;
-    for (let i = 0; i < 100; i++) {
-        if (player2.getLevel() > config2.playerLevel) {
-            didLevelIncrease = true;
-            break;
-        }
-        player2.handleTurn({
-            ...data.data.handleTurnData,
-            turn: i,
-            playerData: {
-                routes: routes,
-                upgrades: []
-            }
-        });
-    }
-
-    expect(didLevelIncrease).toBe(true);
-});
-
 test('can handle queue item', () => {
     player.addRouteToQueue(route, 1);
-    player.handleTurn(data.data.handleTurnData);
-    player.handleTurn(data.data.handleTurnData);
+    player.handleTurn(handleTurnData);
+    player.handleTurn(handleTurnData);
 
     expect(player.getQueue().length).toEqual(0);
     expect(player.getRoutes().length).toEqual(1);
@@ -143,7 +116,7 @@ test('can handle queue item', () => {
 
 test('can reconstruct player base properties', () => {
     const str = player.deconstruct();
-    const rec = Player.createFromStringifiedJSON(str, data.data.cities, data.data.trains, data.data.resources);
+    const rec = Player.createFromStringifiedJSON(str, data.data.cities, data.data.trains, data.data.resources, data.data.upgrades);
 
     expect(rec.equals(player)).toBe(true);
     expect(rec.name).toEqual(player.name);
@@ -155,7 +128,7 @@ test('can reconstruct player base properties', () => {
 
 test('can reconstruct player finance properties', () => {
     const str = player.deconstruct();
-    const rec = Player.createFromStringifiedJSON(str, data.data.cities, data.data.trains, data.data.resources);
+    const rec = Player.createFromStringifiedJSON(str, data.data.cities, data.data.trains, data.data.resources, data.data.upgrades);
     const [f1, f2] = [rec.getFinance(), player.getFinance()];
     const [h1, h2] = [f1.getHistory(), f2.getHistory()];
 
@@ -174,7 +147,7 @@ test('can reconstruct player finance properties', () => {
 
 test('can reconstruct player routes', () => {
     const str = player.deconstruct();
-    const rec = Player.createFromStringifiedJSON(str, data.data.cities, data.data.trains, data.data.resources);
+    const rec = Player.createFromStringifiedJSON(str, data.data.cities, data.data.trains, data.data.resources, data.data.upgrades);
     const [r1, r2] = [rec.getRoutes(), player.getRoutes()];
 
     let i = 0; 
@@ -185,14 +158,14 @@ test('can reconstruct player routes', () => {
         }
     });
 
-    expect(rec.getQueue()).toEqual(player.getQueue());
+    expect(rec.getQueue().length).toEqual(player.getQueue().length);
     expect(r1.length).toEqual(r2.length);
     expect(i).toEqual(r1.length);
 });
 
 test('can reconstruct player upgrades', () => {
     const str = player.deconstruct();
-    const rec = Player.createFromStringifiedJSON(str, data.data.cities, data.data.trains, data.data.resources);
+    const rec = Player.createFromStringifiedJSON(str, data.data.cities, data.data.trains, data.data.resources, data.data.upgrades);
     const [u1, u2] = [rec.getUpgrades(), player.getUpgrades()];
 
     expect(u1.length).toEqual(u2.length);

@@ -1,5 +1,6 @@
 import { 
-    createId 
+    createId, 
+    isDefined 
 } from '../../util/util';
 import { 
     ISaveable 
@@ -20,15 +21,12 @@ export default abstract class BaseComponent implements ISaveable {
     readonly name: string;
 
     constructor(name: string, id?: string) {
-        this.id   = id ? id : createId();
+        this.id   = isDefined(id) ? id : createId();
         this.name = name;
     }
 
-    // TODO is it necessary to override toString?
-    public toString = (): string => this.id;
-
     /** 
-     * @return {boolean} True if instances has same id else false.
+     * @returns {boolean} True if instances has same id else false.
     */
 
     public equals = (other: BaseComponent): boolean => {
@@ -36,8 +34,8 @@ export default abstract class BaseComponent implements ISaveable {
     }
 
     /** 
-     * @return {string} String with JSON stringified property keys and values.
+     * Deconstruction for localStorage use.
     */
 
-    public deconstruct = (): string => JSON.stringify(this);
+    public abstract deconstruct(): string;
 }

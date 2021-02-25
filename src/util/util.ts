@@ -10,6 +10,8 @@ import {
     PlayerLevel
 } from '../types/types';
 import {
+    DataResourceModel,
+    DataTrainModel,
     ResourceModel,
     TrainModel,
     UpgradeModel
@@ -26,7 +28,7 @@ import {
 /**
  * Get an array of either vowels or consonants.
  * 
- * @return {string[]} Array string with names.
+ * @returns {string[]} Array string with names.
  */
 
 const getRandomLetterArray = (): string[] => randomNumber() > 5 ? VOWELS : CONSONANTS;
@@ -34,10 +36,10 @@ const getRandomLetterArray = (): string[] => randomNumber() > 5 ? VOWELS : CONSO
 /**
  * Generate a value volatility between two given whole numbers.
  * 
- * @param {number} min - Number describing minimum volatility
- * @param {number} max - Number describing maximum volatility
+ * @param   {number} min - Number describing minimum volatility
+ * @param   {number} max - Number describing maximum volatility
  * 
- * @return {number}      Number describing random volatility.
+ * @returns {number} Number describing random volatility.
  */
 
 const getRandomValueVolatility = (min: number, max: number): number => randomNumber(min, max) / 10;
@@ -45,15 +47,15 @@ const getRandomValueVolatility = (min: number, max: number): number => randomNum
 /**
  * Generate a random name with length between two given whole numbers.
  * 
- * @param {number} min - Number describing minimum name length.
- * @param {number} max - Number describing maximum name length.
+ * @param   {number} min - Number describing minimum name length.
+ * @param   {number} max - Number describing maximum name length.
  * 
- * @return {string}      String with generated name.
+ * @returns {string} String with generated name.
  */
 
 const generateName = (min: number, max: number): string => {
     let name: string = '';
-    for (let _ = 0; _ < randomNumber(min, max); _++) {
+    for (let _: number = 0; _ < randomNumber(min, max); _++) {
         const arr: string[] = getRandomLetterArray();
         if (name.length < 1) {
             name += arr[randomNumber(0, arr.length - 1)].toUpperCase();
@@ -69,12 +71,42 @@ const generateName = (min: number, max: number): string => {
 }
 
 /**
+ * Check if a variable is defined
+ * 
+ * @param   {any}     target - Target to check if defined.
+ * 
+ * @returns {boolean} True if target defined else false.
+ */
+
+export const isDefined = (target: any): boolean => typeof target !== 'undefined';
+
+/**
+ * Check if a variable is a string.
+ * 
+ * @param   {any}     target - Target to check if defined.
+ * 
+ * @returns {boolean} True if target is a string else false.
+ */
+
+export const isString  = (target: any): boolean => isDefined(target) && typeof target === 'string';
+
+/**
+ * Check if a variable is a non-NaN number.
+ * 
+ * @param   {any}     target - Target to check if defined.
+ * 
+ * @returns {boolean} True if target is a non-NaN number else false.
+ */
+
+export const isNumber  = (target: any): boolean => isDefined(target) && typeof target === 'number' && !Number.isNaN(target); 
+
+/**
  * Generate a random number between two given whole numbers.
  * 
- * @param {number} from - Number describing minimum value, default 1.
- * @param {number} to   - Number describing maximum value, default 10.
+ * @param   {number} from - Number describing minimum value, default 1.
+ * @param   {number} to   - Number describing maximum value, default 10.
  * 
- * @return {number}       Number between from and to constrains.
+ * @returns {number} Number between from and to constrains.
  */
 
 export const randomNumber = (from: number = 1, to: number = 10): number => Math.floor(Math.random() * (to - from + 1) + from);
@@ -82,9 +114,9 @@ export const randomNumber = (from: number = 1, to: number = 10): number => Math.
 /**
  * Get PlayerLevel from number.
  * 
- * @param {number}       n - Number to be matched with PlayerLevel.
+ * @param   {number}      n - Number to be matched with PlayerLevel.
  * 
- * @return {PlayerLevel}     PlayerLevel found.
+ * @returns {PlayerLevel} PlayerLevel found.
  */
 
 export const getPlayerLevelFromNumber = (n: number): PlayerLevel => {
@@ -97,9 +129,9 @@ export const getPlayerLevelFromNumber = (n: number): PlayerLevel => {
 /**
  * Convert degrees to radians.
  * 
- * @param {number}       degrees - Number with degrees to convert.
+ * @param   {number} degrees - Number with degrees to convert.
  * 
- * @return {number}                Number with radians.
+ * @returns {number} Number with radians.
  */
 
 export const degreesToRadians = (degrees: number): number => {
@@ -109,11 +141,11 @@ export const degreesToRadians = (degrees: number): number => {
 /**
  * Get a 32bit random Id.
  * 
- * @return {string} String with generated Id.
+ * @returns {string} String with generated Id.
  */
 
 export const createId = (): string => {
-    let result = '';
+    let result: string = '';
     for (let _ = 0; _ < ID_LENGTH; _++) {
         result += ID_CHARS.charAt(Math.floor(Math.random() * ID_CHARS.length));
     }
@@ -123,12 +155,12 @@ export const createId = (): string => {
 /**
  * Get array of random names.
  * 
- * @param {number}    arraySize     - Number with desired size of the returned array.
- * @param {number}    nameMinLength - Number with minimum name length.
- * @param {number}    nameMaxLength - Number with maximum name length.
- * @param {string[]}  exclude       - Array of strings with names to exclude.
+ * @param   {number}    arraySize     - Number with desired size of the returned array.
+ * @param   {number}    nameMinLength - Number with minimum name length.
+ * @param   {number}    nameMaxLength - Number with maximum name length.
+ * @param   {string[]}  exclude       - Array of strings with names to exclude.
  * 
- * @return {string[]}                 Array of strings with generated names.
+ * @returns {string[]}  Array of strings with generated names.
  */
 
 export const generateArrayOfRandomNames = (
@@ -155,68 +187,65 @@ export const generateArrayOfRandomNames = (
  * Generate low yield ResourceModels with random entries for
  * Resource value and Resource value volatility.
  * 
- * @return {ResourceModel[]} Array with generated low yield ResourceModels.
+ * @returns {ResourceModel[]} Array with generated low yield ResourceModels.
  */
 
-export const getLowYieldResourceModels = (): ResourceModel[] => lowYieldData.map(e => {
-    return {
+export const getLowYieldResourceModels = (): ResourceModel[] => lowYieldData.map((e: DataResourceModel): ResourceModel => ({
         ...e,
         value: randomNumber(...e.value),
         valueVolatility: getRandomValueVolatility(...e.valueVolatility)
-    };
-});
+    })
+);
 
 /**
  * Generate medium yield ResourceModels with random entries for
  * Resource value and Resource value volatility.
  * 
- * @return {ResourceModel[]} Array with generated medium yield ResourceModels.
+ * @returns {ResourceModel[]} Array with generated medium yield ResourceModels.
  */
 
-export const getMediumYieldResourceModels = (): ResourceModel[] => mediumYieldData.map(e => {
-    return {
+export const getMediumYieldResourceModels = (): ResourceModel[] => mediumYieldData.map((e: DataResourceModel): ResourceModel => ({
         ...e,
         value: randomNumber(...e.value),
         valueVolatility: randomNumber(...e.valueVolatility)
-    };
-});
+    })
+);
 
 /**
  * Generate high yield ResourceModels with random entries for
  * Resource value and Resource value volatility.
  * 
- * @return {ResourceModel[]} Array with generated high yield ResourceModels.
+ * @returns {ResourceModel[]} Array with generated high yield ResourceModels.
  */
 
-export const getHighYieldResources = (): ResourceModel[] => highYieldData.map(e => {
-    return {
+export const getHighYieldResources = (): ResourceModel[] => highYieldData.map((e: DataResourceModel): ResourceModel => ({
         ...e,
         value: randomNumber(...e.value),
-        valueVolatility: getRandomValueVolatility(...e.valueVolatility)
-    };
-});
+        valueVolatility: randomNumber(...e.valueVolatility)
+    })
+);
+
 
 /**
  * Generate TrainModels with random entries for cost, upkeep and speed.
  * 
- * @return {TrainModel[]} Array with generated TrainModels.
+ * @returns {TrainModel[]} Array with generated TrainModels.
  */
 
-export const getTrainModels = (): TrainModel[] => trainData.map(e => {
-    return {
+export const getTrainModels = (): TrainModel[] => trainData.map((e: DataTrainModel): TrainModel => ({
         ...e,
         cost: randomNumber(...e.cost),
         upkeep: randomNumber(...e.upkeep),
         speed: randomNumber(...e.speed),
         cargoSpace: randomNumber(...e.cargoSpace)
-    };
-});
+    })
+);
 
 
 /**
  * Get fixed UpgradeModels.
  * 
- * @return {UpgradeModel[]} Array with UpgradeModels.
+ * @returns {UpgradeModel[]} Array with UpgradeModels.
  */
 
 export const getUpgradeModels = (): UpgradeModel[] => upgradeData;
@@ -225,12 +254,12 @@ export const getUpgradeModels = (): UpgradeModel[] => upgradeData;
 /**
  * Get the turn cost for a given distance.
  * 
- * @return {number} Number describing the maximum range.
+ * @returns {number} Number describing the maximum range.
  */
 
 export const getRangeTurnCost = (distance: number): number => {
-    const turnKey: string = Object.keys(rangeCost).filter(key => {
-        const [lower, upper] = key.split(',');
+    const turnKey: string = Object.keys(rangeCost).filter((key: string): boolean => {
+        const [lower, upper]: Array<string> = key.split(',');
         return parseInt(lower) >= distance && distance < parseInt(upper);
     })[0];
     return !turnKey ? rangeCost['260,10000'] : rangeCost[turnKey];

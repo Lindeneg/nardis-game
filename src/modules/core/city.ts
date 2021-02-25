@@ -1,5 +1,6 @@
 import BaseComponent from '../component/base-component';
 import Resource from './resource';
+import Logger from '../../util/logger';
 import { 
     CityModel,
     CityResourceModel 
@@ -8,7 +9,9 @@ import {
     CityResource,
     CityCoordinate,
     HandleTurnInfo,
-    ITurnable
+    ITurnable,
+    PartialLog,
+    LogLevel
 } from '../../types/types';
 import { 
     MAX_CITY_SIZE,
@@ -21,7 +24,8 @@ import {
 } from '../../util/constants';
 import { 
     randomNumber, 
-    degreesToRadians 
+    degreesToRadians, 
+    isDefined
 } from '../../util/util';
 
 
@@ -32,12 +36,12 @@ import {
  * @param {CityCoordinate} coords              - Object with location coordinates.
  * @param {CityResource[]} supply              - Object with info for City supplies.
  * @param {CityResource[]} demand              - Object with info for City demands.
- * @param {number}         growthRate          - Float describing growth rate.
- * @param {number}         supplyRefillRate    - Int describing refill rate.
+ * @param {number}         growthRate          - Number describing growth rate.
+ * @param {number}         supplyRefillRate    - Number describing refill rate.
  * 
- * @param {number}         growthChangeDecider - (optional) Float describing growth change decider.
- * @param {number}         supplyRefillDecider - (optional) Float describing supply refill decider.
- * @param {number}         currentRouteCount   - (optional) Int describing current number of routes.
+ * @param {number}         growthChangeDecider - (optional) Number describing growth change decider.
+ * @param {number}         supplyRefillDecider - (optional) Number describing supply refill decider.
+ * @param {number}         currentRouteCount   - (optional) Number describing current number of routes.
  * @param {string}         id                  - (optional) String number describing id.
  */
 
@@ -55,6 +59,8 @@ export default class City extends BaseComponent implements ITurnable {
     private _supplyRefillDecider: number;
     private _maxConcurrentRoutes: number;
     private _currentRouteCount  : number;
+
+    private log                 : PartialLog;
 
     constructor(
             name                : string,
@@ -79,26 +85,61 @@ export default class City extends BaseComponent implements ITurnable {
         this._demand              = demand;
         this._growthRate          = growthRate;
         this._supplyRefillRate    = supplyRefillRate;
-        this._growthChangeDecider = growthChangeDecider ? growthChangeDecider : 0;
-        this._supplyRefillDecider = supplyRefillDecider ? supplyRefillDecider : 0;
-        this._currentRouteCount   = currentRouteCount   ? currentRouteCount   : 0;
+        this._growthChangeDecider = isDefined(growthChangeDecider) ? growthChangeDecider : 0;
+        this._supplyRefillDecider = isDefined(supplyRefillDecider) ? supplyRefillDecider : 0;
+        this._currentRouteCount   = isDefined(currentRouteCount)   ? currentRouteCount   : 0;
         this._maxConcurrentRoutes = this.getMaxConcurrentRoutes();
+
+        this.log                  = Logger.log.bind(null, LogLevel.All, `city-${this.name}`);
+
     }
 
-    public getSize                = ()                  : number         => this._size;
-    public getCoords              = ()                  : CityCoordinate => this._coords;
-    public getSupply              = ()                  : CityResource[] => this._supply;
-    public getDemand              = ()                  : CityResource[] => this._demand;
-    public getGrowthRate          = ()                  : number         => this._growthRate;
-    public getGrowthDecider       = ()                  : number         => this._growthChangeDecider;
-    public getSupplyRefillRate    = ()                  : number         => this._supplyRefillRate;
-    public getSupplyDecider       = ()                  : number         => this._supplyRefillDecider;
-    public getCurrentRouteCount   = ()                  : number         => this._currentRouteCount;
-    public getMaxRouteCount       = ()                  : number         => this._maxConcurrentRoutes;
-    public isFull                 = ()                  : boolean        => this._currentRouteCount >= this._maxConcurrentRoutes;
-    public isSupply               = (resource: Resource): boolean        => this._supply.filter(e => e.resource.equals(resource)).length > 0;
-    public isDemand               = (resource: Resource): boolean        => this._demand.filter(e => e.resource.equals(resource)).length > 0;
+    public getSize                = (): number         => this._size;
+    public getCoords              = (): CityCoordinate => this._coords;
+    public getSupply              = (): CityResource[] => this._supply;
+    public getDemand              = (): CityResource[] => this._demand;
+    public getGrowthRate          = (): number         => this._growthRate;
+    public getGrowthDecider       = (): number         => this._growthChangeDecider;
+    public getSupplyRefillRate    = (): number         => this._supplyRefillRate;
+    public getSupplyDecider       = (): number         => this._supplyRefillDecider;
+    public getCurrentRouteCount   = (): number         => this._currentRouteCount;
+    public getMaxRouteCount       = (): number         => this._maxConcurrentRoutes;
+    public isFull                 = (): boolean        => this._currentRouteCount >= this._maxConcurrentRoutes;
 
+    /**
+     * Check is a Resource is found in City supplies.
+     * 
+     * @param   {Resource} resource - Resource instance to check for in supplies.
+     * 
+     * @returns {boolean}  True if found else false. 
+     */
+
+    public isSupply = (resource: Resource): boolean => {
+        for (let i: number = 0; i < this._supply.length; i++) {
+            if (this._supply[i].resource.equals(resource)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /**
+     * Check is a Resource is found in City demands.
+     * 
+     * @param   {Resource} resource - Resource instance to check for in demands.
+     * 
+     * @returns {boolean}  True if found else false. 
+     */
+
+    public isDemand = (resource: Resource): boolean => {
+        for (let i: number = 0; i < this._demand.length; i++) {
+            if (this._demand[i].resource.equals(resource)) {
+                return true;
+            }
+        }
+        return false;
+    }
+    
     /**
      * Handle City events which pertains to growth and refill of supplies. A city grow if the decision variable
      * is equal or greater than a certain value. If so, grow the city and set new resources else increment decision.
@@ -126,7 +167,7 @@ export default class City extends BaseComponent implements ITurnable {
     /**
      * Increment currentRouteCount if City is not at peak capacity.
      * 
-     * @return {boolean} True if count was incremented else false.
+     * @returns {boolean} True if count was incremented else false.
      */
 
     public incrementRouteCount = (): boolean => {
@@ -140,7 +181,7 @@ export default class City extends BaseComponent implements ITurnable {
     /**
      * Decrement currentRouteCount if the count is above or equal one.
      * 
-     * @return {boolean} True if count was decremented else false.
+     * @returns {boolean} True if count was decremented else false.
      */
 
     public decrementRouteCount = (): boolean => {
@@ -154,9 +195,9 @@ export default class City extends BaseComponent implements ITurnable {
     /**
      * Get distance between two City instances in kilometers using haversine formula.
      * 
-     * @param {City}    city - City instance to calculate distance to.
+     * @param   {City}    city - City instance to calculate distance to.
      * 
-     * @return {number}        Number with distance in kilometers.
+     * @returns {number}  Number with distance in kilometers.
      */
 
     public distanceTo = (city: City): number => {
@@ -174,10 +215,10 @@ export default class City extends BaseComponent implements ITurnable {
     /**
      * Subtract available amount from a CityResource.
      * 
-     * @param {Resource} supply   - Resource in supply to subtract from.
-     * @param {number}   subtract - Number to subtract.
+     * @param   {Resource} supply   - Resource in supply to subtract from.
+     * @param   {number}   subtract - Number to subtract.
      * 
-     * @return {number}             True if subtracted else false.
+     * @returns {number}   True if subtracted else false.
      */
 
     public subtractSupply = (supply: Resource, subtract: number): boolean => {
@@ -194,38 +235,67 @@ export default class City extends BaseComponent implements ITurnable {
     /**
      * Get CityResource from Resource instance.
      * 
-     * @param {Resource} resource - Resource to match.
+     * @param   {Resource}     resource - Resource to match.
      * 
-     * @return {CityResource}       CityResource if found else null.
+     * @returns {CityResource} CityResource if found else null.
      */
 
     public getCityResourceFromResource = (resource: Resource): CityResource => {
-        const result: CityResource[] = this._supply.filter(e => e.resource.equals(resource));
+        const result: CityResource[] = this._supply.filter((e: CityResource): boolean => e.resource.equals(resource));
         return result.length > 0 ? result[0] : null;
     }
 
+    /** 
+     * @returns {string} String with JSON stringified property keys and values.
+    */
+   
+    public deconstruct = (): string => JSON.stringify({
+        name                : this.name,
+        id                  : this.id,
+        _size               : this._size,
+        _coords             : this._coords,
+        _growthRate         : this._growthRate,
+        _supplyRefillRate   : this._supplyRefillRate,
+        _growthChangeDecider: this._growthChangeDecider,
+        _supplyRefillDecider: this._supplyRefillDecider,
+        _currentRouteCount  : this._currentRouteCount,
+        _supply             : this._supply.map(s => ({
+            resource: {
+                id: s.resource.id
+            },
+            amount: s.amount,
+            available: s.available
+        })),
+        _demand             : this._demand.map(d => ({
+            resource: {
+                id: d.resource.id
+            },
+            amount: d.amount,
+            available: d.available
+        }))
+    })
+
     /**
-     * @param {Resource} resource - Resource to match.
+     * @param   {Resource} resource - Resource to match.
      * 
-     * @return {boolean}            True if Resource is found in supply or demand else false.
+     * @returns {boolean}  True if Resource is found in supply or demand else false.
      */
 
-    private isSupplyOrDemand = (resource: Resource): boolean => {
-        return (this.isSupply(resource) || this.isDemand(resource));
-    }
+    private isSupplyOrDemand = (resource: Resource): boolean => this.isSupply(resource) || this.isDemand(resource);
 
     /**
      * Grow the size of City with 50% roll chance, if City size is not max.
      * 
-     * @param {Resource[]} resources - Resource instances used in the current game.
+     * @param   {Resource[]} resources - Resource instances used in the current game.
      * 
-     * @return {boolean}               True if City did grow else false.
+     * @returns {boolean}    True if City did grow else false.
      */
 
     private grow = (resources: Resource[]): boolean => {
         if (this._size >= MAX_CITY_SIZE || randomNumber() > 5) {
             return false;
         }
+        this.log(`grows in size ${this._size}->${this._size + 1}`);
         this._size++;
         this.updateCityAfterGrowth(resources);
         return true;
@@ -236,7 +306,7 @@ export default class City extends BaseComponent implements ITurnable {
      */
 
     private refill = (): void => {
-        this._supply.forEach(supply => {
+        this._supply.forEach((supply: CityResource): void => {
             supply.available = supply.amount;
         });
     }
@@ -252,14 +322,13 @@ export default class City extends BaseComponent implements ITurnable {
         const resourceDiff: number = resourceLimit - this._supply.length;
         this._maxConcurrentRoutes = this.getMaxConcurrentRoutes();
         if (resourceDiff > 0) {
-            // one could mutate the current reference instead of creating a new one
-            // but strange behavior follows when doing the former, hence the latter
             const newSupplies: CityResource[] = [...this._supply];
             const newDemands: CityResource[] = [...this._demand];
-            for (let _ = 0; _ < resourceDiff; _++) {
+            for (let _: number = 0; _ < resourceDiff; _++) {
                 newSupplies.push(this.rollNewResource(resources));
                 newDemands.push(this.rollNewResource(resources));
             }
+            this.log(`gained ${resourceDiff} new resources after growth`);
             this._supply = newSupplies;
             this._demand = newDemands;
         }
@@ -270,13 +339,13 @@ export default class City extends BaseComponent implements ITurnable {
      * 
      * Throws an Error if no unique Resource could be found.
      * 
-     * @param {Resource[]} resources - Resource instances used in the current game.
+     * @param   {Resource[]}   resources - Resource instances used in the current game.
      * 
-     * @return {CityResource}        - CityResource not found in City supply or demand.
+     * @returns {CityResource} CityResource not found in City supply or demand.
      */
 
     private rollNewResource = (resources: Resource[]): CityResource => {
-        const relevantResources: Resource[] = resources.filter(e => {
+        const relevantResources: Resource[] = resources.filter((e: Resource): boolean => {
             return !this.isSupplyOrDemand(e);
         });
         if (relevantResources.length <= 0) {
@@ -291,23 +360,21 @@ export default class City extends BaseComponent implements ITurnable {
     }
 
     /**
-     * @return {number} maxConcurrentRoutes from the current City size.
+     * @returns {number} maxConcurrentRoutes from the current City size.
      */
 
     private getMaxConcurrentRoutes = (): number => {
-        const result = CitySizeMaxConcurrentRoutes.filter(e => {
-            return e.size === this._size;
-        })[0];
-        return result ? result.maxRoutes : 0;
+        const result = CitySizeMaxConcurrentRoutes.filter(e => e.size === this._size);
+        return result.length > 0 ? result[0].maxRoutes : 0;
     }
 
     /**
      * Get City instance from a CityModel.
      * 
-     * @param {CityModel}  model     - CityModel to be used.
-     * @param {Resource[]} resources - Resource instances used in the current game.
+     * @param   {CityModel}  model     - CityModel to be used.
+     * @param   {Resource[]} resources - Resource instances used in the current game.
      * 
-     * @return {City}                  City instance created from the model.
+     * @returns {City}       City instance created from the model.
      */
 
     public static createFromModel = (model: CityModel, resources: Resource[]): City => {
@@ -325,24 +392,24 @@ export default class City extends BaseComponent implements ITurnable {
     /**
      * Get City instance from stringified JSON.
      * 
-     * @param {string}     stringifiedJSON - string with information to be used.
-     * @param {Resource[]} resources       - Resource instances used in the current game.
+     * @param   {string}     stringifiedJSON - string with information to be used.
+     * @param   {Resource[]} resources       - Resource instances used in the current game.
      * 
-     * @return {City}                        City instance created from the string.
+     * @returns {City}       City instance created from the string.
      */
 
     public static createFromStringifiedJSON = (stringifiedJSON: string, resources: Resource[]): City => {
         // it is not pretty but it does the job
         const parsedJSON: any = JSON.parse(stringifiedJSON);
-        const resource: {s: CityResource[], d: CityResource[]} = ((supply: any[], demand: any[]): {s: CityResource[], d: CityResource[]} => {
-            const s: CityResource[] = supply.map(su => {
+        const resource = ((supply, demand) => {
+            const s = supply.map(su => {
                 return {
                     resource: resources.filter(e => e.id === su.resource.id)[0],
                     amount: su.amount,
                     available: su.available
                 };
             });
-            const d: CityResource[] = demand.map(su => {
+            const d = demand.map(su => {
                 return {
                     resource: resources.filter(e => e.id === su.resource.id)[0],
                     amount: su.amount,
@@ -369,19 +436,17 @@ export default class City extends BaseComponent implements ITurnable {
     /**
      * Get array of CityResources from CityResourceModels.
      * 
-     * @param {CityResourceModel[]} cityResourceModels - CityModel to be used.
-     * @param {Resource[]}          resources          - Resource instances used in the current game.
+     * @param   {CityResourceModel[]} cityResourceModels - CityModel to be used.
+     * @param   {Resource[]}          resources          - Resource instances used in the current game.
      * 
-     * @return {CityResource[]}                        - Array of CityResources.
+     * @returns {CityResource[]}      Array of CityResources.
      */
 
-    private static getCityResources = (cityResourceModels: CityResourceModel[], resources: Resource[]): CityResource[] => {
-        return cityResourceModels.map(e => {
-            return {
-                resource: resources.filter(r => r.name === e.name)[0],
-                amount: e.amount,
-                available: e.available
-            };
-        });
-    }
+    private static getCityResources = (cityResourceModels: CityResourceModel[], resources: Resource[]): CityResource[] => 
+        cityResourceModels.map((e: CityResourceModel): CityResource => ({
+            resource: resources.filter((r: Resource): boolean => r.name === e.name)[0],
+            amount: e.amount,
+            available: e.available
+        })
+    );
 }

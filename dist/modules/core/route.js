@@ -12,35 +12,26 @@ var __extends = (this && this.__extends) || (function () {
         d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
     };
 })();
-var __assign = (this && this.__assign) || function () {
-    __assign = Object.assign || function(t) {
-        for (var s, i = 1, n = arguments.length; i < n; i++) {
-            s = arguments[i];
-            for (var p in s) if (Object.prototype.hasOwnProperty.call(s, p))
-                t[p] = s[p];
-        }
-        return t;
-    };
-    return __assign.apply(this, arguments);
-};
 Object.defineProperty(exports, "__esModule", { value: true });
 var base_component_1 = require("../component/base-component");
+var logger_1 = require("../../util/logger");
+var util_1 = require("../../util/util");
 var types_1 = require("../../types/types");
 /**
  * @constructor
- * @param {string}     name                - string with name.
+ * @param {string}     name                - String with name.
  * @param {City}       cityOne             - City specifying initial departure.
  * @param {City}       cityTwo             - City specifying initial arrival.
  * @param {Train}      train               - Train instance to be used.
  * @param {RoutePlan}  routePlan           - RoutePlan describing cargo.
- * @param {number}     distance            - number with distance in kilometers.
- * @param {number}     cost                - number with cost in gold.
- * @param {number}     purchasedOnTurn     - number with turn count.
+ * @param {number}     distance            - Number with distance in kilometers.
+ * @param {number}     cost                - Number with cost in gold.
+ * @param {number}     purchasedOnTurn     - Number with turn count.
  *
- * @param {number}     profit              - (optional) number with profit in gold.
- * @param {number}     kilometersTravelled - (optional) kilometers travelled in total for route.
+ * @param {number}     profit              - (optional) Number with profit in gold.
+ * @param {number}     kilometersTravelled - (optional) Number with total kilometers travelled.
  * @param {RouteState} routeState          - (optional) RouteState of the route.
- * @param {string}     id                  - (optional) string number describing id.
+ * @param {string}     id                  - (optional) String number describing id.
  */
 var Route = /** @class */ (function (_super) {
     __extends(Route, _super);
@@ -104,18 +95,66 @@ var Route = /** @class */ (function (_super) {
          * Change Train or RoutePlanCargo from active route.
          */
         _this.change = function (train, routePlan) {
+            var msg = '';
             if (!_this._train.equals(train)) {
+                msg = "setting train '" + _this._train.name + "'->'" + train.name + "' and resetting profits and km travelled";
                 _this._profit = 0;
                 _this._kilometersTravelled = 0;
             }
+            _this.log("changing active route: " + msg, routePlan);
             _this._train = train;
             _this._routePlanCargo = routePlan;
             _this.resetRouteState(true);
         };
         /**
+         * @returns {string} String with JSON stringified property keys and values.
+        */
+        _this.deconstruct = function () { return JSON.stringify({
+            name: _this.name,
+            id: _this.id,
+            distance: _this._distance,
+            cost: _this._cost,
+            purchasedOnTurn: _this._purchasedOnTurn,
+            profit: _this._profit,
+            kilometersTravelled: _this._kilometersTravelled,
+            cityOne: _this._cityOne.id,
+            cityTwo: _this._cityTwo.id,
+            train: _this._train.id,
+            routePlanCargo: {
+                cityOne: _this._routePlanCargo.cityOne.map(function (c1) { return ({
+                    resource: {
+                        id: c1.resource.id
+                    },
+                    targetAmount: c1.targetAmount,
+                    actualAmount: c1.actualAmount
+                }); }),
+                cityTwo: _this._routePlanCargo.cityTwo.map(function (c2) { return ({
+                    resource: {
+                        id: c2.resource.id
+                    },
+                    targetAmount: c2.targetAmount,
+                    actualAmount: c2.actualAmount
+                }); })
+            },
+            routeState: {
+                hasArrived: _this._routeState.hasArrived,
+                destination: {
+                    id: _this._routeState.destination.id
+                },
+                distance: _this._routeState.distance,
+                cargo: !!_this._routeState.cargo ? _this._routeState.cargo.map(function (c) { return ({
+                    resource: {
+                        id: c.resource.id
+                    },
+                    targetAmount: c.targetAmount,
+                    actualAmount: c.actualAmount
+                }); }) : null
+            }
+        }); };
+        /**
          * Get Train speed with Player upgrades taken into consideration.
          *
-         * @return {number} - Number with the correct Train speed.
+         * @returns {number} - Number with the correct Train speed.
          */
         _this.getTrainSpeed = function (upgrades) {
             var relevantUpgrades = upgrades.filter(function (e) { return e.type === types_1.UpgradeType.TrainSpeedQuicker; });
@@ -131,7 +170,7 @@ var Route = /** @class */ (function (_super) {
          * Get appropriate array RouteCargo when between arrival and departure. Ensures that the
          * amount of each cargo respects the available amount from the City where the cargo is fetched from.
          *
-         * @return {RouteCargo[]} - Array of RouteCargo objects.
+         * @returns {RouteCargo[]} - Array of RouteCargo objects.
          */
         _this.getChangedCargo = function () {
             var isDestinationCityOne = _this._routeState.destination.equals(_this._cityOne);
@@ -141,7 +180,7 @@ var Route = /** @class */ (function (_super) {
                 var citySupply = inCity.getCityResourceFromResource(routeCargo.resource);
                 var diff = citySupply ? citySupply.available - routeCargo.targetAmount : null;
                 var available = citySupply.available;
-                if (typeof diff === 'number' && !Number.isNaN(diff)) {
+                if (util_1.isNumber(diff)) {
                     if (diff <= 0 && inCity.subtractSupply(routeCargo.resource, available)) {
                         // target amount is greater than available, so set actual amount to available 
                         routeCargo.actualAmount = available;
@@ -161,6 +200,11 @@ var Route = /** @class */ (function (_super) {
             });
             return cargo;
         };
+        /**
+         * Reset the RouteState to its default values.
+         *
+         * @param {boolean} edit - True if the reset is due to an edit of an active Route, else false.
+         */
         _this.resetRouteState = function (edit) {
             _this._routeState = {
                 hasArrived: edit ? true : false,
@@ -177,9 +221,10 @@ var Route = /** @class */ (function (_super) {
         _this._distance = distance;
         _this._cost = cost;
         _this._purchasedOnTurn = purchasedOnTurn;
-        _this._profit = profit ? profit : 0;
-        _this._kilometersTravelled = kilometersTravelled ? kilometersTravelled : 0;
-        if (routeState) {
+        _this._profit = util_1.isDefined(profit) ? profit : 0;
+        _this._kilometersTravelled = util_1.isDefined(kilometersTravelled) ? kilometersTravelled : 0;
+        _this.log = logger_1.default.log.bind(null, types_1.LogLevel.All, "route-" + id);
+        if (util_1.isDefined(routeState)) {
             _this._routeState = routeState;
         }
         else {
@@ -190,25 +235,36 @@ var Route = /** @class */ (function (_super) {
     /**
      * Get Route instance from stringified JSON.
      *
-     * @param {string}     stringifiedJSON - String with information to be used.
-     * @param {City[]}     cities          - Array of City instances used in game.
-     * @param {Train[]}    trains          - Array of Train instances used in game.
-     * @param {Resource[]} resources       - Array of Resource instances used in game.
+     * @param   {string}     stringifiedJSON - String with information to be used.
+     * @param   {City[]}     cities          - Array of City instances used in game.
+     * @param   {Train[]}    trains          - Array of Train instances used in game.
+     * @param   {Resource[]} resources       - Array of Resource instances used in game.
      *
-     * @return {Route}                       Route instance created from the string.
+     * @returns {Route}      Route instance created from the string.
      */
     Route.createFromStringifiedJSON = function (stringifiedJSON, cities, trains, resources) {
-        var parsedJSON = JSON.parse(stringifiedJSON);
-        var routeState = parsedJSON._routeState;
-        var cargo = !!routeState.cargo ? routeState.cargo.map(function (e) { return (__assign(__assign({}, e), { resource: resources.filter(function (j) { return j.id === e.resource.id; })[0] })); }) : routeState.cargo;
-        return new Route(parsedJSON.name, cities.filter(function (e) { return e.id === parsedJSON._cityOne.id; })[0], cities.filter(function (e) { return e.id === parsedJSON._cityTwo.id; })[0], trains.filter(function (e) { return e.id === parsedJSON._train.id; })[0], {
-            cityOne: parsedJSON._routePlanCargo.cityOne.map(function (e) {
-                return __assign(__assign({}, e), { resource: resources.filter(function (j) { return j.id === e.resource.id; })[0] });
-            }),
-            cityTwo: parsedJSON._routePlanCargo.cityTwo.map(function (e) {
-                return __assign(__assign({}, e), { resource: resources.filter(function (j) { return j.id === e.resource.id; })[0] });
-            })
-        }, parsedJSON._distance, parsedJSON._cost, parsedJSON._purchasedOnTurn, parsedJSON._profit, parsedJSON._kilometersTravelled, __assign(__assign({}, parsedJSON._routeState), { destination: cities.filter(function (e) { return e.id === parsedJSON._routeState.destination.id; })[0], cargo: cargo }), parsedJSON.id);
+        var parsedJSON = typeof stringifiedJSON === 'string' ? JSON.parse(stringifiedJSON) : stringifiedJSON;
+        return new Route(parsedJSON.name, cities.filter(function (e) { return e.id === parsedJSON.cityOne; })[0], cities.filter(function (e) { return e.id === parsedJSON.cityTwo; })[0], trains.filter(function (e) { return e.id === parsedJSON.train; })[0], {
+            cityOne: parsedJSON.routePlanCargo.cityOne.map(function (c1) { return ({
+                resource: resources.filter(function (r) { return r.id === c1.resource.id; })[0],
+                targetAmount: c1.targetAmount,
+                actualAmount: c1.actualAmount
+            }); }),
+            cityTwo: parsedJSON.routePlanCargo.cityTwo.map(function (c2) { return ({
+                resource: resources.filter(function (r) { return r.id === c2.resource.id; })[0],
+                targetAmount: c2.targetAmount,
+                actualAmount: c2.actualAmount
+            }); })
+        }, parsedJSON.distance, parsedJSON.cost, parsedJSON.purchasedOnTurn, parsedJSON.profit, parsedJSON.kilometersTravelled, {
+            hasArrived: parsedJSON.routeState.hasArrived,
+            destination: cities.filter(function (e) { return e.id === parsedJSON.routeState.destination.id; })[0],
+            distance: parsedJSON.routeState.distance,
+            cargo: !!parsedJSON.routeState.cargo ? parsedJSON.routeState.cargo.map(function (c) { return ({
+                resource: resources.filter(function (e) { return e.id === c.resource.id; })[0],
+                targetAmount: c.targetAmount,
+                actualAmount: c.actualAmount
+            }); }) : null
+        }, parsedJSON.id);
     };
     return Route;
 }(base_component_1.default));
