@@ -1,5 +1,6 @@
 import BaseComponent from '../component/base-component';
 import Resource from './resource';
+import Logger from '../../util/logger';
 import { 
     CityModel,
     CityResourceModel 
@@ -8,7 +9,9 @@ import {
     CityResource,
     CityCoordinate,
     HandleTurnInfo,
-    ITurnable
+    ITurnable,
+    PartialLog,
+    LogLevel
 } from '../../types/types';
 import { 
     MAX_CITY_SIZE,
@@ -24,6 +27,7 @@ import {
     degreesToRadians, 
     isDefined
 } from '../../util/util';
+
 
 /**
  * @constructor
@@ -56,6 +60,8 @@ export default class City extends BaseComponent implements ITurnable {
     private _maxConcurrentRoutes: number;
     private _currentRouteCount  : number;
 
+    private log                 : PartialLog;
+
     constructor(
             name                : string,
             size                : number,
@@ -84,22 +90,56 @@ export default class City extends BaseComponent implements ITurnable {
         this._currentRouteCount   = isDefined(currentRouteCount)   ? currentRouteCount   : 0;
         this._maxConcurrentRoutes = this.getMaxConcurrentRoutes();
 
+        this.log                  = Logger.log.bind(null, LogLevel.All, `city-${this.name}`);
+
     }
 
-    public getSize                = ()                  : number         => this._size;
-    public getCoords              = ()                  : CityCoordinate => this._coords;
-    public getSupply              = ()                  : CityResource[] => this._supply;
-    public getDemand              = ()                  : CityResource[] => this._demand;
-    public getGrowthRate          = ()                  : number         => this._growthRate;
-    public getGrowthDecider       = ()                  : number         => this._growthChangeDecider;
-    public getSupplyRefillRate    = ()                  : number         => this._supplyRefillRate;
-    public getSupplyDecider       = ()                  : number         => this._supplyRefillDecider;
-    public getCurrentRouteCount   = ()                  : number         => this._currentRouteCount;
-    public getMaxRouteCount       = ()                  : number         => this._maxConcurrentRoutes;
-    public isFull                 = ()                  : boolean        => this._currentRouteCount >= this._maxConcurrentRoutes;
-    public isSupply               = (resource: Resource): boolean        => this._supply.filter((e: CityResource): boolean => e.resource.equals(resource)).length > 0;
-    public isDemand               = (resource: Resource): boolean        => this._demand.filter((e: CityResource): boolean => e.resource.equals(resource)).length > 0;
+    public getSize                = (): number         => this._size;
+    public getCoords              = (): CityCoordinate => this._coords;
+    public getSupply              = (): CityResource[] => this._supply;
+    public getDemand              = (): CityResource[] => this._demand;
+    public getGrowthRate          = (): number         => this._growthRate;
+    public getGrowthDecider       = (): number         => this._growthChangeDecider;
+    public getSupplyRefillRate    = (): number         => this._supplyRefillRate;
+    public getSupplyDecider       = (): number         => this._supplyRefillDecider;
+    public getCurrentRouteCount   = (): number         => this._currentRouteCount;
+    public getMaxRouteCount       = (): number         => this._maxConcurrentRoutes;
+    public isFull                 = (): boolean        => this._currentRouteCount >= this._maxConcurrentRoutes;
 
+    /**
+     * Check is a Resource is found in City supplies.
+     * 
+     * @param   {Resource} resource - Resource instance to check for in supplies.
+     * 
+     * @returns {boolean}  True if found else false. 
+     */
+
+    public isSupply = (resource: Resource): boolean => {
+        for (let i: number = 0; i < this._supply.length; i++) {
+            if (this._supply[i].resource.equals(resource)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /**
+     * Check is a Resource is found in City demands.
+     * 
+     * @param   {Resource} resource - Resource instance to check for in demands.
+     * 
+     * @returns {boolean}  True if found else false. 
+     */
+
+    public isDemand = (resource: Resource): boolean => {
+        for (let i: number = 0; i < this._demand.length; i++) {
+            if (this._demand[i].resource.equals(resource)) {
+                return true;
+            }
+        }
+        return false;
+    }
+    
     /**
      * Handle City events which pertains to growth and refill of supplies. A city grow if the decision variable
      * is equal or greater than a certain value. If so, grow the city and set new resources else increment decision.
@@ -255,6 +295,7 @@ export default class City extends BaseComponent implements ITurnable {
         if (this._size >= MAX_CITY_SIZE || randomNumber() > 5) {
             return false;
         }
+        this.log(`grows in size ${this._size}->${this._size + 1}`);
         this._size++;
         this.updateCityAfterGrowth(resources);
         return true;
@@ -287,6 +328,7 @@ export default class City extends BaseComponent implements ITurnable {
                 newSupplies.push(this.rollNewResource(resources));
                 newDemands.push(this.rollNewResource(resources));
             }
+            this.log(`gained ${resourceDiff} new resources after growth`);
             this._supply = newSupplies;
             this._demand = newDemands;
         }
@@ -322,10 +364,8 @@ export default class City extends BaseComponent implements ITurnable {
      */
 
     private getMaxConcurrentRoutes = (): number => {
-        const result = CitySizeMaxConcurrentRoutes.filter(e => {
-            return e.size === this._size;
-        })[0];
-        return result ? result.maxRoutes : 0;
+        const result = CitySizeMaxConcurrentRoutes.filter(e => e.size === this._size);
+        return result.length > 0 ? result[0].maxRoutes : 0;
     }
 
     /**

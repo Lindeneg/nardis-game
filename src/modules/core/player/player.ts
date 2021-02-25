@@ -5,7 +5,8 @@ import City from '../city';
 import Train from '../train';
 import Resource from '../resource';
 import Route from '../route';
-import { Nardis } from '../../..';
+import Logger from '../../../util/logger';
+import { Nardis } from '../../nardis';
 import {
     QueuedRouteItem,
     HandleTurnInfo,
@@ -14,9 +15,12 @@ import {
     PlayerLevel,
     LevelUpRequirement,
     Indexable,
+    PartialLog,
+    LogLevel,
 } from '../../../types/types';
 import {
-    getPlayerLevelFromNumber, isDefined
+    getPlayerLevelFromNumber, 
+    isDefined
 } from '../../../util/util';
 import {
     rangePerLevel,
@@ -54,6 +58,8 @@ export default class Player extends BaseComponent implements ITurnable {
     protected _upgrades : Upgrade[];
     protected _isActive : boolean;
 
+    protected log       : PartialLog;
+
     constructor(
             name        : string,
             startGold   : number,
@@ -80,6 +86,8 @@ export default class Player extends BaseComponent implements ITurnable {
         this._upgrades  = isDefined(upgrades) ? upgrades : [];
         this._isActive  = isDefined(isActive) ? isActive : true;
         this._range     = this.getRangeFromLevel();
+
+        this.log        = Logger.log.bind(null, (playerType === PlayerType.Human ? LogLevel.All : LogLevel.Opponent), `player-${this.name}`);
 
     }
 
@@ -125,21 +133,27 @@ export default class Player extends BaseComponent implements ITurnable {
     /**
      * Merge current Route array with another,
      * 
-     * @param routes - Array of Routes to append to current Route array.
+     * @param   {Route[]} routes - Array of Routes to append to active Route array.
+     * 
+     * @returns {number}  Number with amount of Routes appended to Player.
      */
 
-    public mergeRoutes = (routes: Route[]): void => {
+    public mergeRoutes = (routes: Route[]): number => {
         this._routes = this._routes.concat(routes);
+        return routes.length;
     }
 
     /**
      * Merge current queue array with another,
+     *  
+     * @param   {QueuedRouteItem[]} queue - Array of QueuedRouteItem to append to current queue array.
      * 
-     * @param queue - Array of QueuedRouteItem to append to current queue array.
+     * @returns {number}            Number with amount of Routes appended to Player.
      */
 
-    public mergeQueue = (queue: QueuedRouteItem[]): void => {
+    public mergeQueue = (queue: QueuedRouteItem[]): number => {
         this._queue = this._queue.concat(queue);
+        return queue.length;
     }
 
     /**
@@ -147,6 +161,7 @@ export default class Player extends BaseComponent implements ITurnable {
      */
 
     public setInactive = (): void => {
+        this.log(`setting player inactive`);
         this._routes = [], this._queue = [], this._upgrades = [];
         this._isActive = false;
     }
@@ -159,6 +174,7 @@ export default class Player extends BaseComponent implements ITurnable {
      */
 
     public addRouteToQueue = (route: Route, turnCost: number): void => {
+        this.log(`adding route '${route.id}' to queue with turn cost ${turnCost}`);
         route.getCityOne().incrementRouteCount();
         route.getCityTwo().incrementRouteCount();
         this._queue.push({
@@ -177,14 +193,16 @@ export default class Player extends BaseComponent implements ITurnable {
 
     public removeRouteFromQueue = (id: string): boolean => {
         for (let i: number = 0; i < this._queue.length; i++) {
-            const route: Route = this._queue[i].route;
+            const { route, turnCost } = this._queue[i];
             if (route.id === id) {
+                this.log(`removing route '${route.id}' from queue with turns ${turnCost} left`);
                 route.getCityOne().decrementRouteCount();
                 route.getCityTwo().decrementRouteCount();
                 this._queue.splice(i, 1);
                 return true;
             }
         }
+        this.log(`cannot remove route '${id}' from queue: not found`);
         return false;
     }
 
@@ -200,12 +218,14 @@ export default class Player extends BaseComponent implements ITurnable {
         for (let i: number = 0; i < this._routes.length; i++) {
             const route: Route = this._routes[i];
             if (route.id === id) {
+                this.log(`removing route '${route.id}' from active routes`);
                 route.getCityOne().decrementRouteCount();
                 route.getCityTwo().decrementRouteCount();
                 this._routes.splice(i, 1);
                 return true;
             }
         }
+        this.log(`cannot remove route '${id}' from active routes: not found`);
         return false;
     }
 
@@ -249,6 +269,7 @@ export default class Player extends BaseComponent implements ITurnable {
 
     protected handleQueue = (): void => {
         const completed: string[] = [];
+        this.log(`handling ${this._queue.length} queue items`);
         for (let i: number = 0; i < this._queue.length; i++) {
             if (this._queue[i].turnCost <= 0) {
                 this._routes.push(this._queue[i].route);
@@ -257,6 +278,7 @@ export default class Player extends BaseComponent implements ITurnable {
                 this._queue[i].turnCost--;
             }
         }
+        this.log(`handled ${this._queue.length} queue items and finished ${completed.length} of them`);
         this._queue = this._queue.filter((item: QueuedRouteItem): boolean => !(completed.indexOf(item.route.id) > -1));
     }
 
@@ -289,11 +311,11 @@ export default class Player extends BaseComponent implements ITurnable {
     protected shouldLevelBeIncreased = (): boolean => {
         if (this._level < PlayerLevel.Master) {
             const requirements: LevelUpRequirement = levelUpRequirements[this._level + 1];
-            return (
-                this._routes.length >= requirements.routes &&
-                this._finance.getAverageRevenue() >= requirements.revenuePerTurn &&
-                this._finance.getGold() >= requirements.gold
-            );
+            const r = this._routes.length >= requirements.routes; 
+            const a = this._finance.getAverageRevenue() >= requirements.revenuePerTurn;
+            const g = this._finance.getGold() >= requirements.gold;
+            this.log(`met level up requirements: routes=${r}, revenue=${a}, gold=${g}`);
+            return r && a && g;
         }
         return false;
     }
@@ -305,8 +327,11 @@ export default class Player extends BaseComponent implements ITurnable {
     protected increaseLevel = (): boolean => {
         const newLevel: PlayerLevel = getPlayerLevelFromNumber(this._level + 1);
         if (newLevel !== PlayerLevel.None) {
+            const r: number = this._range;
             this._level = newLevel;
             this._range = this.getRangeFromLevel();
+            this.log(`increasing level ${this._level - 1}->${this._level}`);
+            this.log(`increasing range ${r}->${this._range}`);
             return true;
         }
         return false;

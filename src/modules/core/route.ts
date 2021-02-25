@@ -3,7 +3,11 @@ import City from './city';
 import Resource from './resource';
 import Train from './train';
 import Upgrade from './player/upgrade';
-import { isDefined, isNumber } from '../../util/util';
+import Logger from '../../util/logger';
+import { 
+    isDefined, 
+    isNumber 
+} from '../../util/util';
 import { 
     RouteCargo,
     RoutePlanCargo, 
@@ -11,7 +15,9 @@ import {
     CityResource,
     HandleTurnInfo,
     ITurnable,
-    UpgradeType
+    UpgradeType,
+    PartialLog,
+    LogLevel
 } from '../../types/types';
 
 
@@ -45,6 +51,8 @@ export default class Route extends BaseComponent implements ITurnable {
     private _profit             : number;
     private _kilometersTravelled: number;
 
+    private log                 : PartialLog;
+
     constructor(
             name                : string,
             cityOne             : City,
@@ -70,6 +78,8 @@ export default class Route extends BaseComponent implements ITurnable {
         this._purchasedOnTurn     = purchasedOnTurn;
         this._profit              = isDefined(profit) ? profit : 0;
         this._kilometersTravelled = isDefined(kilometersTravelled) ? kilometersTravelled : 0;
+
+        this.log                  = Logger.log.bind(null, LogLevel.All, `route-${id}`);
 
         if (isDefined(routeState)) {
             this._routeState = routeState;
@@ -142,9 +152,12 @@ export default class Route extends BaseComponent implements ITurnable {
      */
 
     public change = (train: Train, routePlan: RoutePlanCargo): void => {
+        let msg: string = '';
         if (!this._train.equals(train)) {
+            msg = `setting train '${this._train.name}'->'${train.name}' and resetting profits and km travelled`;
             this._profit = 0; this._kilometersTravelled = 0;
         }
+        this.log(`changing active route: ${msg}`, routePlan);
         this._train = train; this._routePlanCargo = routePlan;
         this.resetRouteState(true);
     }

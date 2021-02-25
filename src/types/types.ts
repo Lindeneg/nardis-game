@@ -6,6 +6,14 @@ import Upgrade from '../modules/core/player/upgrade';
 import Stock from '../modules/core/player/stock';
 
 
+export type PartialLog = (msg: string, ...rest: any[]) => void;
+
+export enum LogLevel {
+    None,
+    Opponent,
+    All
+}
+
 export enum PlayerLevel {
     None,
     Novice,

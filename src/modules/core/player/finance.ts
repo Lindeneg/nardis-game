@@ -2,9 +2,12 @@ import BaseComponent from '../../component/base-component';
 import Upgrade from './upgrade';
 import Route from '../route';
 import Train from '../train';
+import Logger from '../../../util/logger';
 import { isDefined } from '../../../util/util';
 import {
-    localKeys, netWorthDivisors, stockConstant
+    localKeys, 
+    netWorthDivisors, 
+    stockConstant
 } from '../../../util/constants';
 import {
     FinanceHistory,
@@ -21,7 +24,9 @@ import {
     QueuedRouteItem,
     Stocks,
     StockHolding,
-    RouteCargo
+    RouteCargo,
+    PartialLog,
+    LogLevel
 } from '../../../types/types';
 
 
@@ -48,6 +53,8 @@ export default class Finance extends BaseComponent implements ITurnable {
     private _totalProfits: number;
     private _netWorth    : number;
     private _stocks      : StockHolding;
+
+    private log          : PartialLog;
 
     constructor(
         name             : string,
@@ -81,6 +88,8 @@ export default class Finance extends BaseComponent implements ITurnable {
         this._stocks       = isDefined(stocks) ? stocks : {
             [this._playerId]: stockConstant.startingShares
         };
+
+        this.log           = Logger.log.bind(null, LogLevel.All, `finance-${this.name}`);
     }
 
     public getGold         = (): number         => this._gold;
@@ -149,10 +158,12 @@ export default class Finance extends BaseComponent implements ITurnable {
                     this._totalProfits += value;
                     this.removeFromTotalHistory(localKeys[type], value);
                     this.addGold(value);
+                    this.log(`removed: T=${type};V=$${value};I='${id}'`);
                     return true;
                 }
             }
         }
+        this.log(`cannot remove: T=${type};I='${id}': not found`);
         return false;
     }
 
@@ -235,6 +246,8 @@ export default class Finance extends BaseComponent implements ITurnable {
             );
             this._totalProfits += value;
             this.addToTotalHistory(localKeys[FinanceType.StockSell], value);
+        } else {
+            this.log(`cannot subtract ${stockSubtract} from stock '${playerId}': not found`);
         }
     }
 
@@ -410,6 +423,7 @@ export default class Finance extends BaseComponent implements ITurnable {
             amount: amount,
             value : value
         };
+        this.log(`adding: GT=${generalType};T=${type};V=${amount}x${value};I='${id}'`);
         const target: FinanceHistoryItem = isIncome ? this._history.income : this._history.expense;
         const goldTarget: (value: number) => void = isIncome ? this.addGold : this.removeGold;
         target.nthTurn.push(object);

@@ -1,8 +1,15 @@
 import BaseComponent from "../../component/base-component";
 import Finance from "../../core/player/finance";
-import { BuyOutValue, StockSupply, ValueHistory } from "../../../types/types";
+import Logger from '../../../util/logger';
 import { stockConstant } from "../../../util/constants";
 import { isDefined } from "../../../util/util";
+import { 
+    BuyOutValue, 
+    LogLevel, 
+    PartialLog, 
+    StockSupply, 
+    ValueHistory 
+} from "../../../types/types";
 
 
 /**
@@ -25,6 +32,8 @@ export default class Stock extends BaseComponent {
     private _valueHistory  : ValueHistory[];
     private _supply        : StockSupply;
     private _isActive      : boolean;
+
+    private log            : PartialLog;
 
     constructor(
         name               : string,
@@ -50,6 +59,9 @@ export default class Stock extends BaseComponent {
         };
 
         this._isActive       = isDefined(isActive) ? isActive : true;
+
+        this.log             = Logger.log.bind(null, LogLevel.All, `stock-'${this.owningPlayerId}'`);
+
     }
 
     public getBuyValue  = (): number         => Math.floor(this._value * stockConstant.multipliers.stockBuy);
@@ -65,6 +77,7 @@ export default class Stock extends BaseComponent {
      */
     
     public setInactive  = (turn: number): void => {
+        this.log('setting stock inactive');
         this._value = 0;
         this._valueHistory.push({turn, value: this._value});
         this._isActive = false;
@@ -105,6 +118,7 @@ export default class Stock extends BaseComponent {
             }
             return true;
         }
+        this.log(`could not buy stock for '${playerId}': supply exhausted`);
         return false;
     }
 
@@ -122,7 +136,8 @@ export default class Stock extends BaseComponent {
         if (isDefined(this._supply[playerId]) && this._supply[playerId] - amount >= 0) {
             this._supply[playerId] -= amount;
             return true;
-        }   
+        }
+        this.log(`could not sell stock for '${playerId}': supply not found`);
         return false;
     }
 
@@ -158,6 +173,7 @@ export default class Stock extends BaseComponent {
                 Math.floor(this.currentAmountOfStockHolders() * stockConstant.multipliers.stockHolder) 
             ) + (Math.floor(finance.getTotalProfits() / stockConstant.divisors.totalProfits) + stockConstant.baseValue);
             if (newValue !== this._value) {
+                this.log(`setting new value: ${this._value}->${newValue}`);
                 this.updateValueHistory(newValue, turn);
                 this._value = newValue;
             }
@@ -199,6 +215,8 @@ export default class Stock extends BaseComponent {
                 value,
                 turn
             });
+        } else {
+            this.log(`cannot update value to ${value} in turn 1`);
         }
     }
 

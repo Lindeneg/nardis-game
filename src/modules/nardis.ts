@@ -7,7 +7,20 @@ import Resource from './core/resource';
 import Finance from './core/player/finance';
 import Opponent from './core/player/opponent/opponent';
 import Stock from './core/player/stock';
+import Logger from '../util/logger';
 import { genericOpponentsName } from '../data/preparedData';
+import {  RawDataModel } from '../types/model';
+import { generateData } from '../data/data';
+import { 
+    getRangeTurnCost, 
+    isDefined 
+} from '../util/util';
+import {
+    localKeys, 
+    START_GOLD, 
+    START_OPPONENTS, 
+    stockConstant
+} from '../util/constants';
 import {
     GameData,
     PotentialRoute,
@@ -23,20 +36,10 @@ import {
     StockSupply,
     BuyOutValue,
     StockHolding,
-    GameStatus
+    GameStatus,
+    PartialLog,
+    LogLevel
 } from '../types/types';
-import {
-    localKeys, START_GOLD, START_OPPONENTS, stockConstant
-} from '../util/constants';
-import {
-    generateData
-} from '../data/data';
-import {
-    getRangeTurnCost, isDefined
-} from '../util/util';
-import { 
-    RawDataModel 
-} from '../types/model';
 
 
 /**
@@ -58,6 +61,7 @@ export class Nardis {
     private _currentPlayer: Player;
     private _turn         : number;
 
+    private log           : PartialLog
 
     constructor(
         gameData          : GameData,
@@ -73,8 +77,12 @@ export class Nardis {
 
         this._currentPlayer = currentPlayer ? currentPlayer : this.players[0];
         this._turn          = turn          ? turn          : 1;
+        
+        this.log            = Logger.log.bind(null, LogLevel.All, 'nardis-game');
 
         this.updatePlayersNetWorth();
+
+        Logger.setTurn(this._turn);
     }
 
     public getCurrentPlayer = (): Player => this._currentPlayer;
@@ -104,6 +112,7 @@ export class Nardis {
         this.updateStocks();
         this.updatePlayersNetWorth();
         this.saveGame();
+        Logger.setTurn(this._turn);
     }
 
     /**
@@ -147,10 +156,7 @@ export class Nardis {
             upgrades.forEach((upgrade: Upgrade): void => {
                 cost -= Math.floor(cost * upgrade.value);
             });
-            return {
-                train,
-                cost
-            };
+            return { train, cost };
         });
     }
 
@@ -164,6 +170,7 @@ export class Nardis {
         const winner: Player[] = this.players.filter((player: Player): boolean => player.isActive());
         let id: string = ''; let gameOver: boolean = false;
         if (winner.length === 1) {
+            this.log(`'${winner[0].name}' is the only active player left`);
             id = winner[0].id; gameOver = true;
         }
         return {id, gameOver};
@@ -200,7 +207,8 @@ export class Nardis {
 
     public addUpgradeToPlayer = (id: string): boolean => {
         const matchedUpgrade: Upgrade[] = this.data.upgrades.filter(upgrade => upgrade.id === id);
-        if (matchedUpgrade) {
+        if (matchedUpgrade.length > 0) {
+            this.log(`adding upgrade '${id}' to '${this._currentPlayer.name}'`);
             this._currentPlayer.addUpgrade(matchedUpgrade[0]);
             this._currentPlayer.getFinance().addToFinanceExpense(
                 FinanceType.Upgrade,
@@ -210,6 +218,7 @@ export class Nardis {
             );
             return true;
         }
+        this.log(`upgrade '${id}' could not be found in game data`);
         return false;
     }
 
@@ -238,6 +247,7 @@ export class Nardis {
             routes[0].change(train, routePlan);
             return true;
         }
+        this.log(`route '${routeId}' not found in '${this._currentPlayer.name}' data for editing`);
         return false;
     }
 
@@ -268,6 +278,7 @@ export class Nardis {
             this._currentPlayer.getFinance().recoupDeletedRoute(value);
             return true;
         }
+        this.log(`route '${routeId}' not found in '${this._currentPlayer.name}' data for deletion`);
         return false;
     }
 
@@ -282,34 +293,48 @@ export class Nardis {
      */
 
     public buyOutPlayer = (playerId: string, selfBuyOut: boolean = false): boolean => {
+        this.log(`'${this._currentPlayer.name}' is attempting to buyout '${playerId}' stock`);
         const stock: Stock = this.stocks[playerId];
         const diff: number = stockConstant.maxStockAmount - stock.getSupply()[this._currentPlayer.id];
         const cpFinance: Finance = this._currentPlayer.getFinance();
         if (stock.currentAmountOfStockHolders() >= stockConstant.maxStockAmount) {
-            const losingPlayer: Player = this.players.filter(e => e.id === playerId)[0];
-            let expense: number = 0;
-            stock.getBuyOutValues().forEach((buyout: BuyOutValue): void => {
-                if (buyout.id !== this._currentPlayer.id) {
-                    const stockHolder: Player = this.players.filter(e => e.id === buyout.id)[0];
-                    if (buyout.shares > 0) {
-                        if (buyout.id === losingPlayer.id && !selfBuyOut) {
-                            losingPlayer.getFinance().sellStock(losingPlayer.id, 0, buyout.shares);
-                            stock.sellStock(losingPlayer.id, buyout.shares);
-                        } else {
-                            stockHolder.getFinance().sellStock(playerId, buyout.totalValue, buyout.shares);
-                            stock.sellStock(stockHolder.id, buyout.shares);
+            const mLosingPlayer: Player[] = this.players.filter(e => e.id === playerId);
+            if (mLosingPlayer.length > 0) {
+                const losingPlayer: Player = mLosingPlayer[0];
+                let expense: number = 0;
+                let nShareHolders: number = 0;
+                stock.getBuyOutValues().forEach((buyout: BuyOutValue): void => {
+                    if (buyout.id !== this._currentPlayer.id) {
+                        const mStockHolder: Player[] = this.players.filter(e => e.id === buyout.id);
+                        if (buyout.shares > 0 && mStockHolder.length > 0) {
+                            const stockHolder: Player = mStockHolder[0];
+                            if (buyout.id === losingPlayer.id && !selfBuyOut) {
+                                losingPlayer.getFinance().sellStock(losingPlayer.id, 0, buyout.shares);
+                                stock.sellStock(losingPlayer.id, buyout.shares);
+                                this.log(`took over ${buyout.shares} shares from losing player '${losingPlayer.name}'`);
+                            } else {
+                                stockHolder.getFinance().sellStock(playerId, buyout.totalValue, buyout.shares);
+                                stock.sellStock(stockHolder.id, buyout.shares);
+                                this.log(`bought out ${buyout.shares} shares from '${stockHolder.name}' for ${buyout.totalValue}g`);
+                                nShareHolders++;
+                            }
+                            expense += buyout.totalValue;
                         }
-                        expense += buyout.totalValue;
                     }
+                }); 
+                cpFinance.addToFinanceExpense(FinanceType.StockBuy, localKeys[FinanceType.StockBuy], 1, expense);
+                for (let i: number = 0; i < diff; i++) {
+                    stock.buyStock(this._currentPlayer.id);
+                    cpFinance.buyStock(playerId, 0);
                 }
-            }); 
-            cpFinance.addToFinanceExpense(FinanceType.StockBuy, localKeys[FinanceType.StockBuy], 1, expense);
-            for (let i: number = 0; i < diff; i++) {
-                stock.buyStock(this._currentPlayer.id);
-                cpFinance.buyStock(playerId, 0);
+                this.log(`bought out ${nShareHolders} shareholders for a total of ${expense}g`);
+                !selfBuyOut ? this.playerTakeOver(this._currentPlayer, losingPlayer, stock) : null;
+                return true;
+            } else {
+                this.log(`could not find player from id '${playerId}'`);
             }
-            !selfBuyOut ? this.playerTakeOver(this._currentPlayer, losingPlayer, stock) : null;
-            return true;
+        } else {
+            this.log(`could not buyout '${playerId}' as not all supply has been consumed`);
         }
         return false;
     }
@@ -339,6 +364,7 @@ export class Nardis {
      */
 
     public clearStorage = (): void => {
+        this.log(`clearing ${localKeys} keys from localStorage`);
         localKeys.forEach(key => {
             window.localStorage.removeItem(key);
         });
@@ -357,8 +383,9 @@ export class Nardis {
         playerId: string, 
         buy     : boolean
     ): boolean => {
-        const stockOwner: Player = this.players.filter((player: Player): boolean => player.id === playerId)[0];
-        if (isDefined(this.stocks[playerId]) && isDefined(stockOwner)) {
+        const mStockOwner: Player[] = this.players.filter((player: Player): boolean => player.id === playerId);
+        if (isDefined(this.stocks[playerId]) && mStockOwner.length > 0) {
+            const stockOwner: Player = mStockOwner[0];
             const value: number = (buy ?
                 this.stocks[playerId].getBuyValue() : 
                 this.stocks[playerId].getSellValue()
@@ -376,10 +403,12 @@ export class Nardis {
                 this.updateStock(stockOwner);
                 this.updatePlayerNetWorth(this._currentPlayer);
                 this.updatePlayerNetWorth(stockOwner);
+                this.log(`'${this._currentPlayer.name}' ${buy ? 'bought' : 'sold'} stock from '${stockOwner.name}' for ${value}g`);
                 buy ? this.checkIfPlayerIsFullyOwned(stockOwner) : null;
                 return true;
             }
         }
+        this.log(`'${this._currentPlayer.name}' could not ${buy ? 'buy' : 'sell'} stock '${playerId}'`);
         return false;
     }
 
@@ -392,7 +421,7 @@ export class Nardis {
     private checkIfPlayerIsFullyOwned = (stockOwner: Player): void => {
         const supply: StockSupply = this.stocks[stockOwner.id].getSupply();
         if (supply[this._currentPlayer.id] >= stockConstant.maxStockAmount && stockOwner.id !== this._currentPlayer.id) {
-            console.log(`${this._currentPlayer} owns 100% of ${stockOwner.name}`);
+            this.log(`'${this._currentPlayer.name}' now owns 100% of '${stockOwner.name}`);
             this.playerTakeOver(this._currentPlayer, stockOwner, this.stocks[stockOwner.id]);
         } 
     }
@@ -450,15 +479,16 @@ export class Nardis {
      */
 
     private playerTakeOver = (victor: Player, loser: Player, stock: Stock): void => {
+        this.log(`commencing '${victor.name}' takeover of '${loser.name}'`);
         const vFinance: Finance = victor.getFinance(); const lFinance: Finance = loser.getFinance();
         const profit: number = lFinance.getGold();
         if (profit > 0) {
             vFinance.sellStock(loser.id, profit, 0);
             lFinance.addToFinanceExpense(FinanceType.StockBuy, localKeys[FinanceType.StockBuy], 1, profit);
         }
-        victor.mergeQueue(loser.getQueue());
-        victor.mergeRoutes(loser.getRoutes());
-        this.mergeStock(victor, loser);
+        const r: number = victor.mergeQueue(loser.getQueue()); const q: number = victor.mergeRoutes(loser.getRoutes());
+        const [sh, st]: [number, number] = this.mergeStock(victor, loser);
+        this.log(`merged ${profit}g, ${r} routes, ${q} queue and ${sh} shares distributed between ${st} stocks`);
         loser.setInactive();
         stock.setInactive(this._turn);
         this.updateStocks();
@@ -470,9 +500,13 @@ export class Nardis {
      * 
      * @param {Player} victor - Player instance taking over.
      * @param {Player} loser  - Player instance being taken over.
+     * 
+     * @returns {[number, number]} Tuple with two numbers describing merged amount of Stock and shares.
      */
 
-    private mergeStock = (victor: Player, loser: Player): void => {
+    private mergeStock = (victor: Player, loser: Player): [number, number] => {
+        this.log(`merging '${loser.name}' stock to '${victor.name}' holdings`);
+        let mergedStock: number = 0; let mergedShares: number = 0;
         const vFinance: Finance = victor.getFinance(); const lFinance: Finance = loser.getFinance();
         const lStocks: StockHolding = lFinance.getStocks();
         Object.keys(lStocks).forEach((key: string): void => {
@@ -481,12 +515,16 @@ export class Nardis {
                 const amount: number = lStocks[key];
                 lFinance.sellStock(key, 0, amount);
                 stock.sellStock(loser.id, amount);
+                mergedShares += amount;
+                mergedStock++;
                 for (let i: number = 0; i < amount; i++) {
                     vFinance.buyStock(key, 0);
                     stock.buyStock(victor.id);
                 }
+                this.log(`merged ${amount} shares from stock '${key}'`);
             }
         });
+        return [mergedStock, mergedShares];
     }
 
     /**

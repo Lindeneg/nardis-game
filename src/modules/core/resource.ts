@@ -1,11 +1,14 @@
 import BaseComponent from '../component/base-component';
+import Logger from '../../util/logger';
 import { 
     ResourceModel 
 } from '../../types/model';
 import { 
     HandleTurnInfo, 
     ValueHistory, 
-    ITurnable 
+    ITurnable, 
+    PartialLog,
+    LogLevel
 } from '../../types/types';
 import { 
     isDefined,
@@ -40,6 +43,8 @@ export default class Resource extends BaseComponent implements ITurnable {
     private _valueChangeDecider: number;
     private _valueHistory      : ValueHistory[];
 
+    private log                : PartialLog;
+
     constructor(
             name               : string,
             weight             : number,
@@ -63,15 +68,17 @@ export default class Resource extends BaseComponent implements ITurnable {
             value: this._value,
             turn: 1
         }];
+
+        this.log                 = Logger.log.bind(null, LogLevel.All, `resource-${this.name}`);
     }
 
-    public getValue           = (): number                 => this._value;
-    public getMinValue        = (): number                 => this._minValue;
-    public getMaxValue        = (): number                 => this._maxValue;
-    public getValueVolatility = (): number                 => this._valueVolatility;
-    public getChangeDecider   = (): number                 => this._valueChangeDecider;
-    public getWeight          = (): number                 => this._weight;
-    public getValueHistory    = (): ValueHistory[]         => this._valueHistory;
+    public getValue              = (): number                 => this._value;
+    public getMinValue           = (): number                 => this._minValue;
+    public getMaxValue           = (): number                 => this._maxValue;
+    public getValueVolatility    = (): number                 => this._valueVolatility;
+    public getChangeDecider      = (): number                 => this._valueChangeDecider;
+    public getWeight             = (): number                 => this._weight;
+    public getValueHistory       = (): ValueHistory[]         => this._valueHistory;
 
     /**
      * Handle Resource events by checking the decision variable. If the decision is greater than the decision target,
@@ -111,6 +118,7 @@ export default class Resource extends BaseComponent implements ITurnable {
             value: value,
             turn: turn
         });
+        this.log(`updating value ${this._value}->${value}`);
         this._value = value;
         return true;
     }
