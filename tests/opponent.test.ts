@@ -50,15 +50,18 @@ test('can buy routes on first turn', () => {
 });
 
 test('can get finance on first turn', () => {
+    const stocks = finance.getStocks();
     const profits = finance.getTotalProfits()
     expect(profits).toBeLessThan(0);
     expect(finance.getGold()).toEqual(START_GOLD + profits);
     expect(finance.getNetWorth()).toEqual(opponent.getUpgrades()
         .map(e => Math.floor(e.cost / netWorthDivisors.upgrade))
-        .reduce((a, b) => a + b, opponent.getQueue()
-            .map(e => Math.floor(e.route.getCost() / netWorthDivisors.tracks) + Math.floor(e.route.getTrain().cost / netWorthDivisors.train))
+        .reduce((a, b) => a + b, [...opponent.getQueue().map(k => k.route), ...opponent.getRoutes()]
+            .map(e => Math.floor(e.getCost() / netWorthDivisors.tracks) + Math.floor(e.getTrain().cost / netWorthDivisors.train))
         .reduce((a, b) => a + b, 
-            Math.floor(stockConstant.startingShares * game.stocks[opponent.id].getSellValue()) + 
+            Math.floor((Object.keys(stocks).map((key: string): number => (
+                isDefined(game.stocks[key]) ? game.stocks[key].getSellValue() * stocks[key] : 0
+            )).reduce((a, b) => a + b, 0))) + 
             Math.floor(finance.getGold() / netWorthDivisors.gold)
         ))
     );
@@ -70,16 +73,19 @@ test('can handle second turn', () => {
 });
 
 test('can get finance on second turn', () => {
+    const stocks = finance.getStocks();
     const profits = finance.getTotalProfits();
     expect(profits).toBeLessThan(0);
     expect(finance.getGold()).toEqual(START_GOLD + profits);
     expect(finance.getGold() + Math.abs(profits)).toEqual(START_GOLD);
     expect(finance.getNetWorth()).toEqual(opponent.getUpgrades()
         .map(e => Math.floor(e.cost / netWorthDivisors.upgrade))
-        .reduce((a, b) => a + b, opponent.getQueue()
-            .map(e => Math.floor(e.route.getCost() / netWorthDivisors.tracks) + Math.floor(e.route.getTrain().cost / netWorthDivisors.train))
+        .reduce((a, b) => a + b, [...opponent.getQueue().map(k => k.route), ...opponent.getRoutes()]
+            .map(e => Math.floor(e.getCost() / netWorthDivisors.tracks) + Math.floor(e.getTrain().cost / netWorthDivisors.train))
         .reduce((a, b) => a + b, 
-            Math.floor(stockConstant.startingShares * game.stocks[opponent.id].getSellValue()) + 
+            Math.floor((Object.keys(stocks).map((key: string): number => (
+                isDefined(game.stocks[key]) ? game.stocks[key].getSellValue() * stocks[key] : 0
+            )).reduce((a, b) => a + b, 0))) + 
             Math.floor(finance.getGold() / netWorthDivisors.gold)
         ))
     );
