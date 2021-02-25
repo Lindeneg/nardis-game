@@ -22,6 +22,7 @@ export default class Resource extends BaseComponent implements ITurnable {
     private _valueVolatility;
     private _valueChangeDecider;
     private _valueHistory;
+    private log;
     constructor(name: string, weight: number, value: number, minValue: number, maxValue: number, valueVolatility: number, valueChangeDecider?: number, valueHistory?: ValueHistory[], id?: string);
     getValue: () => number;
     getMinValue: () => number;

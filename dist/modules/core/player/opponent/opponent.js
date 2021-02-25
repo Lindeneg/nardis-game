@@ -109,8 +109,8 @@ var Opponent = /** @class */ (function (_super) {
          * @param {Nardis}         game - Nardis game instance.
          */
         _this.deduceAction = function (info, game) {
-            _this.log("turn=" + info.turn + " | name=" + _this.name, _this._save);
             if (_this._save.should && info.turn < _this._save.turn + _this._save.diff) {
+                _this.log("saving until turn " + (_this._save.turn + _this._save.diff));
                 return;
             }
             else if (_this._save.should && info.turn >= _this._save.turn + _this._save.diff) {
@@ -131,7 +131,6 @@ var Opponent = /** @class */ (function (_super) {
             }
             _this.deleteConsistentlyUnprofitableRoutes(game, info.turn);
             _this.checkIfAnyPlayerCanBeBoughtOut(game, info.turn);
-            _this.log('\n\n');
         };
         /**
          * Iterate over each unique origin. Then iterate over routes from that origin.
@@ -143,7 +142,7 @@ var Opponent = /** @class */ (function (_super) {
          * @returns {OriginRoutePotential[]} Array of origins and their respective routes.
          */
         _this.getInterestingRoutes = function (game, train) { return (_this.getRoutePowerPotential(game, train).map(function (origin) {
-            _this.log("routes from " + origin.origin.name, [origin.aRoutes, origin.pRoutes]);
+            _this.log("found " + origin.aRoutes.length + " routes from '" + origin.origin.name + "'");
             return __assign(__assign({}, origin), { aRoutes: origin.aRoutes.filter(function (aRoute) { return (origin.pRoutes[aRoute.index].goldCost + train.cost <= _this._finance.getGold()); })
                     .sort(function (a, b) { return b.power.powerIndex - a.power.powerIndex; }) });
         })); };
@@ -180,7 +179,7 @@ var Opponent = /** @class */ (function (_super) {
             info.data.upgrades.filter(function (upgrade) { return (_this._level >= upgrade.levelRequired &&
                 _this._upgrades.filter(function (boughtUpgrade) { return boughtUpgrade.equals(upgrade); }).length <= 0); }).forEach(function (upgrade) {
                 if (_this._finance.getGold() - upgrade.cost >= 0) {
-                    _this.log("purchasing upgrade " + upgrade.name + " for " + upgrade.cost + "g");
+                    _this.log("purchasing upgrade '" + upgrade.name + "' for " + upgrade.cost + "g");
                     game.addUpgradeToPlayer(upgrade.id);
                 }
             });
@@ -269,27 +268,32 @@ var Opponent = /** @class */ (function (_super) {
             if (currentGold <= 0 && profit <= 0) {
                 var keys = Object.keys(ownedStock);
                 if (keys.length > 0) {
-                    game.sellStock(keys.map(function (key) { return ({
+                    var stock = keys.map(function (key) { return ({
                         id: key,
                         amount: ownedStock[key],
                         value: game.stocks[key].getSellValue()
                     }); })
                         .filter(function (e) { return e.amount > 0; })
-                        .sort(function (a, b) { return b.value - a.value; })[0].id);
+                        .sort(function (a, b) { return b.value - a.value; });
+                    if (stock.length > 0) {
+                        game.sellStock(stock[0].id);
+                    }
                 }
             }
-            else if (currentGold > Math.floor(_this.startGold / 10) && profit > 0) {
+            else {
                 var potentialStock = Object.keys(game.stocks)
                     .map(function (key) { return game.stocks[key]; })
                     .filter(function (e) { return e.currentAmountOfStockHolders() < constants_1.stockConstant.maxStockAmount && currentGold >= e.getBuyValue(); })
                     .sort(function (a, b) { return a.getBuyValue() - b.getBuyValue(); });
-                if (potentialStock.length > 0) {
+                if (potentialStock.length > 0 &&
+                    _this._finance.getAverageRevenue() > 0 &&
+                    _this._finance.getGold() - potentialStock[0].getBuyValue() > Math.floor(_this.startGold / 20)) {
                     game.buyStock(potentialStock[0].owningPlayerId);
                 }
             }
         };
         /**
-         * Check if any Player can be bought out and either buy out that Player or save and try again.
+         * Check if any Player can be bought out and either buyout that Player or save and try again.
          *
          * @param {Nardis} game - Nardis game instance.
          * @param {number} turn - Number with current turn.
@@ -298,16 +302,18 @@ var Opponent = /** @class */ (function (_super) {
             Object.keys(game.stocks).forEach(function (key) {
                 var stock = game.stocks[key];
                 if (stock.currentAmountOfStockHolders() >= constants_1.stockConstant.maxStockAmount &&
-                    stock.isStockHolder(_this.id) && stock.owningPlayerId !== _this.id) {
+                    stock.isStockHolder(_this.id) && stock.owningPlayerId !== _this.id && stock.isActive()) {
                     var buyOut = stock.getBuyOutValues().filter(function (e) { return e.id !== _this.id; }).reduce(function (a, b) { return a + b.totalValue; }, 0);
                     if (_this._finance.getGold() >= buyOut) {
+                        _this.log("commencing buyout of stock '" + stock.owningPlayerId + "'");
                         game.buyOutPlayer(stock.owningPlayerId);
                     }
-                    else {
+                    else if (_this._level >= types_1.PlayerLevel.Advanced) {
+                        _this.log("commencing save to buyout stock '" + stock.owningPlayerId + "'");
                         _this._save = {
                             should: true,
                             turn: turn,
-                            diff: 1,
+                            diff: constants_1.DEFAULT_SAVE,
                             callback: (function (game, id) {
                                 if (_this._finance.getGold() >= game.stocks[id].getBuyOutValues().filter(function (e) { return e.id !== _this.id; }).reduce(function (a, b) { return a + b.totalValue; }, 0)) {
                                     game.buyOutPlayer(id);
@@ -400,7 +406,9 @@ var Opponent = /** @class */ (function (_super) {
                     shouldPurchase = true;
                 }
                 else {
-                    if (_this._finance.getAverageRevenue() >= levelUpReq.revenuePerTurn && _this._finance.getGold() < levelUpReq.gold) {
+                    var gold = _this._finance.getGold();
+                    if (_this._finance.getAverageRevenue() >= levelUpReq.revenuePerTurn && gold < levelUpReq.gold) {
+                        _this.log("commencing save for levelup, missing " + (levelUpReq.gold - gold) + " gold");
                         _this._save = {
                             should: true,
                             turn: turn,
@@ -426,14 +434,13 @@ var Opponent = /** @class */ (function (_super) {
          * @param {BuyableRoute[]} routes - BuyableRoutes to purchase.
          */
         _this.purchaseRoutes = function (game, routes) {
-            _this.log("attempting to purchase " + routes.length + " routes", routes);
+            _this.log("attempting to purchase " + routes.length + " routes");
             var min = _this._level === types_1.PlayerLevel.Novice ? 0 : Math.floor(_this._finance.getGold() * ((_this._level + 2) / 10));
             for (var i = 0; i < routes.length; i++) {
                 if (_this._finance.getGold() - (routes[i].goldCost + routes[i].trainCost) <= min || _this._queue.length >= 5) {
-                    _this.log('cannot purchase anymore routes');
+                    _this.log("stopped purchasing after " + i + " routes");
                     break;
                 }
-                _this.log('purchasing route', routes[i]);
                 game.addRouteToPlayerQueue(routes[i]);
             }
         };
@@ -444,11 +451,11 @@ var Opponent = /** @class */ (function (_super) {
          * @param {number}  turn - Number with current turn.
          */
         _this.deleteConsistentlyUnprofitableRoutes = function (game, turn) {
-            _this.log('active routes', _this._routes);
             _this._routes.forEach(function (route) {
-                if (route.getProfit() < 0) {
+                var profit = route.getProfit();
+                if (profit < 0) {
                     if (turn - route.getPurchasedOnTurn() >= (Math.ceil(route.getDistance() / route.getTrain().speed) * 2) * 2) {
-                        _this.log("deleting route", route);
+                        _this.log("deleting route '" + route.id + "' due to unprofitability " + profit);
                         game.removeRouteFromPlayerRoutes(route.id, Math.floor(route.getCost() / 2));
                     }
                 }
@@ -463,25 +470,24 @@ var Opponent = /** @class */ (function (_super) {
          * @returns {AdjustedTrain}   AdjustedTrain object.
          */
         _this.getSuggestedTrain = function (trains) {
-            var relevantTrains = trains.filter(function (e) { return _this._level >= e.train.levelRequired; });
+            var relevantTrains = trains.filter(function (e) { return _this._level >= e.train.levelRequired && (_this._level > types_1.PlayerLevel.Novice ? e.train.cargoSpace >= 5 : true); });
             var currentSpace = 0;
             var valueRatio = Infinity;
             var i = 0;
             relevantTrains.forEach(function (train, index) {
-                var vr = (train.cost + (train.train.upkeep * 1.5)) / (train.train.speed + (train.train.cargoSpace * 2.5));
-                _this.log("possible train: nme=" + train.train.name + ";vr=" + vr.toFixed(3) + ";cst=" + train.cost + ";vel=" + train.train.speed + ";spa=" + train.train.cargoSpace);
+                var vr = (train.cost + (train.train.upkeep * 5)) / (train.train.speed + (train.train.cargoSpace * 4)); // TODO test higher multiplier for cargo space
                 if ((vr < valueRatio && train.train.cargoSpace >= currentSpace) || (Math.abs(vr - valueRatio) < Number.EPSILON && train.train.cargoSpace > currentSpace)) {
                     currentSpace = train.train.cargoSpace;
                     valueRatio = vr;
                     i = index;
                 }
             });
-            _this.log("suggested train: " + relevantTrains[i].train.name);
+            _this.log("suggested train: '" + relevantTrains[i].train.name + "', vr=" + valueRatio.toFixed(3));
             return relevantTrains[i];
         };
         /**
-         * Get array of all cities currently connected to the Route network of the player. These cities will
-         * serve as potential origins for new routes.
+         * Get array of all non-empty cities currently connected to the Route network of the Player.
+         * These cities will serve as potential origins for new routes.
          *
          * @returns {City[]} Array of unique City origins.
          */
@@ -516,19 +522,6 @@ var Opponent = /** @class */ (function (_super) {
             diff: 0,
             callback: function () { return false; }
         }); };
-        /**
-         * For debugging purposes.
-         *
-         * @param {string} msg - String with message to log.
-         *
-         * @param {any}    obj - (optional) object to log.
-         */
-        _this.log = function (msg, obj) {
-            if (!!parseInt(window['nardisNonHumanDebug'])) {
-                console.log(msg);
-                obj ? console.log(obj) : null;
-            }
-        };
         _this._save = util_1.isDefined(save) ? save : _this.getDefaultSave(1);
         return _this;
     }

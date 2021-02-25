@@ -14,6 +14,7 @@ var __extends = (this && this.__extends) || (function () {
 })();
 Object.defineProperty(exports, "__esModule", { value: true });
 var base_component_1 = require("../component/base-component");
+var logger_1 = require("../../util/logger");
 var util_1 = require("../../util/util");
 var types_1 = require("../../types/types");
 /**
@@ -94,10 +95,13 @@ var Route = /** @class */ (function (_super) {
          * Change Train or RoutePlanCargo from active route.
          */
         _this.change = function (train, routePlan) {
+            var msg = '';
             if (!_this._train.equals(train)) {
+                msg = "setting train '" + _this._train.name + "'->'" + train.name + "' and resetting profits and km travelled";
                 _this._profit = 0;
                 _this._kilometersTravelled = 0;
             }
+            _this.log("changing active route: " + msg, routePlan);
             _this._train = train;
             _this._routePlanCargo = routePlan;
             _this.resetRouteState(true);
@@ -219,6 +223,7 @@ var Route = /** @class */ (function (_super) {
         _this._purchasedOnTurn = purchasedOnTurn;
         _this._profit = util_1.isDefined(profit) ? profit : 0;
         _this._kilometersTravelled = util_1.isDefined(kilometersTravelled) ? kilometersTravelled : 0;
+        _this.log = logger_1.default.log.bind(null, types_1.LogLevel.All, "route-" + id);
         if (util_1.isDefined(routeState)) {
             _this._routeState = routeState;
         }

@@ -30,6 +30,7 @@ export default class Route extends BaseComponent implements ITurnable {
     private _routeState;
     private _profit;
     private _kilometersTravelled;
+    private log;
     constructor(name: string, cityOne: City, cityTwo: City, train: Train, routePlanCargo: RoutePlanCargo, distance: number, cost: number, purchasedOnTurn: number, profit?: number, kilometersTravelled?: number, routeState?: RouteState, id?: string);
     getCityOne: () => City;
     getCityTwo: () => City;

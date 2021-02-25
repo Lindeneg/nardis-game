@@ -14,8 +14,10 @@ var __extends = (this && this.__extends) || (function () {
 })();
 Object.defineProperty(exports, "__esModule", { value: true });
 var base_component_1 = require("../../component/base-component");
+var logger_1 = require("../../../util/logger");
 var constants_1 = require("../../../util/constants");
 var util_1 = require("../../../util/util");
+var types_1 = require("../../../types/types");
 /**
  * @constructor
  * @param {string}         name           - Name of the Stock instance.
@@ -43,6 +45,7 @@ var Stock = /** @class */ (function (_super) {
          * @param {number} turn - Number with current turn at hand.
          */
         _this.setInactive = function (turn) {
+            _this.log('setting stock inactive');
             _this._value = 0;
             _this._valueHistory.push({ turn: turn, value: _this._value });
             _this._isActive = false;
@@ -80,6 +83,7 @@ var Stock = /** @class */ (function (_super) {
                 }
                 return true;
             }
+            _this.log("could not buy stock for '" + playerId + "': supply exhausted");
             return false;
         };
         /**
@@ -97,6 +101,7 @@ var Stock = /** @class */ (function (_super) {
                 _this._supply[playerId] -= amount;
                 return true;
             }
+            _this.log("could not sell stock for '" + playerId + "': supply not found");
             return false;
         };
         /**
@@ -118,6 +123,7 @@ var Stock = /** @class */ (function (_super) {
                     Math.floor(finance.getAverageRevenue() / constants_1.stockConstant.divisors.avgRevenue) +
                     Math.floor(_this.currentAmountOfStockHolders() * constants_1.stockConstant.multipliers.stockHolder)) + (Math.floor(finance.getTotalProfits() / constants_1.stockConstant.divisors.totalProfits) + constants_1.stockConstant.baseValue);
                 if (newValue !== _this._value) {
+                    _this.log("setting new value: " + _this._value + "->" + newValue);
                     _this.updateValueHistory(newValue, turn);
                     _this._value = newValue;
                 }
@@ -152,6 +158,9 @@ var Stock = /** @class */ (function (_super) {
                     turn: turn
                 });
             }
+            else {
+                _this.log("cannot update value to " + value + " in turn 1");
+            }
         };
         _this.owningPlayerId = owningPlayerId;
         _this._value = util_1.isDefined(value) ? value : Math.floor(constants_1.stockConstant.startingShares * constants_1.stockConstant.multipliers.stockHolder) + constants_1.stockConstant.baseValue;
@@ -163,6 +172,7 @@ var Stock = /** @class */ (function (_super) {
             _a[_this.owningPlayerId] = constants_1.stockConstant.startingShares,
             _a);
         _this._isActive = util_1.isDefined(isActive) ? isActive : true;
+        _this.log = logger_1.default.log.bind(null, types_1.LogLevel.All, "stock-'" + _this.owningPlayerId + "'");
         return _this;
     }
     /**

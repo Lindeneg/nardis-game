@@ -29,6 +29,7 @@ export default class City extends BaseComponent implements ITurnable {
     private _supplyRefillDecider;
     private _maxConcurrentRoutes;
     private _currentRouteCount;
+    private log;
     constructor(name: string, size: number, coords: CityCoordinate, supply: CityResource[], demand: CityResource[], growthRate: number, supplyRefillRate: number, growthChangeDecider?: number, supplyRefillDecider?: number, currentRouteCount?: number, id?: string);
     getSize: () => number;
     getCoords: () => CityCoordinate;
@@ -41,7 +42,21 @@ export default class City extends BaseComponent implements ITurnable {
     getCurrentRouteCount: () => number;
     getMaxRouteCount: () => number;
     isFull: () => boolean;
+    /**
+     * Check is a Resource is found in City supplies.
+     *
+     * @param   {Resource} resource - Resource instance to check for in supplies.
+     *
+     * @returns {boolean}  True if found else false.
+     */
     isSupply: (resource: Resource) => boolean;
+    /**
+     * Check is a Resource is found in City demands.
+     *
+     * @param   {Resource} resource - Resource instance to check for in demands.
+     *
+     * @returns {boolean}  True if found else false.
+     */
     isDemand: (resource: Resource) => boolean;
     /**
      * Handle City events which pertains to growth and refill of supplies. A city grow if the decision variable

@@ -5,8 +5,8 @@ import City from '../city';
 import Train from '../train';
 import Resource from '../resource';
 import Route from '../route';
-import { Nardis } from '../../..';
-import { QueuedRouteItem, HandleTurnInfo, ITurnable, PlayerType, PlayerLevel } from '../../../types/types';
+import { Nardis } from '../../nardis';
+import { QueuedRouteItem, HandleTurnInfo, ITurnable, PlayerType, PlayerLevel, PartialLog } from '../../../types/types';
 /**
  * @constructor
  * @param {string}            name       - String with name.
@@ -33,6 +33,7 @@ export default class Player extends BaseComponent implements ITurnable {
     protected _routes: Route[];
     protected _upgrades: Upgrade[];
     protected _isActive: boolean;
+    protected log: PartialLog;
     constructor(name: string, startGold: number, playerType: PlayerType, startCity: City, finance?: Finance, level?: PlayerLevel, queue?: QueuedRouteItem[], routes?: Route[], upgrades?: Upgrade[], isActive?: boolean, id?: string);
     getStartCity: () => City;
     getFinance: () => Finance;
@@ -58,15 +59,19 @@ export default class Player extends BaseComponent implements ITurnable {
     /**
      * Merge current Route array with another,
      *
-     * @param routes - Array of Routes to append to current Route array.
+     * @param   {Route[]} routes - Array of Routes to append to active Route array.
+     *
+     * @returns {number}  Number with amount of Routes appended to Player.
      */
-    mergeRoutes: (routes: Route[]) => void;
+    mergeRoutes: (routes: Route[]) => number;
     /**
      * Merge current queue array with another,
      *
-     * @param queue - Array of QueuedRouteItem to append to current queue array.
+     * @param   {QueuedRouteItem[]} queue - Array of QueuedRouteItem to append to current queue array.
+     *
+     * @returns {number}            Number with amount of Routes appended to Player.
      */
-    mergeQueue: (queue: QueuedRouteItem[]) => void;
+    mergeQueue: (queue: QueuedRouteItem[]) => number;
     /**
      * Set Player to inactive. Also removes all Routes and Upgrades.
      */

@@ -21,6 +21,7 @@ var __spreadArrays = (this && this.__spreadArrays) || function () {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 var base_component_1 = require("../../component/base-component");
+var logger_1 = require("../../../util/logger");
 var util_1 = require("../../../util/util");
 var constants_1 = require("../../../util/constants");
 var types_1 = require("../../../types/types");
@@ -94,10 +95,12 @@ var Finance = /** @class */ (function (_super) {
                         _this._totalProfits += value;
                         _this.removeFromTotalHistory(constants_1.localKeys[type], value);
                         _this.addGold(value);
+                        _this.log("removed: T=" + type + ";V=$" + value + ";I='" + id + "'");
                         return true;
                     }
                 }
             }
+            _this.log("cannot remove: T=" + type + ";I='" + id + "': not found");
             return false;
         };
         /**
@@ -158,6 +161,9 @@ var Finance = /** @class */ (function (_super) {
                 _this.addNthTurnObject(types_1.FinanceGeneralType.Income, types_1.FinanceType.StockSell, constants_1.localKeys[types_1.FinanceType.StockSell], 1, value);
                 _this._totalProfits += value;
                 _this.addToTotalHistory(constants_1.localKeys[types_1.FinanceType.StockSell], value);
+            }
+            else {
+                _this.log("cannot subtract " + stockSubtract + " from stock '" + playerId + "': not found");
             }
         };
         /**
@@ -296,6 +302,7 @@ var Finance = /** @class */ (function (_super) {
                 amount: amount,
                 value: value
             };
+            _this.log("adding: GT=" + generalType + ";T=" + type + ";V=" + amount + "x" + value + ";I='" + id + "'");
             var target = isIncome ? _this._history.income : _this._history.expense;
             var goldTarget = isIncome ? _this.addGold : _this.removeGold;
             target.nthTurn.push(object);
@@ -345,6 +352,7 @@ var Finance = /** @class */ (function (_super) {
         _this._stocks = util_1.isDefined(stocks) ? stocks : (_b = {},
             _b[_this._playerId] = constants_1.stockConstant.startingShares,
             _b);
+        _this.log = logger_1.default.log.bind(null, types_1.LogLevel.All, "finance-" + _this.name);
         return _this;
     }
     /**

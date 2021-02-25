@@ -18,6 +18,7 @@ export default class Stock extends BaseComponent {
     private _valueHistory;
     private _supply;
     private _isActive;
+    private log;
     constructor(name: string, owningPlayerId: string, value?: number, valueHistory?: ValueHistory[], supply?: StockSupply, isActive?: boolean, id?: string);
     getBuyValue: () => number;
     getSellValue: () => number;

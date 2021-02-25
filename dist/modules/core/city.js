@@ -21,6 +21,8 @@ var __spreadArrays = (this && this.__spreadArrays) || function () {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 var base_component_1 = require("../component/base-component");
+var logger_1 = require("../../util/logger");
+var types_1 = require("../../types/types");
 var constants_1 = require("../../util/constants");
 var util_1 = require("../../util/util");
 /**
@@ -53,8 +55,36 @@ var City = /** @class */ (function (_super) {
         _this.getCurrentRouteCount = function () { return _this._currentRouteCount; };
         _this.getMaxRouteCount = function () { return _this._maxConcurrentRoutes; };
         _this.isFull = function () { return _this._currentRouteCount >= _this._maxConcurrentRoutes; };
-        _this.isSupply = function (resource) { return _this._supply.filter(function (e) { return e.resource.equals(resource); }).length > 0; };
-        _this.isDemand = function (resource) { return _this._demand.filter(function (e) { return e.resource.equals(resource); }).length > 0; };
+        /**
+         * Check is a Resource is found in City supplies.
+         *
+         * @param   {Resource} resource - Resource instance to check for in supplies.
+         *
+         * @returns {boolean}  True if found else false.
+         */
+        _this.isSupply = function (resource) {
+            for (var i = 0; i < _this._supply.length; i++) {
+                if (_this._supply[i].resource.equals(resource)) {
+                    return true;
+                }
+            }
+            return false;
+        };
+        /**
+         * Check is a Resource is found in City demands.
+         *
+         * @param   {Resource} resource - Resource instance to check for in demands.
+         *
+         * @returns {boolean}  True if found else false.
+         */
+        _this.isDemand = function (resource) {
+            for (var i = 0; i < _this._demand.length; i++) {
+                if (_this._demand[i].resource.equals(resource)) {
+                    return true;
+                }
+            }
+            return false;
+        };
         /**
          * Handle City events which pertains to growth and refill of supplies. A city grow if the decision variable
          * is equal or greater than a certain value. If so, grow the city and set new resources else increment decision.
@@ -194,6 +224,7 @@ var City = /** @class */ (function (_super) {
             if (_this._size >= constants_1.MAX_CITY_SIZE || util_1.randomNumber() > 5) {
                 return false;
             }
+            _this.log("grows in size " + _this._size + "->" + (_this._size + 1));
             _this._size++;
             _this.updateCityAfterGrowth(resources);
             return true;
@@ -222,6 +253,7 @@ var City = /** @class */ (function (_super) {
                     newSupplies.push(_this.rollNewResource(resources));
                     newDemands.push(_this.rollNewResource(resources));
                 }
+                _this.log("gained " + resourceDiff + " new resources after growth");
                 _this._supply = newSupplies;
                 _this._demand = newDemands;
             }
@@ -253,10 +285,8 @@ var City = /** @class */ (function (_super) {
          * @returns {number} maxConcurrentRoutes from the current City size.
          */
         _this.getMaxConcurrentRoutes = function () {
-            var result = constants_1.CitySizeMaxConcurrentRoutes.filter(function (e) {
-                return e.size === _this._size;
-            })[0];
-            return result ? result.maxRoutes : 0;
+            var result = constants_1.CitySizeMaxConcurrentRoutes.filter(function (e) { return e.size === _this._size; });
+            return result.length > 0 ? result[0].maxRoutes : 0;
         };
         _this.isStartCity = size <= constants_1.MAX_START_CITY_SIZE;
         _this._size = size;
@@ -269,6 +299,7 @@ var City = /** @class */ (function (_super) {
         _this._supplyRefillDecider = util_1.isDefined(supplyRefillDecider) ? supplyRefillDecider : 0;
         _this._currentRouteCount = util_1.isDefined(currentRouteCount) ? currentRouteCount : 0;
         _this._maxConcurrentRoutes = _this.getMaxConcurrentRoutes();
+        _this.log = logger_1.default.log.bind(null, types_1.LogLevel.All, "city-" + _this.name);
         return _this;
     }
     /**

@@ -17,6 +17,7 @@ export declare class Nardis {
     readonly stocks: Stocks;
     private _currentPlayer;
     private _turn;
+    private log;
     constructor(gameData: GameData, players: Player[], stocks: Stocks, currentPlayer?: Player, turn?: number);
     getCurrentPlayer: () => Player;
     getCurrentTurn: () => number;
@@ -164,6 +165,8 @@ export declare class Nardis {
      *
      * @param {Player} victor - Player instance taking over.
      * @param {Player} loser  - Player instance being taken over.
+     *
+     * @returns {[number, number]} Tuple with two numbers describing merged amount of Stock and shares.
      */
     private mergeStock;
     /**

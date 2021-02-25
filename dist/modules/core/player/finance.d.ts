@@ -21,6 +21,7 @@ export default class Finance extends BaseComponent implements ITurnable {
     private _totalProfits;
     private _netWorth;
     private _stocks;
+    private log;
     constructor(name: string, playerId: string, gold: number, history?: FinanceHistory, totalHistory?: FinanceTotal, totalProfits?: number, netWorth?: number, stocks?: StockHolding, id?: string);
     getGold: () => number;
     getHistory: () => FinanceHistory;

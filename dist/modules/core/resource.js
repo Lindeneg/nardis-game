@@ -14,6 +14,8 @@ var __extends = (this && this.__extends) || (function () {
 })();
 Object.defineProperty(exports, "__esModule", { value: true });
 var base_component_1 = require("../component/base-component");
+var logger_1 = require("../../util/logger");
+var types_1 = require("../../types/types");
 var util_1 = require("../../util/util");
 var constants_1 = require("../../util/constants");
 /**
@@ -74,6 +76,7 @@ var Resource = /** @class */ (function (_super) {
                 value: value,
                 turn: turn
             });
+            _this.log("updating value " + _this._value + "->" + value);
             _this._value = value;
             return true;
         };
@@ -121,6 +124,7 @@ var Resource = /** @class */ (function (_super) {
                 value: _this._value,
                 turn: 1
             }];
+        _this.log = logger_1.default.log.bind(null, types_1.LogLevel.All, "resource-" + _this.name);
         return _this;
     }
     /**

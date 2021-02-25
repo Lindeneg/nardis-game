@@ -16,11 +16,12 @@ var train_1 = require("./core/train");
 var resource_1 = require("./core/resource");
 var opponent_1 = require("./core/player/opponent/opponent");
 var stock_1 = require("./core/player/stock");
+var logger_1 = require("../util/logger");
 var preparedData_1 = require("../data/preparedData");
-var types_1 = require("../types/types");
-var constants_1 = require("../util/constants");
 var data_1 = require("../data/data");
 var util_1 = require("../util/util");
+var constants_1 = require("../util/constants");
+var types_1 = require("../types/types");
 /**
  * @constructor
  * @param {GameData} data          - Object with GameData.
@@ -56,6 +57,7 @@ var Nardis = /** @class */ (function () {
             _this.updateStocks();
             _this.updatePlayersNetWorth();
             _this.saveGame();
+            logger_1.default.setTurn(_this._turn);
         };
         /**
          * Get array of PotentialRoute objects respecting the current Players maximum range.
@@ -93,10 +95,7 @@ var Nardis = /** @class */ (function () {
                 upgrades.forEach(function (upgrade) {
                     cost -= Math.floor(cost * upgrade.value);
                 });
-                return {
-                    train: train,
-                    cost: cost
-                };
+                return { train: train, cost: cost };
             });
         };
         /**
@@ -109,6 +108,7 @@ var Nardis = /** @class */ (function () {
             var id = '';
             var gameOver = false;
             if (winner.length === 1) {
+                _this.log("'" + winner[0].name + "' is the only active player left");
                 id = winner[0].id;
                 gameOver = true;
             }
@@ -133,11 +133,13 @@ var Nardis = /** @class */ (function () {
          */
         this.addUpgradeToPlayer = function (id) {
             var matchedUpgrade = _this.data.upgrades.filter(function (upgrade) { return upgrade.id === id; });
-            if (matchedUpgrade) {
+            if (matchedUpgrade.length > 0) {
+                _this.log("adding upgrade '" + id + "' to '" + _this._currentPlayer.name + "'");
                 _this._currentPlayer.addUpgrade(matchedUpgrade[0]);
                 _this._currentPlayer.getFinance().addToFinanceExpense(types_1.FinanceType.Upgrade, matchedUpgrade[0].id, 1, matchedUpgrade[0].cost);
                 return true;
             }
+            _this.log("upgrade '" + id + "' could not be found in game data");
             return false;
         };
         /**
@@ -159,6 +161,7 @@ var Nardis = /** @class */ (function () {
                 routes[0].change(train, routePlan);
                 return true;
             }
+            _this.log("route '" + routeId + "' not found in '" + _this._currentPlayer.name + "' data for editing");
             return false;
         };
         /**
@@ -185,6 +188,7 @@ var Nardis = /** @class */ (function () {
                 _this._currentPlayer.getFinance().recoupDeletedRoute(value);
                 return true;
             }
+            _this.log("route '" + routeId + "' not found in '" + _this._currentPlayer.name + "' data for deletion");
             return false;
         };
         /**
@@ -198,35 +202,51 @@ var Nardis = /** @class */ (function () {
          */
         this.buyOutPlayer = function (playerId, selfBuyOut) {
             if (selfBuyOut === void 0) { selfBuyOut = false; }
+            _this.log("'" + _this._currentPlayer.name + "' is attempting to buyout '" + playerId + "' stock");
             var stock = _this.stocks[playerId];
             var diff = constants_1.stockConstant.maxStockAmount - stock.getSupply()[_this._currentPlayer.id];
             var cpFinance = _this._currentPlayer.getFinance();
             if (stock.currentAmountOfStockHolders() >= constants_1.stockConstant.maxStockAmount) {
-                var losingPlayer_1 = _this.players.filter(function (e) { return e.id === playerId; })[0];
-                var expense_1 = 0;
-                stock.getBuyOutValues().forEach(function (buyout) {
-                    if (buyout.id !== _this._currentPlayer.id) {
-                        var stockHolder = _this.players.filter(function (e) { return e.id === buyout.id; })[0];
-                        if (buyout.shares > 0) {
-                            if (buyout.id === losingPlayer_1.id && !selfBuyOut) {
-                                losingPlayer_1.getFinance().sellStock(losingPlayer_1.id, 0, buyout.shares);
-                                stock.sellStock(losingPlayer_1.id, buyout.shares);
+                var mLosingPlayer = _this.players.filter(function (e) { return e.id === playerId; });
+                if (mLosingPlayer.length > 0) {
+                    var losingPlayer_1 = mLosingPlayer[0];
+                    var expense_1 = 0;
+                    var nShareHolders_1 = 0;
+                    stock.getBuyOutValues().forEach(function (buyout) {
+                        if (buyout.id !== _this._currentPlayer.id) {
+                            var mStockHolder = _this.players.filter(function (e) { return e.id === buyout.id; });
+                            if (buyout.shares > 0 && mStockHolder.length > 0) {
+                                var stockHolder = mStockHolder[0];
+                                if (buyout.id === losingPlayer_1.id && !selfBuyOut) {
+                                    losingPlayer_1.getFinance().sellStock(losingPlayer_1.id, 0, buyout.shares);
+                                    stock.sellStock(losingPlayer_1.id, buyout.shares);
+                                    _this.log("took over " + buyout.shares + " shares from losing player '" + losingPlayer_1.name + "'");
+                                }
+                                else {
+                                    stockHolder.getFinance().sellStock(playerId, buyout.totalValue, buyout.shares);
+                                    stock.sellStock(stockHolder.id, buyout.shares);
+                                    _this.log("bought out " + buyout.shares + " shares from '" + stockHolder.name + "' for " + buyout.totalValue + "g");
+                                    nShareHolders_1++;
+                                }
+                                expense_1 += buyout.totalValue;
                             }
-                            else {
-                                stockHolder.getFinance().sellStock(playerId, buyout.totalValue, buyout.shares);
-                                stock.sellStock(stockHolder.id, buyout.shares);
-                            }
-                            expense_1 += buyout.totalValue;
                         }
+                    });
+                    cpFinance.addToFinanceExpense(types_1.FinanceType.StockBuy, constants_1.localKeys[types_1.FinanceType.StockBuy], 1, expense_1);
+                    for (var i = 0; i < diff; i++) {
+                        stock.buyStock(_this._currentPlayer.id);
+                        cpFinance.buyStock(playerId, 0);
                     }
-                });
-                cpFinance.addToFinanceExpense(types_1.FinanceType.StockBuy, constants_1.localKeys[types_1.FinanceType.StockBuy], 1, expense_1);
-                for (var i = 0; i < diff; i++) {
-                    stock.buyStock(_this._currentPlayer.id);
-                    cpFinance.buyStock(playerId, 0);
+                    _this.log("bought out " + nShareHolders_1 + " shareholders for a total of " + expense_1 + "g");
+                    !selfBuyOut ? _this.playerTakeOver(_this._currentPlayer, losingPlayer_1, stock) : null;
+                    return true;
                 }
-                !selfBuyOut ? _this.playerTakeOver(_this._currentPlayer, losingPlayer_1, stock) : null;
-                return true;
+                else {
+                    _this.log("could not find player from id '" + playerId + "'");
+                }
+            }
+            else {
+                _this.log("could not buyout '" + playerId + "' as not all supply has been consumed");
             }
             return false;
         };
@@ -250,6 +270,7 @@ var Nardis = /** @class */ (function () {
          * Clear the saved game state from localStorage.
          */
         this.clearStorage = function () {
+            _this.log("clearing " + constants_1.localKeys + " keys from localStorage");
             constants_1.localKeys.forEach(function (key) {
                 window.localStorage.removeItem(key);
             });
@@ -263,8 +284,9 @@ var Nardis = /** @class */ (function () {
          * @returns {boolean} True if action was performed else false.
          */
         this.performStockAction = function (playerId, buy) {
-            var stockOwner = _this.players.filter(function (player) { return player.id === playerId; })[0];
-            if (util_1.isDefined(_this.stocks[playerId]) && util_1.isDefined(stockOwner)) {
+            var mStockOwner = _this.players.filter(function (player) { return player.id === playerId; });
+            if (util_1.isDefined(_this.stocks[playerId]) && mStockOwner.length > 0) {
+                var stockOwner = mStockOwner[0];
                 var value = (buy ?
                     _this.stocks[playerId].getBuyValue() :
                     _this.stocks[playerId].getSellValue());
@@ -279,10 +301,12 @@ var Nardis = /** @class */ (function () {
                     _this.updateStock(stockOwner);
                     _this.updatePlayerNetWorth(_this._currentPlayer);
                     _this.updatePlayerNetWorth(stockOwner);
+                    _this.log("'" + _this._currentPlayer.name + "' " + (buy ? 'bought' : 'sold') + " stock from '" + stockOwner.name + "' for " + value + "g");
                     buy ? _this.checkIfPlayerIsFullyOwned(stockOwner) : null;
                     return true;
                 }
             }
+            _this.log("'" + _this._currentPlayer.name + "' could not " + (buy ? 'buy' : 'sell') + " stock '" + playerId + "'");
             return false;
         };
         /**
@@ -293,7 +317,7 @@ var Nardis = /** @class */ (function () {
         this.checkIfPlayerIsFullyOwned = function (stockOwner) {
             var supply = _this.stocks[stockOwner.id].getSupply();
             if (supply[_this._currentPlayer.id] >= constants_1.stockConstant.maxStockAmount && stockOwner.id !== _this._currentPlayer.id) {
-                console.log(_this._currentPlayer + " owns 100% of " + stockOwner.name);
+                _this.log("'" + _this._currentPlayer.name + "' now owns 100% of '" + stockOwner.name);
                 _this.playerTakeOver(_this._currentPlayer, stockOwner, _this.stocks[stockOwner.id]);
             }
         };
@@ -337,6 +361,7 @@ var Nardis = /** @class */ (function () {
          * @param {Stock}  stock  - Stock instance of the losing Player.
          */
         this.playerTakeOver = function (victor, loser, stock) {
+            _this.log("commencing '" + victor.name + "' takeover of '" + loser.name + "'");
             var vFinance = victor.getFinance();
             var lFinance = loser.getFinance();
             var profit = lFinance.getGold();
@@ -344,9 +369,10 @@ var Nardis = /** @class */ (function () {
                 vFinance.sellStock(loser.id, profit, 0);
                 lFinance.addToFinanceExpense(types_1.FinanceType.StockBuy, constants_1.localKeys[types_1.FinanceType.StockBuy], 1, profit);
             }
-            victor.mergeQueue(loser.getQueue());
-            victor.mergeRoutes(loser.getRoutes());
-            _this.mergeStock(victor, loser);
+            var r = victor.mergeQueue(loser.getQueue());
+            var q = victor.mergeRoutes(loser.getRoutes());
+            var _a = _this.mergeStock(victor, loser), sh = _a[0], st = _a[1];
+            _this.log("merged " + profit + "g, " + r + " routes, " + q + " queue and " + sh + " shares distributed between " + st + " stocks");
             loser.setInactive();
             stock.setInactive(_this._turn);
             _this.updateStocks();
@@ -357,8 +383,13 @@ var Nardis = /** @class */ (function () {
          *
          * @param {Player} victor - Player instance taking over.
          * @param {Player} loser  - Player instance being taken over.
+         *
+         * @returns {[number, number]} Tuple with two numbers describing merged amount of Stock and shares.
          */
         this.mergeStock = function (victor, loser) {
+            _this.log("merging '" + loser.name + "' stock to '" + victor.name + "' holdings");
+            var mergedStock = 0;
+            var mergedShares = 0;
             var vFinance = victor.getFinance();
             var lFinance = loser.getFinance();
             var lStocks = lFinance.getStocks();
@@ -368,12 +399,16 @@ var Nardis = /** @class */ (function () {
                     var amount = lStocks[key];
                     lFinance.sellStock(key, 0, amount);
                     stock.sellStock(loser.id, amount);
+                    mergedShares += amount;
+                    mergedStock++;
                     for (var i = 0; i < amount; i++) {
                         vFinance.buyStock(key, 0);
                         stock.buyStock(victor.id);
                     }
+                    _this.log("merged " + amount + " shares from stock '" + key + "'");
                 }
             });
+            return [mergedStock, mergedShares];
         };
         /**
          * Iterate over each Computer player and handle their turns accordingly.
@@ -478,7 +513,9 @@ var Nardis = /** @class */ (function () {
         this.stocks = stocks;
         this._currentPlayer = currentPlayer ? currentPlayer : this.players[0];
         this._turn = turn ? turn : 1;
+        this.log = logger_1.default.log.bind(null, types_1.LogLevel.All, 'nardis-game');
         this.updatePlayersNetWorth();
+        logger_1.default.setTurn(this._turn);
     }
     /**
      * Get Nardis instance from saved localStorage data.

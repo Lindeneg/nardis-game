@@ -27,6 +27,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 var base_component_1 = require("../../component/base-component");
 var finance_1 = require("./finance");
 var route_1 = require("../route");
+var logger_1 = require("../../../util/logger");
 var types_1 = require("../../../types/types");
 var util_1 = require("../../../util/util");
 var constants_1 = require("../../../util/constants");
@@ -87,23 +88,30 @@ var Player = /** @class */ (function (_super) {
         /**
          * Merge current Route array with another,
          *
-         * @param routes - Array of Routes to append to current Route array.
+         * @param   {Route[]} routes - Array of Routes to append to active Route array.
+         *
+         * @returns {number}  Number with amount of Routes appended to Player.
          */
         _this.mergeRoutes = function (routes) {
             _this._routes = _this._routes.concat(routes);
+            return routes.length;
         };
         /**
          * Merge current queue array with another,
          *
-         * @param queue - Array of QueuedRouteItem to append to current queue array.
+         * @param   {QueuedRouteItem[]} queue - Array of QueuedRouteItem to append to current queue array.
+         *
+         * @returns {number}            Number with amount of Routes appended to Player.
          */
         _this.mergeQueue = function (queue) {
             _this._queue = _this._queue.concat(queue);
+            return queue.length;
         };
         /**
          * Set Player to inactive. Also removes all Routes and Upgrades.
          */
         _this.setInactive = function () {
+            _this.log("setting player inactive");
             _this._routes = [], _this._queue = [], _this._upgrades = [];
             _this._isActive = false;
         };
@@ -114,6 +122,7 @@ var Player = /** @class */ (function (_super) {
          * @param {Route} turnCost - Number describing turn cost.
          */
         _this.addRouteToQueue = function (route, turnCost) {
+            _this.log("adding route '" + route.id + "' to queue with turn cost " + turnCost);
             route.getCityOne().incrementRouteCount();
             route.getCityTwo().incrementRouteCount();
             _this._queue.push({
@@ -130,14 +139,16 @@ var Player = /** @class */ (function (_super) {
          */
         _this.removeRouteFromQueue = function (id) {
             for (var i = 0; i < _this._queue.length; i++) {
-                var route = _this._queue[i].route;
+                var _a = _this._queue[i], route = _a.route, turnCost = _a.turnCost;
                 if (route.id === id) {
+                    _this.log("removing route '" + route.id + "' from queue with turns " + turnCost + " left");
                     route.getCityOne().decrementRouteCount();
                     route.getCityTwo().decrementRouteCount();
                     _this._queue.splice(i, 1);
                     return true;
                 }
             }
+            _this.log("cannot remove route '" + id + "' from queue: not found");
             return false;
         };
         /**
@@ -151,12 +162,14 @@ var Player = /** @class */ (function (_super) {
             for (var i = 0; i < _this._routes.length; i++) {
                 var route = _this._routes[i];
                 if (route.id === id) {
+                    _this.log("removing route '" + route.id + "' from active routes");
                     route.getCityOne().decrementRouteCount();
                     route.getCityTwo().decrementRouteCount();
                     _this._routes.splice(i, 1);
                     return true;
                 }
             }
+            _this.log("cannot remove route '" + id + "' from active routes: not found");
             return false;
         };
         /**
@@ -194,6 +207,7 @@ var Player = /** @class */ (function (_super) {
          */
         _this.handleQueue = function () {
             var completed = [];
+            _this.log("handling " + _this._queue.length + " queue items");
             for (var i = 0; i < _this._queue.length; i++) {
                 if (_this._queue[i].turnCost <= 0) {
                     _this._routes.push(_this._queue[i].route);
@@ -203,6 +217,7 @@ var Player = /** @class */ (function (_super) {
                     _this._queue[i].turnCost--;
                 }
             }
+            _this.log("handled " + _this._queue.length + " queue items and finished " + completed.length + " of them");
             _this._queue = _this._queue.filter(function (item) { return !(completed.indexOf(item.route.id) > -1); });
         };
         /**
@@ -229,9 +244,11 @@ var Player = /** @class */ (function (_super) {
         _this.shouldLevelBeIncreased = function () {
             if (_this._level < types_1.PlayerLevel.Master) {
                 var requirements = constants_1.levelUpRequirements[_this._level + 1];
-                return (_this._routes.length >= requirements.routes &&
-                    _this._finance.getAverageRevenue() >= requirements.revenuePerTurn &&
-                    _this._finance.getGold() >= requirements.gold);
+                var r = _this._routes.length >= requirements.routes;
+                var a = _this._finance.getAverageRevenue() >= requirements.revenuePerTurn;
+                var g = _this._finance.getGold() >= requirements.gold;
+                _this.log("met level up requirements: routes=" + r + ", revenue=" + a + ", gold=" + g);
+                return r && a && g;
             }
             return false;
         };
@@ -241,8 +258,11 @@ var Player = /** @class */ (function (_super) {
         _this.increaseLevel = function () {
             var newLevel = util_1.getPlayerLevelFromNumber(_this._level + 1);
             if (newLevel !== types_1.PlayerLevel.None) {
+                var r = _this._range;
                 _this._level = newLevel;
                 _this._range = _this.getRangeFromLevel();
+                _this.log("increasing level " + (_this._level - 1) + "->" + _this._level);
+                _this.log("increasing range " + r + "->" + _this._range);
                 return true;
             }
             return false;
@@ -263,6 +283,7 @@ var Player = /** @class */ (function (_super) {
         _this._upgrades = util_1.isDefined(upgrades) ? upgrades : [];
         _this._isActive = util_1.isDefined(isActive) ? isActive : true;
         _this._range = _this.getRangeFromLevel();
+        _this.log = logger_1.default.log.bind(null, (playerType === types_1.PlayerType.Human ? types_1.LogLevel.All : types_1.LogLevel.Opponent), "player-" + _this.name);
         return _this;
     }
     /**

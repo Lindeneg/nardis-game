@@ -45,7 +45,7 @@ exports.stockConstant = {
     baseValue: 500,
     multipliers: {
         stockBuy: 1.25,
-        routeLength: 1.8,
+        routeLength: 4.5,
         stockHolder: 20
     },
     divisors: {

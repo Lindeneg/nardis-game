@@ -1,4 +1,3 @@
-import { Nardis } from '../../../nardis';
 import Player from '../player';
 import Finance from '../finance';
 import Upgrade from '../upgrade';
@@ -6,6 +5,7 @@ import Route from '../../route';
 import City from '../../city';
 import Train from '../../train';
 import Resource from '../../resource';
+import { Nardis } from '../../../nardis';
 import { HandleTurnInfo, QueuedRouteItem, PlayerLevel, ActionSave } from '../../../../types/types';
 /**
  * @constructor
@@ -122,7 +122,7 @@ export default class Opponent extends Player {
      */
     private inspectStockOptions;
     /**
-     * Check if any Player can be bought out and either buy out that Player or save and try again.
+     * Check if any Player can be bought out and either buyout that Player or save and try again.
      *
      * @param {Nardis} game - Nardis game instance.
      * @param {number} turn - Number with current turn.
@@ -184,8 +184,8 @@ export default class Opponent extends Player {
      */
     private getSuggestedTrain;
     /**
-     * Get array of all cities currently connected to the Route network of the player. These cities will
-     * serve as potential origins for new routes.
+     * Get array of all non-empty cities currently connected to the Route network of the Player.
+     * These cities will serve as potential origins for new routes.
      *
      * @returns {City[]} Array of unique City origins.
      */
@@ -198,14 +198,6 @@ export default class Opponent extends Player {
      * @returns {ActionSave} ActionSave object with default values.
      */
     private getDefaultSave;
-    /**
-     * For debugging purposes.
-     *
-     * @param {string} msg - String with message to log.
-     *
-     * @param {any}    obj - (optional) object to log.
-     */
-    private log;
     /**
      * Get Opponent instance from stringified JSON.
      *

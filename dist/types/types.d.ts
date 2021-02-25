@@ -4,6 +4,12 @@ import Route from '../modules/core/route';
 import Train from '../modules/core/train';
 import Upgrade from '../modules/core/player/upgrade';
 import Stock from '../modules/core/player/stock';
+export declare type PartialLog = (msg: string, ...rest: any[]) => void;
+export declare enum LogLevel {
+    None = 0,
+    Opponent = 1,
+    All = 2
+}
 export declare enum PlayerLevel {
     None = 0,
     Novice = 1,

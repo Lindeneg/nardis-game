@@ -1,6 +1,12 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.LocalKey = exports.UpgradeType = exports.FinanceGeneralType = exports.FinanceType = exports.PlayerType = exports.PlayerLevel = void 0;
+exports.LocalKey = exports.UpgradeType = exports.FinanceGeneralType = exports.FinanceType = exports.PlayerType = exports.PlayerLevel = exports.LogLevel = void 0;
+var LogLevel;
+(function (LogLevel) {
+    LogLevel[LogLevel["None"] = 0] = "None";
+    LogLevel[LogLevel["Opponent"] = 1] = "Opponent";
+    LogLevel[LogLevel["All"] = 2] = "All";
+})(LogLevel = exports.LogLevel || (exports.LogLevel = {}));
 var PlayerLevel;
 (function (PlayerLevel) {
     PlayerLevel[PlayerLevel["None"] = 0] = "None";
