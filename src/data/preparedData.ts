@@ -74,7 +74,7 @@ export const trainData: DataTrainModel[] = [
     {
         name: "",
         cost: [90, 110],
-        upkeep: [3, 5],
+        upkeep: [3, 4],
         speed: [40, 50],
         cargoSpace: [4, 4],
         levelRequired: 1
@@ -82,7 +82,7 @@ export const trainData: DataTrainModel[] = [
     {
         name: "",
         cost: [130, 150],
-        upkeep: [6, 11],
+        upkeep: [6, 10],
         speed: [60, 80],
         cargoSpace: [4, 5],
         levelRequired: 1
@@ -106,7 +106,7 @@ export const trainData: DataTrainModel[] = [
     {
         name: "",
         cost: [240, 260],
-        upkeep: [20, 25],
+        upkeep: [15, 20],
         speed: [130, 140],
         cargoSpace: [6, 7],
         levelRequired: 2
@@ -114,7 +114,7 @@ export const trainData: DataTrainModel[] = [
     {
         name: "",
         cost: [270, 300],
-        upkeep: [30, 35],
+        upkeep: [25, 30],
         speed: [140, 160],
         cargoSpace: [6, 7],
         levelRequired: 2
@@ -122,7 +122,7 @@ export const trainData: DataTrainModel[] = [
     {
         name: "",
         cost: [310, 330],
-        upkeep: [40, 45],
+        upkeep: [35, 40],
         speed: [160, 180],
         cargoSpace: [8, 9],
         levelRequired: 3
@@ -130,7 +130,7 @@ export const trainData: DataTrainModel[] = [
     {
         name: "",
         cost: [330, 350],
-        upkeep: [50, 55],
+        upkeep: [45, 50],
         speed: [180, 200],
         cargoSpace: [8, 9],
         levelRequired: 3
@@ -138,7 +138,7 @@ export const trainData: DataTrainModel[] = [
     {
         name: "",
         cost: [400, 450],
-        upkeep: [56, 60],
+        upkeep: [50, 55],
         speed: [210, 250],
         cargoSpace: [10, 12],
         levelRequired: 4
@@ -270,7 +270,7 @@ export const genericOpponentsName: string[] = [
 export const opponentInformation: OpponentInformation[] = [
     {
         type: PlayerType.Human,
-        color: 'darkslategray',
+        color: 'teal',
         avatar: 0
     },
     {
@@ -280,7 +280,7 @@ export const opponentInformation: OpponentInformation[] = [
     },
     {
         type: PlayerType.Computer,
-        color: 'teal',
+        color: 'purple',
         avatar: 2
     },
     {
@@ -290,7 +290,7 @@ export const opponentInformation: OpponentInformation[] = [
     },
     {
         type: PlayerType.Computer,
-        color: 'purple',
+        color: 'darkslategray',
         avatar: 4
     },
     {

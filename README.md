@@ -1,7 +1,5 @@
-Still in progress. Working on:
+Todo:
 
-- Player Stocks
-- Opponents
-- Turn Events
-- Winning condition based on Player Stock
-- (Possibly an API for server-side storage/retrieval of saved game states instead of client-side using localStorage)
+- Thorougher testing of all core modules.
+
+- Possibly a backend allowing for server-side benefits, such as multiplayer support and game-state storage.
