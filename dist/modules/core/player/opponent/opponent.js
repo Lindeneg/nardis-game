@@ -276,6 +276,7 @@ var Opponent = /** @class */ (function (_super) {
                         .filter(function (e) { return e.amount > 0; })
                         .sort(function (a, b) { return b.value - a.value; });
                     if (stock.length > 0) {
+                        _this.log("selling stock: '" + stock[0].id + "' due to low cash availability");
                         game.sellStock(stock[0].id);
                     }
                 }
@@ -286,8 +287,8 @@ var Opponent = /** @class */ (function (_super) {
                     .filter(function (e) { return e.currentAmountOfStockHolders() < constants_1.stockConstant.maxStockAmount && currentGold >= e.getBuyValue(); })
                     .sort(function (a, b) { return a.getBuyValue() - b.getBuyValue(); });
                 if (potentialStock.length > 0 &&
-                    _this._finance.getAverageRevenue() > 0 &&
-                    _this._finance.getGold() - potentialStock[0].getBuyValue() > Math.floor(_this.startGold / 20)) {
+                    _this._finance.getAverageRevenue() > 0) {
+                    _this.log("buying stock: '" + potentialStock[0].owningPlayerId + "'");
                     game.buyStock(potentialStock[0].owningPlayerId);
                 }
             }
@@ -301,26 +302,28 @@ var Opponent = /** @class */ (function (_super) {
         _this.checkIfAnyPlayerCanBeBoughtOut = function (game, turn) {
             Object.keys(game.stocks).forEach(function (key) {
                 var stock = game.stocks[key];
-                if (stock.currentAmountOfStockHolders() >= constants_1.stockConstant.maxStockAmount &&
-                    stock.isStockHolder(_this.id) && stock.owningPlayerId !== _this.id && stock.isActive()) {
+                if (stock.isActive() &&
+                    stock.currentAmountOfStockHolders() >= constants_1.stockConstant.maxStockAmount) {
                     var buyOut = stock.getBuyOutValues().filter(function (e) { return e.id !== _this.id; }).reduce(function (a, b) { return a + b.totalValue; }, 0);
                     if (_this._finance.getGold() >= buyOut) {
                         _this.log("commencing buyout of stock '" + stock.owningPlayerId + "'");
-                        game.buyOutPlayer(stock.owningPlayerId);
+                        game.buyOutPlayer(stock.owningPlayerId, stock.owningPlayerId === _this.id);
                     }
                     else if (_this._level >= types_1.PlayerLevel.Advanced) {
                         _this.log("commencing save to buyout stock '" + stock.owningPlayerId + "'");
                         _this._save = {
                             should: true,
                             turn: turn,
-                            diff: constants_1.DEFAULT_SAVE,
-                            callback: (function (game, id) {
+                            diff: 1,
+                            callback: (function (game, id, turn) {
                                 if (_this._finance.getGold() >= game.stocks[id].getBuyOutValues().filter(function (e) { return e.id !== _this.id; }).reduce(function (a, b) { return a + b.totalValue; }, 0)) {
-                                    game.buyOutPlayer(id);
+                                    game.buyOutPlayer(id, stock.owningPlayerId === _this.id);
                                     return true;
                                 }
-                                return false;
-                            }).bind(_this, game, stock.owningPlayerId)
+                                var continueSave = !(game.getCurrentTurn() > turn + constants_1.DEFAULT_SAVE);
+                                _this.log("save initiated on turn: " + turn + " | continue: " + continueSave);
+                                return continueSave;
+                            }).bind(_this, game, stock.owningPlayerId, turn)
                         };
                     }
                 }

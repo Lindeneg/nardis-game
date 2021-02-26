@@ -204,7 +204,8 @@ var Nardis = /** @class */ (function () {
             if (selfBuyOut === void 0) { selfBuyOut = false; }
             _this.log("'" + _this._currentPlayer.name + "' is attempting to buyout '" + playerId + "' stock");
             var stock = _this.stocks[playerId];
-            var diff = constants_1.stockConstant.maxStockAmount - stock.getSupply()[_this._currentPlayer.id];
+            var supply = stock.getSupply();
+            var diff = constants_1.stockConstant.maxStockAmount - (util_1.isDefined(supply[_this._currentPlayer.id]) ? supply[_this._currentPlayer.id] : 0);
             var cpFinance = _this._currentPlayer.getFinance();
             if (stock.currentAmountOfStockHolders() >= constants_1.stockConstant.maxStockAmount) {
                 var mLosingPlayer = _this.players.filter(function (e) { return e.id === playerId; });
