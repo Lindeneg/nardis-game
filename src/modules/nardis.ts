@@ -294,8 +294,8 @@ export class Nardis {
 
     public buyOutPlayer = (playerId: string, selfBuyOut: boolean = false): boolean => {
         this.log(`'${this._currentPlayer.name}' is attempting to buyout '${playerId}' stock`);
-        const stock: Stock = this.stocks[playerId];
-        const diff: number = stockConstant.maxStockAmount - stock.getSupply()[this._currentPlayer.id];
+        const stock: Stock = this.stocks[playerId]; const supply: StockSupply = stock.getSupply(); 
+        const diff: number = stockConstant.maxStockAmount - (isDefined(supply[this._currentPlayer.id]) ? supply[this._currentPlayer.id] : 0);
         const cpFinance: Finance = this._currentPlayer.getFinance();
         if (stock.currentAmountOfStockHolders() >= stockConstant.maxStockAmount) {
             const mLosingPlayer: Player[] = this.players.filter(e => e.id === playerId);

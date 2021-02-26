@@ -348,6 +348,7 @@ export default class Opponent extends Player {
                 .filter(e => e.amount > 0)
                 .sort((a, b) => b.value - a.value);
                 if (stock.length > 0) {
+                    this.log(`selling stock: '${stock[0].id}' due to low cash availability`);
                     game.sellStock(stock[0].id);
                 }
             }
@@ -358,9 +359,9 @@ export default class Opponent extends Player {
             .sort((a, b) => a.getBuyValue() - b.getBuyValue());
             if (
                 potentialStock.length > 0 && 
-                this._finance.getAverageRevenue() > 0 &&
-                this._finance.getGold() - potentialStock[0].getBuyValue() > Math.floor(this.startGold / 20) 
+                this._finance.getAverageRevenue() > 0
             ) {
+                this.log(`buying stock: '${potentialStock[0].owningPlayerId}'`);
                 game.buyStock(potentialStock[0].owningPlayerId);
             }
         }
@@ -377,26 +378,28 @@ export default class Opponent extends Player {
         Object.keys(game.stocks).forEach((key: string): void => {
             const stock: Stock = game.stocks[key];
             if (
-                stock.currentAmountOfStockHolders() >= stockConstant.maxStockAmount && 
-                stock.isStockHolder(this.id) && stock.owningPlayerId !== this.id && stock.isActive()
+                stock.isActive() &&
+                stock.currentAmountOfStockHolders() >= stockConstant.maxStockAmount
             ) {
                 const buyOut: number = stock.getBuyOutValues().filter(e => e.id !== this.id).reduce((a, b) => a + b.totalValue, 0);
                 if (this._finance.getGold() >= buyOut) {
                     this.log(`commencing buyout of stock '${stock.owningPlayerId}'`);
-                    game.buyOutPlayer(stock.owningPlayerId);
+                    game.buyOutPlayer(stock.owningPlayerId, stock.owningPlayerId === this.id);
                 } else if (this._level >= PlayerLevel.Advanced) {
                     this.log(`commencing save to buyout stock '${stock.owningPlayerId}'`);
                     this._save = {
                         should: true,
                         turn,
-                        diff: DEFAULT_SAVE,
-                        callback: ((game: Nardis, id: string): boolean => {
+                        diff: 1,
+                        callback: ((game: Nardis, id: string, turn: number): boolean => {
                             if (this._finance.getGold() >= game.stocks[id].getBuyOutValues().filter(e => e.id !== this.id).reduce((a, b) => a + b.totalValue, 0)) {
-                                game.buyOutPlayer(id);
+                                game.buyOutPlayer(id, stock.owningPlayerId === this.id);
                                 return true;
                             }
-                            return false;
-                        }).bind(this, game, stock.owningPlayerId)
+                            const continueSave: boolean = !(game.getCurrentTurn() > turn + DEFAULT_SAVE);
+                            this.log(`save initiated on turn: ${turn} | continue: ${continueSave}`);
+                            return continueSave;
+                        }).bind(this, game, stock.owningPlayerId, turn)
                     }
                 }
             }

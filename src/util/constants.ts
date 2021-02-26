@@ -50,7 +50,7 @@ export const netWorthDivisors: Indexable<number> = {
 export const stockConstant: StockConstant = {
     maxStockAmount: 10,
     startingShares: 4,
-    baseValue: 500,
+    baseValue: 850,
     multipliers: {
         stockBuy: 1.25,
         routeLength: 4.5,
