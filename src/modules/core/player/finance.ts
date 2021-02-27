@@ -72,7 +72,7 @@ export default class Finance extends BaseComponent implements ITurnable {
         this._playerId     = playerId;
         this._gold         = gold;
         this._history      = isDefined(history) ? history : this.getInitialHistoryState();
-        this._totalProfits = isDefined(totalProfits) ? totalProfits : 0;
+        this._totalProfits = isDefined(totalProfits) ? totalProfits : gold;
         this._totalHistory = isDefined(totalHistory) ? totalHistory : {
             [localKeys[FinanceType.Train]]    : 0,
             [localKeys[FinanceType.Track]]    : 0,
