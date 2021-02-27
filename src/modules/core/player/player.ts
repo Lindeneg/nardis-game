@@ -249,6 +249,7 @@ export default class Player extends BaseComponent implements ITurnable {
         level      : this._level,
         id         : this.id,
         startCityId: this._startCity.id,
+        startGold  : this.startGold,
         finance    : this._finance.deconstruct(),
         queue      : this._queue.map((queued: QueuedRouteItem): Indexable<string | number> => ({
             route: queued.route.deconstruct(),
