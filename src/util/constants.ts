@@ -53,12 +53,12 @@ export const stockConstant: StockConstant = {
     baseValue: 850,
     multipliers: {
         stockBuy: 1.25,
-        routeLength: 4.5,
+        routeLength: 8.5,
         stockHolder: 20
     },
     divisors: {
-        avgRevenue: 100,
-        totalProfits: 100
+        avgRevenue: 85,
+        totalProfits: 90
     }
 };
 
