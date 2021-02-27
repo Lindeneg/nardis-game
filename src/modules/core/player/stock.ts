@@ -169,7 +169,7 @@ export default class Stock extends BaseComponent {
         if (this.isActive()) {
             const newValue: number = (
                 Math.floor(routes * stockConstant.multipliers.routeLength) +
-                //Math.floor(finance.getAverageRevenue() / stockConstant.divisors.avgRevenue) +
+                Math.floor(finance.getAverageRevenue() / stockConstant.divisors.avgRevenue) +
                 Math.floor(this.currentAmountOfStockHolders() * stockConstant.multipliers.stockHolder) 
             ) + (Math.floor(finance.getTotalProfits() / stockConstant.divisors.totalProfits) + stockConstant.baseValue);
             if (newValue !== this._value) {
