@@ -57,8 +57,8 @@ export const stockConstant: StockConstant = {
         stockHolder: 20
     },
     divisors: {
-        avgRevenue: 70,
-        totalProfits: 70
+        avgRevenue: 100,
+        totalProfits: 100
     }
 };
 
