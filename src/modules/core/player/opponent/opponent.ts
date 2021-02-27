@@ -396,7 +396,7 @@ export default class Opponent extends Player {
                                 game.buyOutPlayer(id, stock.owningPlayerId === this.id);
                                 return true;
                             }
-                            const continueSave: boolean = game.getCurrentTurn() < turn + (this.isAllGameStockOwned(game) ? 10 : 4);
+                            const continueSave: boolean = !(game.getCurrentTurn() < turn + (this.isAllGameStockOwned(game) ? 10 : 4));
                             this.log(`save initiated on turn: ${turn} | continue: ${continueSave}`);
                             return continueSave;
                         }).bind(this, game, stock.owningPlayerId, turn)
@@ -548,12 +548,12 @@ export default class Opponent extends Player {
      */
 
     private isAllGameStockOwned = (game: Nardis): boolean => {
-        let result = Object.keys(game.stocks).map((key: string): number => {
+        const result = Object.keys(game.stocks).map((key: string): number => {
             const stock: Stock = game.stocks[key];
             return stock.currentAmountOfStockHolders() >= stockConstant.maxStockAmount ? 0 : 1;
         })
         .reduce((a: number, b: number): number => a + b, 0) === 0;
-        console.log('ALL STOCK OWNED: ' + result);
+        this.log(`all shares of every stock currently owned: ${result}`)
         return result;
     };
     
