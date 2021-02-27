@@ -390,13 +390,13 @@ export default class Opponent extends Player {
                     this._save = {
                         should: true,
                         turn,
-                        diff: 1,
+                        diff: 4,
                         callback: ((game: Nardis, id: string, turn: number): boolean => {
                             if (this._finance.getGold() >= game.stocks[id].getBuyOutValues().filter(e => e.id !== this.id).reduce((a, b) => a + b.totalValue, 0)) {
                                 game.buyOutPlayer(id, stock.owningPlayerId === this.id);
                                 return true;
                             }
-                            const continueSave: boolean = !(game.getCurrentTurn() > turn + DEFAULT_SAVE);
+                            const continueSave: boolean = game.getCurrentTurn() < turn + DEFAULT_SAVE;
                             this.log(`save initiated on turn: ${turn} | continue: ${continueSave}`);
                             return continueSave;
                         }).bind(this, game, stock.owningPlayerId, turn)
