@@ -375,9 +375,10 @@ export default class Opponent extends Player {
      */
 
     private checkIfAnyPlayerCanBeBoughtOut = (game: Nardis, turn: number): void => {
-        Object.keys(game.stocks).forEach((key: string): void => {
+        [...Object.keys(game.stocks).filter((key: string): boolean => key !== this.id), this.id].forEach((key: string): void => {
             const stock: Stock = game.stocks[key];
             if (
+                isDefined(stock) &&
                 stock.isActive() &&
                 stock.currentAmountOfStockHolders() >= stockConstant.maxStockAmount
             ) {
