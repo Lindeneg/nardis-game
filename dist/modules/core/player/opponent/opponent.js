@@ -23,6 +23,13 @@ var __assign = (this && this.__assign) || function () {
     };
     return __assign.apply(this, arguments);
 };
+var __spreadArrays = (this && this.__spreadArrays) || function () {
+    for (var s = 0, i = 0, il = arguments.length; i < il; i++) s += arguments[i].length;
+    for (var r = Array(s), k = 0, i = 0; i < il; i++)
+        for (var a = arguments[i], j = 0, jl = a.length; j < jl; j++, k++)
+            r[k] = a[j];
+    return r;
+};
 Object.defineProperty(exports, "__esModule", { value: true });
 var player_1 = require("../player");
 var finance_1 = require("../finance");
@@ -300,14 +307,17 @@ var Opponent = /** @class */ (function (_super) {
          * @param {number} turn - Number with current turn.
          */
         _this.checkIfAnyPlayerCanBeBoughtOut = function (game, turn) {
-            Object.keys(game.stocks).forEach(function (key) {
-                var stock = game.stocks[key];
-                if (stock.isActive() &&
+            var keys = __spreadArrays(Object.keys(game.stocks).filter(function (key) { return key !== _this.id; }), [_this.id]);
+            var _loop_1 = function (i) {
+                var stock = game.stocks[keys[i]];
+                if (util_1.isDefined(stock) &&
+                    stock.isActive() &&
                     stock.currentAmountOfStockHolders() >= constants_1.stockConstant.maxStockAmount) {
                     var buyOut = stock.getBuyOutValues().filter(function (e) { return e.id !== _this.id; }).reduce(function (a, b) { return a + b.totalValue; }, 0);
                     if (_this._finance.getGold() >= buyOut) {
                         _this.log("commencing buyout of stock '" + stock.owningPlayerId + "'");
                         game.buyOutPlayer(stock.owningPlayerId, stock.owningPlayerId === _this.id);
+                        return "break";
                     }
                     else if (_this._level >= types_1.PlayerLevel.Advanced) {
                         _this.log("commencing save to buyout stock '" + stock.owningPlayerId + "'");
@@ -325,9 +335,15 @@ var Opponent = /** @class */ (function (_super) {
                                 return continueSave;
                             }).bind(_this, game, stock.owningPlayerId, turn)
                         };
+                        return "break";
                     }
                 }
-            });
+            };
+            for (var i = 0; i < keys.length; i++) {
+                var state_1 = _loop_1(i);
+                if (state_1 === "break")
+                    break;
+            }
         };
         /**
          * Get array of suggested RouteCargo for a given route.
@@ -513,7 +529,7 @@ var Opponent = /** @class */ (function (_super) {
         _this.getUniqueOrigins = function () {
             var origins = [];
             !_this._startCity.isFull() ? origins.push(_this._startCity) : null;
-            var _loop_1 = function (i) {
+            var _loop_2 = function (i) {
                 var _a = [_this._routes[i].getCityOne(), _this._routes[i].getCityTwo()], c1 = _a[0], c2 = _a[1];
                 if (origins.filter(function (e) { return e.equals(c1); }).length <= 0 && !c1.isFull()) {
                     origins.push(c1);
@@ -523,7 +539,7 @@ var Opponent = /** @class */ (function (_super) {
                 }
             };
             for (var i = 0; i < _this._routes.length; i++) {
-                _loop_1(i);
+                _loop_2(i);
             }
             _this.log("found " + origins.length + " unique origins");
             return origins;

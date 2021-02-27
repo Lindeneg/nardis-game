@@ -45,12 +45,12 @@ exports.stockConstant = {
     baseValue: 850,
     multipliers: {
         stockBuy: 1.25,
-        routeLength: 4.5,
+        routeLength: 8.5,
         stockHolder: 20
     },
     divisors: {
-        avgRevenue: 70,
-        totalProfits: 70
+        avgRevenue: 85,
+        totalProfits: 90
     }
 };
 exports.rangeCost = {

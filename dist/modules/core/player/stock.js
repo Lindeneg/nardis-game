@@ -121,7 +121,7 @@ var Stock = /** @class */ (function (_super) {
             if (_this.isActive()) {
                 var newValue = (Math.floor(routes * constants_1.stockConstant.multipliers.routeLength) +
                     Math.floor(finance.getAverageRevenue() / constants_1.stockConstant.divisors.avgRevenue) +
-                    Math.floor(_this.currentAmountOfStockHolders() * constants_1.stockConstant.multipliers.stockHolder)) + (Math.floor(finance.getTotalProfits() / constants_1.stockConstant.divisors.totalProfits) + constants_1.stockConstant.baseValue);
+                    Math.floor(_this.currentAmountOfStockHolders() * constants_1.stockConstant.multipliers.stockHolder)) + ((turn > 1 ? Math.floor(finance.getTotalProfits() / constants_1.stockConstant.divisors.totalProfits) : 0) + constants_1.stockConstant.baseValue);
                 if (newValue !== _this._value) {
                     _this.log("setting new value: " + _this._value + "->" + newValue);
                     _this.updateValueHistory(newValue, turn);

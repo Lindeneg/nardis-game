@@ -189,6 +189,7 @@ var Player = /** @class */ (function (_super) {
             level: _this._level,
             id: _this.id,
             startCityId: _this._startCity.id,
+            startGold: _this.startGold,
             finance: _this._finance.deconstruct(),
             queue: _this._queue.map(function (queued) { return ({
                 route: queued.route.deconstruct(),
