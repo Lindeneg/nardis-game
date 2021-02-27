@@ -148,7 +148,7 @@ export default class Opponent extends Player {
         if (this.shouldPurchaseRoutes(info.turn)) {
             const train: AdjustedTrain = this.getSuggestedTrain(game.getArrayOfAdjustedTrains());
             const originRoutes: OriginRoutePotential[] = this.getInterestingRoutes(game, train);
-            const n: number = originRoutes.length > 0 ? originRoutes[0].pRoutes.length : 0; 
+            const n: number = originRoutes.length > 0 ? (this.isAllGameStockOwned(game) ? 1 : originRoutes[0].pRoutes.length) : 0; 
             this.purchaseRoutes(game, this.pickNInterestingRoutes(originRoutes, n, train));
         }
         this.deleteConsistentlyUnprofitableRoutes(game, info.turn);
@@ -390,13 +390,13 @@ export default class Opponent extends Player {
                     this._save = {
                         should: true,
                         turn,
-                        diff: 4,
+                        diff: this.isAllGameStockOwned(game) ? 10 : 4,
                         callback: ((game: Nardis, id: string, turn: number): boolean => {
                             if (this._finance.getGold() >= game.stocks[id].getBuyOutValues().filter(e => e.id !== this.id).reduce((a, b) => a + b.totalValue, 0)) {
                                 game.buyOutPlayer(id, stock.owningPlayerId === this.id);
                                 return true;
                             }
-                            const continueSave: boolean = game.getCurrentTurn() < turn + DEFAULT_SAVE;
+                            const continueSave: boolean = game.getCurrentTurn() < turn + (this.isAllGameStockOwned(game) ? 10 : 4);
                             this.log(`save initiated on turn: ${turn} | continue: ${continueSave}`);
                             return continueSave;
                         }).bind(this, game, stock.owningPlayerId, turn)
@@ -538,6 +538,24 @@ export default class Opponent extends Player {
             game.addRouteToPlayerQueue(routes[i]);
         }
     }
+
+    /**
+     * Useful when deciding how long to save when commencing buyouts.
+     * 
+     * @param   {Nardis}  game - Nardis game instance. 
+     * 
+     * @returns {boolean} True if all shares of every Stock is currently held else false.
+     */
+
+    private isAllGameStockOwned = (game: Nardis): boolean => {
+        let result = Object.keys(game.stocks).map((key: string): number => {
+            const stock: Stock = game.stocks[key];
+            return stock.currentAmountOfStockHolders() >= stockConstant.maxStockAmount ? 0 : 1;
+        })
+        .reduce((a: number, b: number): number => a + b, 0) === 0;
+        console.log('ALL STOCK OWNED: ' + result);
+        return result;
+    };
     
     /**
      * If any Route has been unprofitable for four the amount of turns a full revolution takes, delete it.
