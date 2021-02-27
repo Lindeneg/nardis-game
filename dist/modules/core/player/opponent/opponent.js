@@ -126,7 +126,7 @@ var Opponent = /** @class */ (function (_super) {
             if (_this.shouldPurchaseRoutes(info.turn)) {
                 var train = _this.getSuggestedTrain(game.getArrayOfAdjustedTrains());
                 var originRoutes = _this.getInterestingRoutes(game, train);
-                var n = originRoutes.length > 0 ? originRoutes[0].pRoutes.length : 0;
+                var n = originRoutes.length > 0 ? (_this.isAllGameStockOwned(game) ? 1 : originRoutes[0].pRoutes.length) : 0;
                 _this.purchaseRoutes(game, _this.pickNInterestingRoutes(originRoutes, n, train));
             }
             _this.deleteConsistentlyUnprofitableRoutes(game, info.turn);
@@ -314,13 +314,13 @@ var Opponent = /** @class */ (function (_super) {
                         _this._save = {
                             should: true,
                             turn: turn,
-                            diff: 1,
+                            diff: _this.isAllGameStockOwned(game) ? 10 : 4,
                             callback: (function (game, id, turn) {
                                 if (_this._finance.getGold() >= game.stocks[id].getBuyOutValues().filter(function (e) { return e.id !== _this.id; }).reduce(function (a, b) { return a + b.totalValue; }, 0)) {
                                     game.buyOutPlayer(id, stock.owningPlayerId === _this.id);
                                     return true;
                                 }
-                                var continueSave = !(game.getCurrentTurn() > turn + constants_1.DEFAULT_SAVE);
+                                var continueSave = !(game.getCurrentTurn() < turn + (_this.isAllGameStockOwned(game) ? 10 : 4));
                                 _this.log("save initiated on turn: " + turn + " | continue: " + continueSave);
                                 return continueSave;
                             }).bind(_this, game, stock.owningPlayerId, turn)
@@ -446,6 +446,22 @@ var Opponent = /** @class */ (function (_super) {
                 }
                 game.addRouteToPlayerQueue(routes[i]);
             }
+        };
+        /**
+         * Useful when deciding how long to save when commencing buyouts.
+         *
+         * @param   {Nardis}  game - Nardis game instance.
+         *
+         * @returns {boolean} True if all shares of every Stock is currently held else false.
+         */
+        _this.isAllGameStockOwned = function (game) {
+            var result = Object.keys(game.stocks).map(function (key) {
+                var stock = game.stocks[key];
+                return stock.currentAmountOfStockHolders() >= constants_1.stockConstant.maxStockAmount ? 0 : 1;
+            })
+                .reduce(function (a, b) { return a + b; }, 0) === 0;
+            _this.log("all shares of every stock currently owned: " + result);
+            return result;
         };
         /**
          * If any Route has been unprofitable for four the amount of turns a full revolution takes, delete it.

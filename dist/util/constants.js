@@ -49,7 +49,7 @@ exports.stockConstant = {
         stockHolder: 20
     },
     divisors: {
-        avgRevenue: 35,
+        avgRevenue: 70,
         totalProfits: 70
     }
 };

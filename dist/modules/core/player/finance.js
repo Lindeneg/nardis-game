@@ -338,7 +338,7 @@ var Finance = /** @class */ (function (_super) {
         _this._playerId = playerId;
         _this._gold = gold;
         _this._history = util_1.isDefined(history) ? history : _this.getInitialHistoryState();
-        _this._totalProfits = util_1.isDefined(totalProfits) ? totalProfits : 0;
+        _this._totalProfits = util_1.isDefined(totalProfits) ? totalProfits : gold;
         _this._totalHistory = util_1.isDefined(totalHistory) ? totalHistory : (_a = {},
             _a[constants_1.localKeys[types_1.FinanceType.Train]] = 0,
             _a[constants_1.localKeys[types_1.FinanceType.Track]] = 0,

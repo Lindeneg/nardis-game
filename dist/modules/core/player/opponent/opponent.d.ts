@@ -168,6 +168,14 @@ export default class Opponent extends Player {
      */
     private purchaseRoutes;
     /**
+     * Useful when deciding how long to save when commencing buyouts.
+     *
+     * @param   {Nardis}  game - Nardis game instance.
+     *
+     * @returns {boolean} True if all shares of every Stock is currently held else false.
+     */
+    private isAllGameStockOwned;
+    /**
      * If any Route has been unprofitable for four the amount of turns a full revolution takes, delete it.
      *
      * @param {Nardis}  game - Nardis game instance.
