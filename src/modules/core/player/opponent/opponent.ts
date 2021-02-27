@@ -375,8 +375,9 @@ export default class Opponent extends Player {
      */
 
     private checkIfAnyPlayerCanBeBoughtOut = (game: Nardis, turn: number): void => {
-        [...Object.keys(game.stocks).filter((key: string): boolean => key !== this.id), this.id].forEach((key: string): void => {
-            const stock: Stock = game.stocks[key];
+        const keys: string[] = [...Object.keys(game.stocks).filter((key: string): boolean => key !== this.id), this.id];
+        for (let i: number = 0; i < keys.length; i++) {
+            const stock: Stock = game.stocks[keys[i]];
             if (
                 isDefined(stock) &&
                 stock.isActive() &&
@@ -386,6 +387,7 @@ export default class Opponent extends Player {
                 if (this._finance.getGold() >= buyOut) {
                     this.log(`commencing buyout of stock '${stock.owningPlayerId}'`);
                     game.buyOutPlayer(stock.owningPlayerId, stock.owningPlayerId === this.id);
+                    break;
                 } else if (this._level >= PlayerLevel.Advanced) {
                     this.log(`commencing save to buyout stock '${stock.owningPlayerId}'`);
                     this._save = {
@@ -402,9 +404,10 @@ export default class Opponent extends Player {
                             return continueSave;
                         }).bind(this, game, stock.owningPlayerId, turn)
                     }
+                    break;
                 }
             }
-        });
+        }
     }
 
     /**
