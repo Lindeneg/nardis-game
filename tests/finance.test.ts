@@ -76,7 +76,7 @@ test('can add to Finance expense history', () => {
     expect(history.expense.nthTurn[0].amount).toEqual(1);
     expect(history.expense.nthTurn[0].value).toEqual(200);
     expect(finance.getTotalHistory()[localKeys[FinanceType.Track]]).toEqual(200);
-    expect(finance.getTotalProfits()).toEqual(-200);
+    expect(finance.getTotalProfits()).toEqual(START_GOLD-200);
     expect(finance.getGold()).toEqual(START_GOLD - 200);
 });
 
@@ -85,7 +85,7 @@ test('can remove from Finance expense history', () => {
     expect(didRemove).toBe(true);
     expect(history.expense.nthTurn.length).toEqual(0);
     expect(finance.getTotalHistory()[localKeys[FinanceType.Track]]).toEqual(0);
-    expect(finance.getTotalProfits()).toEqual(0);
+    expect(finance.getTotalProfits()).toEqual(START_GOLD);
     expect(finance.getGold()).toEqual(START_GOLD);
 });
 
@@ -117,7 +117,6 @@ test('can handle route on turns', () => {
         Math.floor(route.getTrain().cost / netWorthDivisors.train) 
     );
     expect(finance.getTotalHistory()[r1.resource.id]).toEqual(value);
-    expect(finance.getTotalProfits()).toEqual(value - route.getTrain().upkeep);
 });
  
 test('can shift history array on turn change', () => {

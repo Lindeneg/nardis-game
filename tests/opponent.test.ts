@@ -33,7 +33,7 @@ test('can get correct opponent finance', () => {
     expect(finance.getNetWorth()).toEqual(START_GOLD + Math.floor(stockConstant.startingShares * (Math.floor(stockConstant.startingShares * stockConstant.multipliers.stockHolder) + stockConstant.baseValue)));
     expect(finance.getAverageRevenue()).toEqual(0);
     expect(finance.getAverageExpense()).toEqual(0);
-    expect(finance.getTotalProfits()).toEqual(0);
+    expect(finance.getTotalProfits()).toEqual(START_GOLD);
 });
 
 test('can handle first turn', () => {
@@ -52,8 +52,7 @@ test('can buy routes on first turn', () => {
 test('can get finance on first turn', () => {
     const stocks = finance.getStocks();
     const profits = finance.getTotalProfits()
-    expect(profits).toBeLessThan(0);
-    expect(finance.getGold()).toEqual(START_GOLD + profits);
+    expect(finance.getGold()).toEqual(profits);
     expect(finance.getNetWorth()).toEqual(opponent.getUpgrades()
         .map(e => Math.floor(e.cost / netWorthDivisors.upgrade))
         .reduce((a, b) => a + b, [...opponent.getQueue().map(k => k.route), ...opponent.getRoutes()]
@@ -75,9 +74,7 @@ test('can handle second turn', () => {
 test('can get finance on second turn', () => {
     const stocks = finance.getStocks();
     const profits = finance.getTotalProfits();
-    expect(profits).toBeLessThan(0);
-    expect(finance.getGold()).toEqual(START_GOLD + profits);
-    expect(finance.getGold() + Math.abs(profits)).toEqual(START_GOLD);
+    expect(finance.getGold()).toEqual(profits);
     expect(finance.getNetWorth()).toEqual(opponent.getUpgrades()
         .map(e => Math.floor(e.cost / netWorthDivisors.upgrade))
         .reduce((a, b) => a + b, [...opponent.getQueue().map(k => k.route), ...opponent.getRoutes()]
