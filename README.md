@@ -10,4 +10,4 @@ Start server
 
 `yarn start`
 
-Or try it [here](https://lindeneg.github.io/nardis-ui/).
+Or try it [here](https://nardis.lindeneg.org).
